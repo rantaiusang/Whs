@@ -1,0 +1,1428 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Dashboard — Wallet Health Score</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=DM+Sans:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
+
+  <style>
+    /* ========================================
+       CSS VARIABLES
+    ======================================== */
+    :root {
+      --bg-primary: #060a13;
+      --bg-secondary: #0c1222;
+      --bg-card: rgba(14, 22, 42, 0.65);
+      --bg-card-hover: rgba(20, 32, 58, 0.75);
+      --bg-sidebar: rgba(8, 14, 28, 0.92);
+      --bg-input: rgba(6, 10, 19, 0.6);
+      --border-color: rgba(45, 212, 191, 0.12);
+      --border-color-hover: rgba(45, 212, 191, 0.3);
+      --border-subtle: rgba(255, 255, 255, 0.06);
+
+      --accent: #2dd4bf;
+      --accent-dim: rgba(45, 212, 191, 0.12);
+      --accent-glow: rgba(45, 212, 191, 0.2);
+      --accent-secondary: #f59e0b;
+      --accent-secondary-dim: rgba(245, 158, 11, 0.12);
+
+      --text-primary: #f1f5f9;
+      --text-secondary: #94a3b8;
+      --text-muted: #475569;
+      --text-accent: #2dd4bf;
+
+      --success: #22c55e;
+      --warning: #f59e0b;
+      --danger: #ef4444;
+      --info: #3b82f6;
+
+      --radius-sm: 8px;
+      --radius-md: 12px;
+      --radius-lg: 16px;
+      --radius-xl: 24px;
+      --radius-full: 9999px;
+
+      --font-display: 'Space Grotesk', sans-serif;
+      --font-body: 'DM Sans', sans-serif;
+
+      --shadow-card: 0 4px 24px rgba(0, 0, 0, 0.3);
+      --shadow-glow: 0 0 40px rgba(45, 212, 191, 0.06);
+
+      --sidebar-width: 260px;
+      --topbar-height: 64px;
+
+      --transition-fast: 150ms cubic-bezier(0.4, 0, 0.2, 1);
+      --transition-base: 250ms cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    /* ========================================
+       RESET & BASE
+    ======================================== */
+    *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+    html { scroll-behavior: smooth; -webkit-font-smoothing: antialiased; }
+    body {
+      font-family: var(--font-body);
+      background: var(--bg-primary);
+      color: var(--text-primary);
+      line-height: 1.6;
+      overflow-x: hidden;
+      min-height: 100vh;
+    }
+    a { color: inherit; text-decoration: none; transition: color var(--transition-fast); }
+    button { font-family: var(--font-body); cursor: pointer; border: none; outline: none; background: none; }
+
+    /* ========================================
+       BACKGROUND
+    ======================================== */
+    .bg-atmosphere {
+      position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+      pointer-events: none; z-index: 0; overflow: hidden;
+    }
+    .bg-atmosphere .orb {
+      position: absolute; border-radius: 50%; filter: blur(120px); opacity: 0.25;
+      animation: orbFloat 25s ease-in-out infinite;
+    }
+    .bg-atmosphere .orb-1 {
+      width: 500px; height: 500px;
+      background: radial-gradient(circle, rgba(45, 212, 191, 0.1) 0%, transparent 70%);
+      top: -10%; left: -5%;
+    }
+    .bg-atmosphere .orb-2 {
+      width: 400px; height: 400px;
+      background: radial-gradient(circle, rgba(245, 158, 11, 0.06) 0%, transparent 70%);
+      bottom: -10%; right: -5%;
+      animation-delay: -10s; animation-duration: 28s;
+    }
+    @keyframes orbFloat {
+      0%, 100% { transform: translate(0, 0) scale(1); }
+      33% { transform: translate(20px, -30px) scale(1.03); }
+      66% { transform: translate(-15px, 15px) scale(0.97); }
+    }
+    .bg-noise {
+      position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+      pointer-events: none; z-index: 0; opacity: 0.02;
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+      background-size: 256px 256px;
+    }
+
+    /* ========================================
+       DASHBOARD LAYOUT
+    ======================================== */
+    .dashboard-layout {
+      position: relative; z-index: 1;
+      display: flex; min-height: 100vh;
+    }
+
+    /* ========================================
+       SIDEBAR
+    ======================================== */
+    .sidebar {
+      width: var(--sidebar-width);
+      background: var(--bg-sidebar);
+      border-right: 1px solid var(--border-subtle);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      display: flex; flex-direction: column;
+      position: fixed; top: 0; left: 0; bottom: 0;
+      z-index: 50;
+      transition: transform var(--transition-base);
+    }
+
+    .sidebar-brand {
+      padding: 20px 24px;
+      display: flex; align-items: center; gap: 10px;
+      border-bottom: 1px solid var(--border-subtle);
+      font-family: var(--font-display);
+      font-weight: 700; font-size: 1.1rem;
+    }
+
+    .sidebar-brand-icon {
+      width: 32px; height: 32px;
+      background: linear-gradient(135deg, var(--accent), #0d9488);
+      border-radius: var(--radius-sm);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 0.85rem; color: var(--bg-primary);
+      box-shadow: 0 0 14px var(--accent-glow);
+    }
+
+    .sidebar-nav {
+      flex: 1; padding: 16px 12px;
+      display: flex; flex-direction: column; gap: 4px;
+      overflow-y: auto;
+    }
+
+    .nav-section-label {
+      font-size: 0.68rem; font-weight: 600;
+      text-transform: uppercase; letter-spacing: 0.1em;
+      color: var(--text-muted); padding: 16px 12px 8px;
+    }
+
+    .nav-item {
+      display: flex; align-items: center; gap: 12px;
+      padding: 11px 14px; border-radius: var(--radius-md);
+      font-size: 0.9rem; font-weight: 500;
+      color: var(--text-secondary);
+      transition: all var(--transition-fast);
+      position: relative;
+    }
+
+    .nav-item i {
+      width: 20px; text-align: center; font-size: 0.9rem;
+    }
+
+    .nav-item:hover {
+      color: var(--text-primary);
+      background: rgba(255, 255, 255, 0.04);
+    }
+
+    .nav-item.active {
+      color: var(--accent);
+      background: var(--accent-dim);
+    }
+
+    .nav-item.active::before {
+      content: '';
+      position: absolute; left: 0; top: 50%;
+      transform: translateY(-50%);
+      width: 3px; height: 20px;
+      background: var(--accent);
+      border-radius: 0 3px 3px 0;
+    }
+
+    .nav-item .badge {
+      margin-left: auto;
+      padding: 2px 8px;
+      font-size: 0.7rem; font-weight: 600;
+      border-radius: var(--radius-full);
+      background: rgba(239, 68, 68, 0.15);
+      color: var(--danger);
+    }
+
+    .sidebar-footer {
+      padding: 16px;
+      border-top: 1px solid var(--border-subtle);
+    }
+
+    .sidebar-wallet {
+      display: flex; align-items: center; gap: 10px;
+      padding: 10px 12px;
+      background: rgba(255, 255, 255, 0.02);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-md);
+      cursor: pointer;
+      transition: all var(--transition-fast);
+    }
+
+    .sidebar-wallet:hover {
+      border-color: var(--border-color);
+      background: rgba(255, 255, 255, 0.04);
+    }
+
+    .sidebar-wallet-avatar {
+      width: 32px; height: 32px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, var(--accent-dim), rgba(45, 212, 191, 0.25));
+      display: flex; align-items: center; justify-content: center;
+      font-size: 0.75rem; color: var(--accent);
+      font-family: var(--font-display); font-weight: 700;
+      flex-shrink: 0;
+    }
+
+    .sidebar-wallet-info {
+      flex: 1; min-width: 0;
+    }
+
+    .sidebar-wallet-addr {
+      font-family: 'Space Grotesk', monospace;
+      font-size: 0.8rem; font-weight: 500;
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    }
+
+    .sidebar-wallet-label {
+      font-size: 0.7rem; color: var(--text-muted);
+    }
+
+    /* ========================================
+       MAIN CONTENT
+    ======================================== */
+    .main-content {
+      flex: 1;
+      margin-left: var(--sidebar-width);
+      display: flex; flex-direction: column;
+      min-height: 100vh;
+    }
+
+    /* ----------------------------------------
+       TOPBAR
+    ---------------------------------------- */
+    .topbar {
+      height: var(--topbar-height);
+      padding: 0 32px;
+      display: flex; align-items: center; justify-content: space-between;
+      border-bottom: 1px solid var(--border-subtle);
+      background: rgba(6, 10, 19, 0.6);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      position: sticky; top: 0; z-index: 40;
+    }
+
+    .topbar-left {
+      display: flex; align-items: center; gap: 16px;
+    }
+
+    .sidebar-toggle {
+      display: none;
+      width: 36px; height: 36px;
+      border-radius: var(--radius-sm);
+      align-items: center; justify-content: center;
+      color: var(--text-secondary);
+      font-size: 1.1rem;
+      transition: all var(--transition-fast);
+    }
+
+    .sidebar-toggle:hover {
+      color: var(--text-primary);
+      background: rgba(255, 255, 255, 0.05);
+    }
+
+    .topbar-title {
+      font-family: var(--font-display);
+      font-size: 1.15rem; font-weight: 600;
+    }
+
+    .topbar-right {
+      display: flex; align-items: center; gap: 12px;
+    }
+
+    .topbar-btn {
+      width: 38px; height: 38px;
+      border-radius: var(--radius-sm);
+      display: flex; align-items: center; justify-content: center;
+      color: var(--text-muted);
+      font-size: 0.95rem;
+      transition: all var(--transition-fast);
+      position: relative;
+    }
+
+    .topbar-btn:hover {
+      color: var(--text-primary);
+      background: rgba(255, 255, 255, 0.05);
+    }
+
+    .topbar-btn .notif-dot {
+      position: absolute; top: 6px; right: 6px;
+      width: 7px; height: 7px;
+      background: var(--danger);
+      border-radius: 50%;
+      border: 1.5px solid var(--bg-primary);
+    }
+
+    .btn-logout {
+      display: inline-flex; align-items: center; gap: 8px;
+      padding: 8px 16px;
+      font-size: 0.82rem; font-weight: 500;
+      color: var(--text-muted);
+      border-radius: var(--radius-full);
+      transition: all var(--transition-fast);
+    }
+
+    .btn-logout:hover {
+      color: var(--danger);
+      background: rgba(239, 68, 68, 0.08);
+    }
+
+    /* ----------------------------------------
+       PAGE CONTENT
+    ---------------------------------------- */
+    .page-content {
+      flex: 1; padding: 32px;
+    }
+
+    /* Wallet header info */
+    .wallet-header {
+      display: flex; align-items: flex-start; justify-content: space-between;
+      margin-bottom: 28px; flex-wrap: wrap; gap: 16px;
+    }
+
+    .wallet-header-left {
+      display: flex; align-items: center; gap: 16px;
+    }
+
+    .wallet-avatar-lg {
+      width: 52px; height: 52px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, var(--accent), #0d9488);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 1.1rem; color: var(--bg-primary);
+      font-family: var(--font-display); font-weight: 700;
+      box-shadow: 0 0 24px var(--accent-glow);
+      flex-shrink: 0;
+    }
+
+    .wallet-header-info h2 {
+      font-family: var(--font-display);
+      font-size: 1.2rem; font-weight: 600;
+      letter-spacing: 0.02em;
+    }
+
+    .wallet-header-meta {
+      display: flex; align-items: center; gap: 16px;
+      margin-top: 4px; font-size: 0.82rem; color: var(--text-muted);
+    }
+
+    .wallet-header-meta span {
+      display: flex; align-items: center; gap: 5px;
+    }
+
+    .copy-btn {
+      display: inline-flex; align-items: center; gap: 6px;
+      padding: 6px 12px;
+      font-size: 0.78rem; font-weight: 500;
+      color: var(--text-muted);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-full);
+      transition: all var(--transition-fast);
+    }
+
+    .copy-btn:hover {
+      color: var(--accent);
+      border-color: var(--border-color);
+      background: var(--accent-dim);
+    }
+
+    .wallet-header-right {
+      display: flex; align-items: center; gap: 12px;
+    }
+
+    .status-badge {
+      display: inline-flex; align-items: center; gap: 8px;
+      padding: 8px 18px;
+      border-radius: var(--radius-full);
+      font-size: 0.85rem; font-weight: 600;
+      letter-spacing: 0.02em;
+    }
+
+    .status-badge i { font-size: 0.8rem; }
+
+    .sim-badge {
+      display: inline-flex; align-items: center; gap: 6px;
+      padding: 6px 14px;
+      font-size: 0.72rem; font-weight: 500;
+      color: var(--text-muted);
+      background: rgba(255, 255, 255, 0.03);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-full);
+    }
+
+    /* ----------------------------------------
+       STAT CARDS GRID
+    ---------------------------------------- */
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 20px;
+      margin-bottom: 28px;
+    }
+
+    .stat-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-lg);
+      padding: 24px;
+      position: relative; overflow: hidden;
+      transition: all var(--transition-base);
+    }
+
+    .stat-card::before {
+      content: '';
+      position: absolute; top: 0; left: 0; right: 0;
+      height: 2px;
+      opacity: 0; transition: opacity var(--transition-base);
+    }
+
+    .stat-card:hover {
+      border-color: var(--border-color);
+      transform: translateY(-2px);
+      box-shadow: var(--shadow-card), var(--shadow-glow);
+    }
+
+    .stat-card:hover::before { opacity: 1; }
+
+    .stat-card.accent::before { background: linear-gradient(90deg, var(--accent), transparent); }
+    .stat-card.green::before { background: linear-gradient(90deg, var(--success), transparent); }
+    .stat-card.amber::before { background: linear-gradient(90deg, var(--warning), transparent); }
+    .stat-card.red::before { background: linear-gradient(90deg, var(--danger), transparent); }
+
+    .stat-card-header {
+      display: flex; align-items: center; justify-content: space-between;
+      margin-bottom: 16px;
+    }
+
+    .stat-card-label {
+      font-size: 0.82rem; font-weight: 500;
+      color: var(--text-muted);
+    }
+
+    .stat-card-icon {
+      width: 36px; height: 36px;
+      border-radius: var(--radius-sm);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 0.9rem;
+    }
+
+    .stat-card.accent .stat-card-icon { background: var(--accent-dim); color: var(--accent); }
+    .stat-card.green .stat-card-icon { background: rgba(34,197,94,0.12); color: var(--success); }
+    .stat-card.amber .stat-card-icon { background: var(--accent-secondary-dim); color: var(--warning); }
+    .stat-card.red .stat-card-icon { background: rgba(239,68,68,0.12); color: var(--danger); }
+
+    .stat-card-value {
+      font-family: var(--font-display);
+      font-size: 1.9rem; font-weight: 700;
+      line-height: 1; margin-bottom: 8px;
+    }
+
+    .stat-card.accent .stat-card-value { color: var(--accent); }
+
+    .stat-card-change {
+      display: inline-flex; align-items: center; gap: 4px;
+      font-size: 0.78rem; font-weight: 600;
+      padding: 2px 8px; border-radius: var(--radius-full);
+    }
+
+    .stat-card-change.up {
+      color: var(--success);
+      background: rgba(34, 197, 94, 0.1);
+    }
+
+    .stat-card-change.down {
+      color: var(--danger);
+      background: rgba(239, 68, 68, 0.1);
+    }
+
+    .stat-card-sub {
+      font-size: 0.78rem; color: var(--text-muted);
+      margin-top: 6px;
+    }
+
+    /* ----------------------------------------
+       BOTTOM GRID: Score Breakdown + Recent Tx
+    ---------------------------------------- */
+    .bottom-grid {
+      display: grid;
+      grid-template-columns: 1fr 1.2fr;
+      gap: 20px;
+    }
+
+    .card {
+      background: var(--bg-card);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-lg);
+      overflow: hidden;
+    }
+
+    .card-header {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 20px 24px;
+      border-bottom: 1px solid var(--border-subtle);
+    }
+
+    .card-title {
+      font-family: var(--font-display);
+      font-size: 0.95rem; font-weight: 600;
+    }
+
+    .card-action {
+      font-size: 0.8rem; font-weight: 500;
+      color: var(--accent);
+      display: flex; align-items: center; gap: 4px;
+      transition: all var(--transition-fast);
+    }
+
+    .card-action:hover {
+      gap: 6px;
+    }
+
+    .card-body {
+      padding: 24px;
+    }
+
+    /* Breakdown bars */
+    .breakdown-list {
+      display: flex; flex-direction: column; gap: 20px;
+    }
+
+    .breakdown-item-label {
+      display: flex; align-items: center; justify-content: space-between;
+      margin-bottom: 8px;
+    }
+
+    .breakdown-label-text {
+      font-size: 0.85rem; font-weight: 500;
+      color: var(--text-secondary);
+    }
+
+    .breakdown-label-value {
+      font-family: var(--font-display);
+      font-size: 0.85rem; font-weight: 600;
+    }
+
+    .breakdown-bar {
+      height: 8px;
+      background: rgba(255, 255, 255, 0.04);
+      border-radius: var(--radius-full);
+      overflow: hidden;
+    }
+
+    .breakdown-bar-fill {
+      height: 100%;
+      border-radius: var(--radius-full);
+      transition: width 1.2s cubic-bezier(0.4, 0, 0.2, 1);
+      width: 0;
+    }
+
+    .breakdown-bar-fill.teal { background: linear-gradient(90deg, var(--accent), #5eead4); }
+    .breakdown-bar-fill.green { background: linear-gradient(90deg, #16a34a, #4ade80); }
+    .breakdown-bar-fill.amber { background: linear-gradient(90deg, #d97706, #fbbf24); }
+    .breakdown-bar-fill.red { background: linear-gradient(90deg, #dc2626, #f87171); }
+
+    /* Risk flags mini list */
+    .risk-flags-mini {
+      margin-top: 24px;
+      padding-top: 20px;
+      border-top: 1px solid var(--border-subtle);
+    }
+
+    .risk-flags-mini-title {
+      font-size: 0.82rem; font-weight: 600;
+      color: var(--text-muted); margin-bottom: 12px;
+      text-transform: uppercase; letter-spacing: 0.06em;
+    }
+
+    .risk-flag-item {
+      display: flex; align-items: flex-start; gap: 10px;
+      padding: 10px 12px;
+      background: rgba(239, 68, 68, 0.04);
+      border: 1px solid rgba(239, 68, 68, 0.1);
+      border-radius: var(--radius-sm);
+      margin-bottom: 8px;
+      font-size: 0.82rem;
+      color: var(--text-secondary);
+      line-height: 1.45;
+    }
+
+    .risk-flag-item i {
+      color: var(--danger);
+      margin-top: 2px; flex-shrink: 0;
+      font-size: 0.75rem;
+    }
+
+    .risk-flag-severity {
+      display: inline-block;
+      padding: 1px 6px;
+      font-size: 0.65rem; font-weight: 600;
+      text-transform: uppercase; letter-spacing: 0.05em;
+      border-radius: 4px;
+      margin-left: 8px; vertical-align: middle;
+    }
+
+    .risk-flag-severity.critical { background: rgba(239,68,68,0.2); color: #f87171; }
+    .risk-flag-severity.high { background: rgba(249,115,22,0.2); color: #fb923c; }
+    .risk-flag-severity.medium { background: rgba(245,158,11,0.2); color: #fbbf24; }
+    .risk-flag-severity.low { background: rgba(59,130,246,0.2); color: #60a5fa; }
+
+    .no-flags {
+      display: flex; align-items: center; gap: 10px;
+      padding: 14px 16px;
+      background: rgba(34, 197, 94, 0.05);
+      border: 1px solid rgba(34, 197, 94, 0.12);
+      border-radius: var(--radius-sm);
+      font-size: 0.85rem; color: var(--success);
+    }
+
+    /* Recent transactions table */
+    .tx-table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+
+    .tx-table th {
+      text-align: left;
+      font-size: 0.72rem; font-weight: 600;
+      text-transform: uppercase; letter-spacing: 0.08em;
+      color: var(--text-muted);
+      padding: 0 0 14px;
+      border-bottom: 1px solid var(--border-subtle);
+    }
+
+    .tx-table td {
+      padding: 14px 0;
+      font-size: 0.85rem;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.03);
+      vertical-align: middle;
+    }
+
+    .tx-table tr:last-child td { border-bottom: none; }
+
+    .tx-type-badge {
+      display: inline-flex; align-items: center; gap: 6px;
+      padding: 4px 10px;
+      border-radius: var(--radius-full);
+      font-size: 0.75rem; font-weight: 600;
+      text-transform: capitalize;
+    }
+
+    .tx-type-badge.send { background: rgba(239,68,68,0.1); color: #f87171; }
+    .tx-type-badge.receive { background: rgba(34,197,94,0.1); color: #4ade80; }
+    .tx-type-badge.swap { background: rgba(168,85,247,0.1); color: #c084fc; }
+    .tx-type-badge.approve { background: rgba(59,130,246,0.1); color: #60a5fa; }
+    .tx-type-badge.stake { background: var(--accent-dim); color: var(--accent); }
+    .tx-type-badge.unstake { background: var(--accent-secondary-dim); color: var(--accent-secondary); }
+    .tx-type-badge.bridge { background: rgba(236,72,153,0.1); color: #f472b6; }
+    .tx-type-badge.mint { background: rgba(34,197,94,0.1); color: #4ade80; }
+    .tx-type-badge.burn { background: rgba(239,68,68,0.1); color: #f87171; }
+
+    .tx-addr {
+      font-family: 'Space Grotesk', monospace;
+      font-size: 0.8rem; color: var(--text-muted);
+    }
+
+    .tx-amount {
+      font-family: var(--font-display);
+      font-weight: 600; font-size: 0.85rem;
+    }
+
+    .tx-amount.negative { color: #f87171; }
+    .tx-amount.positive { color: #4ade80; }
+
+    .tx-status {
+      display: inline-flex; align-items: center; gap: 5px;
+      font-size: 0.75rem; font-weight: 500;
+    }
+
+    .tx-status.success { color: var(--success); }
+    .tx-status.failed { color: var(--danger); }
+
+    .tx-status i { font-size: 0.6rem; }
+
+    .tx-time {
+      font-size: 0.78rem; color: var(--text-muted);
+      white-space: nowrap;
+    }
+
+    /* Empty state */
+    .empty-state {
+      text-align: center; padding: 48px 24px;
+      color: var(--text-muted);
+    }
+
+    .empty-state i { font-size: 2rem; margin-bottom: 12px; opacity: 0.4; }
+    .empty-state p { font-size: 0.9rem; }
+
+    /* ========================================
+       SIDEBAR OVERLAY (mobile)
+    ======================================== */
+    .sidebar-overlay {
+      display: none;
+      position: fixed; inset: 0;
+      background: rgba(0, 0, 0, 0.6);
+      z-index: 45;
+      opacity: 0;
+      transition: opacity var(--transition-base);
+    }
+
+    .sidebar-overlay.active {
+      opacity: 1;
+    }
+
+    /* ========================================
+       TOAST
+    ======================================== */
+    .toast-container {
+      position: fixed; top: 80px; right: 24px;
+      z-index: 200; display: flex; flex-direction: column; gap: 8px;
+    }
+
+    .toast {
+      display: flex; align-items: center; gap: 12px;
+      padding: 14px 20px;
+      background: var(--bg-secondary);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-md);
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+      font-size: 0.88rem; color: var(--text-primary);
+      transform: translateX(120%);
+      transition: transform var(--transition-base);
+      max-width: 380px;
+    }
+
+    .toast.show { transform: translateX(0); }
+    .toast i { font-size: 1.1rem; flex-shrink: 0; }
+    .toast.success { border-left: 3px solid var(--success); }
+    .toast.success i { color: var(--success); }
+    .toast.error { border-left: 3px solid var(--danger); }
+    .toast.error i { color: var(--danger); }
+    .toast.info { border-left: 3px solid var(--info); }
+    .toast.info i { color: var(--info); }
+
+    /* ========================================
+       REDIRECT GUARD (jika belum login)
+    ======================================== */
+    .guard-screen {
+      display: none;
+      position: fixed; inset: 0; z-index: 500;
+      background: var(--bg-primary);
+      flex-direction: column; align-items: center; justify-content: center;
+      gap: 20px; text-align: center; padding: 24px;
+    }
+
+    .guard-screen.active { display: flex; }
+
+    .guard-screen i { font-size: 2.5rem; color: var(--text-muted); opacity: 0.4; }
+    .guard-screen h2 {
+      font-family: var(--font-display);
+      font-size: 1.4rem; font-weight: 600;
+    }
+    .guard-screen p { font-size: 0.95rem; color: var(--text-muted); max-width: 360px; }
+
+    .btn {
+      display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+      font-family: var(--font-body); font-weight: 600; font-size: 0.9rem;
+      padding: 12px 28px; border-radius: var(--radius-full);
+      transition: all var(--transition-base);
+    }
+
+    .btn-primary {
+      color: var(--bg-primary);
+      background: linear-gradient(135deg, var(--accent), #0d9488);
+      box-shadow: 0 0 20px var(--accent-glow);
+    }
+
+    .btn-primary:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 0 30px var(--accent-glow), 0 4px 16px rgba(45, 212, 191, 0.2);
+    }
+
+    /* ========================================
+       RESPONSIVE
+    ======================================== */
+    @media (max-width: 1100px) {
+      .stats-grid { grid-template-columns: repeat(2, 1fr); }
+      .bottom-grid { grid-template-columns: 1fr; }
+    }
+
+    @media (max-width: 768px) {
+      .sidebar {
+        transform: translateX(-100%);
+      }
+
+      .sidebar.open {
+        transform: translateX(0);
+      }
+
+      .sidebar-overlay {
+        display: block;
+      }
+
+      .main-content {
+        margin-left: 0;
+      }
+
+      .sidebar-toggle {
+        display: flex;
+      }
+
+      .page-content {
+        padding: 20px 16px;
+      }
+
+      .stats-grid {
+        grid-template-columns: 1fr 1fr;
+        gap: 12px;
+      }
+
+      .stat-card { padding: 18px; }
+      .stat-card-value { font-size: 1.5rem; }
+
+      .wallet-header { flex-direction: column; }
+      .wallet-header-right { width: 100%; justify-content: flex-start; }
+
+      .tx-table { font-size: 0.8rem; }
+      .tx-table th:nth-child(4),
+      .tx-table td:nth-child(4) { display: none; } /* Sembunyikan kolom status di mobile */
+    }
+
+    @media (max-width: 480px) {
+      .stats-grid { grid-template-columns: 1fr; }
+      .topbar { padding: 0 16px; }
+      .topbar-title { font-size: 1rem; }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after {
+        animation-duration: 0.01ms !important;
+        transition-duration: 0.01ms !important;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Background -->
+  <div class="bg-atmosphere" aria-hidden="true">
+    <div class="orb orb-1"></div>
+    <div class="orb orb-2"></div>
+  </div>
+  <div class="bg-noise" aria-hidden="true"></div>
+
+  <!-- Guard Screen (belum login) -->
+  <div class="guard-screen" id="guardScreen">
+    <i class="fa-solid fa-lock"></i>
+    <h2>Belum Masuk</h2>
+    <p>Anda harus login dengan wallet address terlebih dahulu untuk mengakses dashboard.</p>
+    <a href="login.html" class="btn btn-primary">
+      <i class="fa-solid fa-arrow-right-to-bracket"></i> Masuk Sekarang
+    </a>
+  </div>
+
+  <!-- Toast -->
+  <div class="toast-container" id="toastContainer" aria-live="polite"></div>
+
+  <!-- Sidebar Overlay (mobile) -->
+  <div class="sidebar-overlay" id="sidebarOverlay"></div>
+
+  <!-- Dashboard Layout -->
+  <div class="dashboard-layout" id="dashboardLayout" style="display:none;">
+
+    <!-- Sidebar -->
+    <aside class="sidebar" id="sidebar" role="navigation" aria-label="Sidebar navigasi">
+      <div class="sidebar-brand">
+        <div class="sidebar-brand-icon"><i class="fa-solid fa-shield-halved"></i></div>
+        <span>WalletScore</span>
+      </div>
+
+      <nav class="sidebar-nav">
+        <div class="nav-section-label">Menu Utama</div>
+        <a href="dashboard.html" class="nav-item active">
+          <i class="fa-solid fa-grid-2"></i> Dashboard
+        </a>
+        <a href="wallet.html" class="nav-item">
+          <i class="fa-solid fa-wallet"></i> Wallet Detail
+        </a>
+        <a href="history.html" class="nav-item">
+          <i class="fa-solid fa-clock-rotate-left"></i> Riwayat
+          <span class="badge" id="txBadge" style="display:none;"></span>
+        </a>
+        <a href="analytics.html" class="nav-item">
+          <i class="fa-solid fa-chart-mixed"></i> Analitik
+        </a>
+
+        <div class="nav-section-label">Lainnya</div>
+        <a href="settings.html" class="nav-item">
+          <i class="fa-solid fa-gear"></i> Pengaturan
+        </a>
+        <a href="index.html" class="nav-item">
+          <i class="fa-solid fa-house"></i> Beranda
+        </a>
+      </nav>
+
+      <div class="sidebar-footer">
+        <div class="sidebar-wallet" id="sidebarWallet" title="Klik untuk salin alamat">
+          <div class="sidebar-wallet-avatar" id="sidebarAvatar">?</div>
+          <div class="sidebar-wallet-info">
+            <div class="sidebar-wallet-addr" id="sidebarAddr">—</div>
+            <div class="sidebar-wallet-label">Tersambung</div>
+          </div>
+          <i class="fa-solid fa-copy" style="color:var(--text-muted); font-size:0.75rem;"></i>
+        </div>
+      </div>
+    </aside>
+
+    <!-- Main -->
+    <div class="main-content">
+
+      <!-- Topbar -->
+      <header class="topbar">
+        <div class="topbar-left">
+          <button class="sidebar-toggle" id="sidebarToggle" aria-label="Toggle sidebar">
+            <i class="fa-solid fa-bars"></i>
+          </button>
+          <h1 class="topbar-title">Dashboard</h1>
+        </div>
+        <div class="topbar-right">
+          <button class="topbar-btn" aria-label="Notifikasi">
+            <i class="fa-solid fa-bell"></i>
+            <span class="notif-dot"></span>
+          </button>
+          <button class="topbar-btn" id="refreshBtn" aria-label="Refresh data" title="Refresh data">
+            <i class="fa-solid fa-arrows-rotate"></i>
+          </button>
+          <button class="btn-logout" id="logoutBtn">
+            <i class="fa-solid fa-right-from-bracket"></i>
+            <span>Keluar</span>
+          </button>
+        </div>
+      </header>
+
+      <!-- Page Content -->
+      <main class="page-content" id="pageContent">
+        <!-- Diisi oleh JavaScript -->
+      </main>
+
+    </div>
+  </div>
+
+  <!-- Load data.js terlebih dahulu -->
+  <script src="js/data.js"></script>
+
+  <script>
+    /* ========================================
+       UTILITAS
+    ======================================== */
+    function showToast(message, type = 'info', duration = 3000) {
+      const container = document.getElementById('toastContainer');
+      const toast = document.createElement('div');
+      toast.className = `toast ${type}`;
+      const icons = {
+        success: 'fa-solid fa-circle-check',
+        error: 'fa-solid fa-circle-xmark',
+        info: 'fa-solid fa-circle-info'
+      };
+      toast.innerHTML = `<i class="${icons[type] || icons.info}"></i><span>${message}</span>`;
+      container.appendChild(toast);
+      requestAnimationFrame(() => requestAnimationFrame(() => toast.classList.add('show')));
+      setTimeout(() => {
+        toast.classList.remove('show');
+        setTimeout(() => toast.remove(), 300);
+      }, duration);
+    }
+
+    /* ========================================
+       AUTH GUARD
+    ======================================== */
+    const walletAddress = localStorage.getItem('whs_wallet');
+    const guardScreen = document.getElementById('guardScreen');
+    const dashboardLayout = document.getElementById('dashboardLayout');
+
+    if (!walletAddress) {
+      guardScreen.classList.add('active');
+    } else {
+      dashboardLayout.style.display = 'flex';
+      initDashboard(walletAddress);
+    }
+
+    /* ========================================
+       SIDEBAR LOGIC
+    ======================================== */
+    const sidebar = document.getElementById('sidebar');
+    const sidebarOverlay = document.getElementById('sidebarOverlay');
+    const sidebarToggle = document.getElementById('sidebarToggle');
+
+    sidebarToggle.addEventListener('click', () => {
+      sidebar.classList.toggle('open');
+      sidebarOverlay.classList.toggle('active');
+    });
+
+    sidebarOverlay.addEventListener('click', () => {
+      sidebar.classList.remove('open');
+      sidebarOverlay.classList.remove('active');
+    });
+
+    // Copy wallet dari sidebar
+    document.getElementById('sidebarWallet').addEventListener('click', () => {
+      if (walletAddress) {
+        navigator.clipboard.writeText(walletAddress).then(() => {
+          showToast('Alamat wallet disalin', 'success', 2000);
+        }).catch(() => {
+          showToast('Gagal menyalin alamat', 'error');
+        });
+      }
+    });
+
+    /* ========================================
+       LOGOUT
+    ======================================== */
+    document.getElementById('logoutBtn').addEventListener('click', () => {
+      localStorage.removeItem('whs_wallet');
+      localStorage.removeItem('whs_login_time');
+      sessionStorage.removeItem('currentWallet');
+      showToast('Berhasil keluar', 'info', 2000);
+      setTimeout(() => { window.location.href = 'login.html'; }, 600);
+    });
+
+    /* ========================================
+       REFRESH
+    ======================================== */
+    document.getElementById('refreshBtn').addEventListener('click', () => {
+      if (walletAddress) {
+        const icon = document.querySelector('#refreshBtn i');
+        icon.style.animation = 'spin 0.6s linear';
+        setTimeout(() => { icon.style.animation = ''; }, 600);
+        initDashboard(walletAddress);
+        showToast('Data diperbarui', 'success', 2000);
+      }
+    });
+
+    // Tambahkan keyframe spin jika belum ada
+    if (!document.getElementById('dynamicKeyframes')) {
+      const style = document.createElement('style');
+      style.id = 'dynamicKeyframes';
+      style.textContent = `@keyframes spin { to { transform: rotate(360deg); } }`;
+      document.head.appendChild(style);
+    }
+
+    /* ========================================
+       INIT DASHBOARD
+    ======================================== */
+    function initDashboard(address) {
+      // Update sidebar info
+      const addrShort = shortAddress(address);
+      document.getElementById('sidebarAddr').textContent = address;
+      document.getElementById('sidebarAvatar').textContent = address.slice(2, 4).toUpperCase();
+
+      // Generate data
+      const data = calculateCreditScore(address);
+
+      // Simpan ke sessionStorage untuk halaman lain
+      sessionStorage.setItem('walletData', JSON.stringify(data));
+
+      // Update badge transaksi
+      const txBadge = document.getElementById('txBadge');
+      if (data.transactions.total > 0) {
+        txBadge.style.display = 'inline';
+        txBadge.textContent = data.transactions.total > 99 ? '99+' : data.transactions.total;
+      }
+
+      // Render page content
+      renderPage(data);
+    }
+
+    /* ========================================
+       RENDER PAGE
+    ======================================== */
+    function renderPage(data) {
+      const pageContent = document.getElementById('pageContent');
+
+      // Format umur wallet
+      let ageText;
+      if (data.walletAgeDays >= 365) {
+        const y = Math.floor(data.walletAgeDays / 365);
+        const m = Math.floor((data.walletAgeDays % 365) / 30);
+        ageText = y > 0 ? `${y} tahun${m > 0 ? ' ' + m + ' bulan' : ''}` : `${m} bulan`;
+      } else if (data.walletAgeDays >= 30) {
+        ageText = `${Math.floor(data.walletAgeDays / 30)} bulan`;
+      } else {
+        ageText = `${data.walletAgeDays} hari`;
+      }
+
+      // Persentil vs network avg
+      const vsNetwork = data.score - data.networkAvg;
+      const vsText = vsNetwork >= 0 ? `+${vsNetwork}` : `${vsNetwork}`;
+      const vsClass = vsNetwork >= 0 ? 'up' : 'down';
+      const vsIcon = vsNetwork >= 0 ? 'fa-arrow-up' : 'fa-arrow-down';
+
+      // Score change
+      const changeClass = data.scoreChange >= 0 ? 'up' : 'down';
+      const changeIcon = data.scoreChange >= 0 ? 'fa-arrow-up' : 'fa-arrow-down';
+      const changeText = data.scoreChange >= 0 ? `+${data.scoreChange}` : `${data.scoreChange}`;
+
+      // Ambil 5 transaksi terbaru
+      const recentTx = data.transactions.list.slice(0, 5);
+
+      pageContent.innerHTML = `
+        <!-- Wallet Header -->
+        <div class="wallet-header">
+          <div class="wallet-header-left">
+            <div class="wallet-avatar-lg">${data.walletAddress.slice(2, 4).toUpperCase()}</div>
+            <div class="wallet-header-info">
+              <h2>${data.walletAddress}</h2>
+              <div class="wallet-header-meta">
+                <span><i class="fa-regular fa-clock"></i> Umur ${ageText}</span>
+                <span><i class="fa-solid fa-gas-pump"></i> ${formatETH(data.transactions.totalGasETH)} gas spent</span>
+                <span><i class="fa-brands fa-ethereum"></i> ${formatETH(data.estimatedBalance)}</span>
+              </div>
+            </div>
+            <button class="copy-btn" onclick="copyAddress('${data.walletAddress}')">
+              <i class="fa-regular fa-copy"></i> Salin
+            </button>
+          </div>
+          <div class="wallet-header-right">
+            <span class="sim-badge">
+              <i class="fa-solid fa-flask"></i> Data Simulasi
+            </span>
+            <span class="status-badge" style="color:${data.statusColor}; background:${data.statusBg};">
+              <i class="fa-solid ${data.statusIcon}"></i>
+              ${data.status}
+            </span>
+          </div>
+        </div>
+
+        <!-- 4 Stat Cards -->
+        <div class="stats-grid">
+          <!-- Credit Score -->
+          <div class="stat-card accent">
+            <div class="stat-card-header">
+              <span class="stat-card-label">Credit Score</span>
+              <div class="stat-card-icon"><i class="fa-solid fa-shield-halved"></i></div>
+            </div>
+            <div class="stat-card-value" id="animScore">0</div>
+            <span class="stat-card-change ${changeClass}">
+              <i class="fa-solid ${changeIcon}"></i> ${changeText} dari bulan lalu
+            </span>
+            <div class="stat-card-sub">Top ${data.percentile}% dari semua wallet</div>
+          </div>
+
+          <!-- Total Transaksi -->
+          <div class="stat-card green">
+            <div class="stat-card-header">
+              <span class="stat-card-label">Total Transaksi</span>
+              <div class="stat-card-icon"><i class="fa-solid fa-arrow-right-arrow-left"></i></div>
+            </div>
+            <div class="stat-card-value" id="animTx">0</div>
+            <span class="stat-card-change up">
+              <i class="fa-solid fa-arrow-up"></i> ${data.transactions.recentWeek} minggu ini
+            </span>
+            <div class="stat-card-sub">${formatNumber(data.transactions.success)} berhasil, ${data.transactions.failed} gagal</div>
+          </div>
+
+          <!-- Success Rate -->
+          <div class="stat-card amber">
+            <div class="stat-card-header">
+              <span class="stat-card-label">Success Rate</span>
+              <div class="stat-card-icon"><i class="fa-solid fa-circle-check"></i></div>
+            </div>
+            <div class="stat-card-value" id="animRate">0%</div>
+            <span class="stat-card-change ${data.transactions.successRate >= 95 ? 'up' : 'down'}">
+              <i class="fa-solid ${data.transactions.successRate >= 95 ? 'fa-arrow-up' : 'fa-arrow-down'}"></i>
+              ${data.transactions.successRate >= 95 ? 'Di atas rata-rata' : 'Di bawah rata-rata'}
+            </span>
+            <div class="stat-card-sub">Network avg: ~94%</div>
+          </div>
+
+          <!-- Risk Flags -->
+          <div class="stat-card ${data.riskFlags.length === 0 ? 'green' : 'red'}">
+            <div class="stat-card-header">
+              <span class="stat-card-label">Risk Flags</span>
+              <div class="stat-card-icon"><i class="fa-solid ${data.riskFlags.length === 0 ? 'fa-shield-check' : 'fa-triangle-exclamation'}"></i></div>
+            </div>
+            <div class="stat-card-value">${data.riskFlags.length}</div>
+            <span class="stat-card-change ${data.riskFlags.length === 0 ? 'up' : 'down'}">
+              <i class="fa-solid ${data.riskFlags.length === 0 ? 'fa-check' : 'fa-exclamation'}"></i>
+              ${data.riskFlags.length === 0 ? 'Tidak ada risiko' : 'Perlu perhatian'}
+            </span>
+            <div class="stat-card-sub">${data.riskFlags.filter(f => f.severity === 'critical').length} critical, ${data.riskFlags.filter(f => f.severity === 'high').length} high</div>
+          </div>
+        </div>
+
+        <!-- Bottom Grid -->
+        <div class="bottom-grid">
+          <!-- Score Breakdown -->
+          <div class="card">
+            <div class="card-header">
+              <h3 class="card-title">Breakdown Skor</h3>
+              <a href="wallet.html" class="card-action">Detail <i class="fa-solid fa-arrow-right"></i></a>
+            </div>
+            <div class="card-body">
+              <div class="breakdown-list">
+                ${renderBreakdownItem(data.breakdown.successRate, 'teal', data.transactions.successRate + '%')}
+                ${renderBreakdownItem(data.breakdown.volume, 'green', formatNumber(data.breakdown.volume.value) + ' tx')}
+                ${renderBreakdownItem(data.breakdown.age, 'amber', ageText)}
+                ${renderBreakdownItemRisk(data.breakdown.risk)}
+              </div>
+
+              <!-- Risk flags mini -->
+              <div class="risk-flags-mini">
+                <div class="risk-flags-mini-title">
+                  <i class="fa-solid fa-flag"></i> Risk Flags Terdeteksi
+                </div>
+                ${data.riskFlags.length === 0
+                  ? `<div class="no-flags"><i class="fa-solid fa-circle-check"></i> Tidak ada risk flag terdeteksi</div>`
+                  : data.riskFlags.map(f => `
+                    <div class="risk-flag-item">
+                      <i class="fa-solid fa-circle-exclamation"></i>
+                      <span>${f.label}
+                        <span class="risk-flag-severity ${f.severity}">${f.severity}</span>
+                      </span>
+                    </div>
+                  `).join('')
+                }
+              </div>
+            </div>
+          </div>
+
+          <!-- Recent Transactions -->
+          <div class="card">
+            <div class="card-header">
+              <h3 class="card-title">Transaksi Terbaru</h3>
+              <a href="history.html" class="card-action">Lihat semua <i class="fa-solid fa-arrow-right"></i></a>
+            </div>
+            <div class="card-body" style="padding: 24px 24px 12px;">
+              ${recentTx.length > 0 ? `
+                <table class="tx-table">
+                  <thead>
+                    <tr>
+                      <th>Tipe</th>
+                      <th>Jumlah</th>
+                      <th>Waktu</th>
+                      <th>Status</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    ${recentTx.map(tx => renderTxRow(tx, data.walletAddress)).join('')}
+                  </tbody>
+                </table>
+              ` : `
+                <div class="empty-state">
+                  <i class="fa-solid fa-inbox"></i>
+                  <p>Belum ada transaksi</p>
+                </div>
+              `}
+            </div>
+          </div>
+        </div>
+      `;
+
+      // Trigger animasi angka dan bar
+      requestAnimationFrame(() => {
+        animateCounter('animScore', 0, data.score, 1200);
+        animateCounter('animTx', 0, data.transactions.total, 1000);
+        animateCounter('animRate', 0, data.transactions.successRate, 1000, '%', 1);
+
+        // Animasi breakdown bars
+        setTimeout(() => {
+          document.querySelectorAll('.breakdown-bar-fill').forEach(bar => {
+            bar.style.width = bar.getAttribute('data-width') + '%';
+          });
+        }, 200);
+      });
+    }
+
+    /* ========================================
+       HELPER: Render breakdown item
+    ======================================== */
+    function renderBreakdownItem(item, colorClass, displayValue) {
+      const pct = Math.round((item.score / item.max) * 100);
+      return `
+        <div class="breakdown-item">
+          <div class="breakdown-item-label">
+            <span class="breakdown-label-text">${item.label}</span>
+            <span class="breakdown-label-value">${item.score}/${item.max} <span style="color:var(--text-muted); font-weight:400; font-size:0.78rem;">(${displayValue})</span></span>
+          </div>
+          <div class="breakdown-bar">
+            <div class="breakdown-bar-fill ${colorClass}" data-width="${pct}"></div>
+          </div>
+        </div>
+      `;
+    }
+
+    function renderBreakdownItemRisk(item) {
+      const pct = Math.round((item.score / item.max) * 100);
+      const colorClass = pct >= 70 ? 'green' : pct >= 40 ? 'amber' : 'red';
+      const displayValue = item.penalty > 0 ? `-${item.penalty} poin penalty` : 'Tidak ada penalty';
+      return `
+        <div class="breakdown-item">
+          <div class="breakdown-item-label">
+            <span class="breakdown-label-text">${item.label}</span>
+            <span class="breakdown-label-value">${item.score}/${item.max} <span style="color:var(--text-muted); font-weight:400; font-size:0.78rem;">(${displayValue})</span></span>
+          </div>
+          <div class="breakdown-bar">
+            <div class="breakdown-bar-fill ${colorClass}" data-width="${pct}"></div>
+          </div>
+        </div>
+      `;
+    }
+
+    /* ========================================
+       HELPER: Render tx row
+    ======================================== */
+    function renderTxRow(tx, walletAddr) {
+      const isOutgoing = ['send', 'approve', 'stake', 'bridge', 'burn'].includes(tx.type);
+      const amountClass = isOutgoing ? 'negative' : 'positive';
+      const amountPrefix = isOutgoing ? '-' : '+';
+      const counterparty = isOutgoing ? tx.to : tx.from;
+
+      const typeIcons = {
+        send: 'fa-arrow-up-right', receive: 'fa-arrow-down-left',
+        swap: 'fa-repeat', approve: 'fa-check-double',
+        stake: 'fa-lock', unstake: 'fa-lock-open',
+        bridge: 'fa-bridge', mint: 'fa-plus', burn: 'fa-fire'
+      };
+
+      return `
+        <tr>
+          <td>
+            <span class="tx-type-badge ${tx.type}">
+              <i class="fa-solid ${typeIcons[tx.type] || 'fa-circle'}"></i>
+              ${tx.type}
+            </span>
+          </td>
+          <td>
+            <span class="tx-amount ${amountClass}">${amountPrefix}${tx.amount} ${tx.token}</span>
+            <div class="tx-addr" style="margin-top:2px;">${shortAddress(counterparty)}</div>
+          </td>
+          <td><span class="tx-time">${formatTimestamp(tx.timestamp)}</span></td>
+          <td>
+            <span class="tx-status ${tx.status}">
+              <i class="fa-solid ${tx.status === 'success' ? 'fa-circle-check' : 'fa-circle-xmark'}"></i>
+              ${tx.status === 'success' ? 'Berhasil' : 'Gagal'}
+            </span>
+          </td>
+        </tr>
+      `;
+    }
+
+    /* ========================================
+       ANIMASI COUNTER
+    ======================================== */
+    function animateCounter(elementId, start, end, duration, suffix = '', decimals = 0) {
+      const el = document.getElementById(elementId);
+      if (!el) return;
+
+      const startTime = performance.now();
+
+      function update(now) {
+        const elapsed = now - startTime;
+        const progress = Math.min(elapsed / duration, 1);
+        // Ease-out cubic
+        const eased = 1 - Math.pow(1 - progress, 3);
+        const current = start + (end - start) * eased;
+
+        if (decimals > 0) {
+          el.textContent = current.toFixed(decimals) + suffix;
+        } else {
+          el.textContent = Math.round(current) + suffix;
+        }
+
+        if (progress < 1) {
+          requestAnimationFrame(update);
+        }
+      }
+
+      requestAnimationFrame(update);
+    }
+
+    /* ========================================
+       COPY ADDRESS
+    ======================================== */
+    function copyAddress(addr) {
+      navigator.clipboard.writeText(addr).then(() => {
+        showToast('Alamat wallet disalin ke clipboard', 'success', 2000);
+      }).catch(() => {
+        // Fallback
+        const ta = document.createElement('textarea');
+        ta.value = addr;
+        document.body.appendChild(ta);
+        ta.select();
+        document.execCommand('copy');
+        document.body.removeChild(ta);
+        showToast('Alamat wallet disalin', 'success', 2000);
+      });
+    }
+  </script>
+
+</body>
+</html>
