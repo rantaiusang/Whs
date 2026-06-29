@@ -1,0 +1,2185 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Wallet Health Score — Web3 Credit Intelligence</title>
+
+  <!-- Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=DM+Sans:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400&display=swap" rel="stylesheet" />
+
+  <!-- Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
+
+  <style>
+    /* ========================================
+       CSS VARIABLES / DESIGN TOKENS
+    ======================================== */
+    :root {
+      --bg-primary: #060a13;
+      --bg-secondary: #0c1222;
+      --bg-card: rgba(14, 22, 42, 0.7);
+      --bg-card-hover: rgba(20, 32, 58, 0.8);
+      --bg-glass: rgba(14, 22, 42, 0.45);
+      --border-color: rgba(45, 212, 191, 0.12);
+      --border-color-hover: rgba(45, 212, 191, 0.3);
+      --border-subtle: rgba(255, 255, 255, 0.06);
+
+      --accent: #2dd4bf;
+      --accent-dim: rgba(45, 212, 191, 0.15);
+      --accent-glow: rgba(45, 212, 191, 0.25);
+      --accent-secondary: #f59e0b;
+      --accent-secondary-dim: rgba(245, 158, 11, 0.15);
+
+      --text-primary: #f1f5f9;
+      --text-secondary: #94a3b8;
+      --text-muted: #475569;
+      --text-accent: #2dd4bf;
+
+      --success: #22c55e;
+      --warning: #f59e0b;
+      --danger: #ef4444;
+      --info: #3b82f6;
+
+      --radius-sm: 8px;
+      --radius-md: 12px;
+      --radius-lg: 16px;
+      --radius-xl: 24px;
+      --radius-full: 9999px;
+
+      --font-display: 'Space Grotesk', sans-serif;
+      --font-body: 'DM Sans', sans-serif;
+
+      --shadow-card: 0 4px 24px rgba(0, 0, 0, 0.3), 0 1px 2px rgba(0, 0, 0, 0.2);
+      --shadow-glow: 0 0 40px rgba(45, 212, 191, 0.08);
+      --shadow-glow-strong: 0 0 60px rgba(45, 212, 191, 0.15);
+
+      --transition-fast: 150ms cubic-bezier(0.4, 0, 0.2, 1);
+      --transition-base: 250ms cubic-bezier(0.4, 0, 0.2, 1);
+      --transition-slow: 400ms cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    /* ========================================
+       RESET & BASE
+    ======================================== */
+    *, *::before, *::after {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    html {
+      scroll-behavior: smooth;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+    }
+
+    body {
+      font-family: var(--font-body);
+      background: var(--bg-primary);
+      color: var(--text-primary);
+      line-height: 1.6;
+      overflow-x: hidden;
+      min-height: 100vh;
+    }
+
+    a {
+      color: inherit;
+      text-decoration: none;
+      transition: color var(--transition-fast);
+    }
+
+    button {
+      font-family: var(--font-body);
+      cursor: pointer;
+      border: none;
+      outline: none;
+      background: none;
+    }
+
+    img {
+      max-width: 100%;
+      display: block;
+    }
+
+    /* ========================================
+       BACKGROUND ATMOSPHERE
+    ======================================== */
+    .bg-atmosphere {
+      position: fixed;
+      top: 0; left: 0;
+      width: 100%; height: 100%;
+      pointer-events: none;
+      z-index: 0;
+      overflow: hidden;
+    }
+
+    .bg-atmosphere .orb {
+      position: absolute;
+      border-radius: 50%;
+      filter: blur(100px);
+      opacity: 0.4;
+      animation: orbFloat 20s ease-in-out infinite;
+    }
+
+    .bg-atmosphere .orb-1 {
+      width: 600px; height: 600px;
+      background: radial-gradient(circle, rgba(45, 212, 191, 0.12) 0%, transparent 70%);
+      top: -15%; left: -10%;
+      animation-delay: 0s;
+    }
+
+    .bg-atmosphere .orb-2 {
+      width: 500px; height: 500px;
+      background: radial-gradient(circle, rgba(245, 158, 11, 0.08) 0%, transparent 70%);
+      top: 40%; right: -10%;
+      animation-delay: -7s;
+      animation-duration: 25s;
+    }
+
+    .bg-atmosphere .orb-3 {
+      width: 400px; height: 400px;
+      background: radial-gradient(circle, rgba(45, 212, 191, 0.06) 0%, transparent 70%);
+      bottom: -10%; left: 30%;
+      animation-delay: -14s;
+      animation-duration: 22s;
+    }
+
+    @keyframes orbFloat {
+      0%, 100% { transform: translate(0, 0) scale(1); }
+      25% { transform: translate(30px, -40px) scale(1.05); }
+      50% { transform: translate(-20px, 20px) scale(0.95); }
+      75% { transform: translate(15px, 30px) scale(1.02); }
+    }
+
+    /* Grid pattern overlay */
+    .bg-grid {
+      position: fixed;
+      top: 0; left: 0;
+      width: 100%; height: 100%;
+      pointer-events: none;
+      z-index: 0;
+      background-image:
+        linear-gradient(rgba(45, 212, 191, 0.03) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(45, 212, 191, 0.03) 1px, transparent 1px);
+      background-size: 60px 60px;
+      mask-image: radial-gradient(ellipse 70% 60% at 50% 30%, black 20%, transparent 100%);
+      -webkit-mask-image: radial-gradient(ellipse 70% 60% at 50% 30%, black 20%, transparent 100%);
+    }
+
+    /* Noise texture */
+    .bg-noise {
+      position: fixed;
+      top: 0; left: 0;
+      width: 100%; height: 100%;
+      pointer-events: none;
+      z-index: 0;
+      opacity: 0.025;
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+      background-repeat: repeat;
+      background-size: 256px 256px;
+    }
+
+    /* ========================================
+       LAYOUT
+    ======================================== */
+    .page-wrapper {
+      position: relative;
+      z-index: 1;
+      min-height: 100vh;
+    }
+
+    .container {
+      width: 100%;
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 0 24px;
+    }
+
+    /* ========================================
+       NAVIGATION
+    ======================================== */
+    .nav {
+      position: fixed;
+      top: 0; left: 0; right: 0;
+      z-index: 100;
+      padding: 0 24px;
+      transition: background var(--transition-base), backdrop-filter var(--transition-base);
+    }
+
+    .nav.scrolled {
+      background: rgba(6, 10, 19, 0.85);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      border-bottom: 1px solid var(--border-subtle);
+    }
+
+    .nav-inner {
+      max-width: 1200px;
+      margin: 0 auto;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      height: 72px;
+    }
+
+    .nav-brand {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-family: var(--font-display);
+      font-weight: 700;
+      font-size: 1.2rem;
+      letter-spacing: -0.02em;
+    }
+
+    .nav-brand-icon {
+      width: 36px; height: 36px;
+      background: linear-gradient(135deg, var(--accent), #0d9488);
+      border-radius: var(--radius-sm);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1rem;
+      color: var(--bg-primary);
+      box-shadow: 0 0 20px var(--accent-glow);
+    }
+
+    .nav-links {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      list-style: none;
+    }
+
+    .nav-links a {
+      padding: 8px 16px;
+      font-size: 0.9rem;
+      font-weight: 500;
+      color: var(--text-secondary);
+      border-radius: var(--radius-full);
+      transition: all var(--transition-fast);
+    }
+
+    .nav-links a:hover {
+      color: var(--text-primary);
+      background: rgba(255, 255, 255, 0.05);
+    }
+
+    .nav-actions {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      font-family: var(--font-body);
+      font-weight: 600;
+      font-size: 0.9rem;
+      padding: 10px 22px;
+      border-radius: var(--radius-full);
+      transition: all var(--transition-base);
+      white-space: nowrap;
+    }
+
+    .btn-ghost {
+      color: var(--text-secondary);
+      background: transparent;
+    }
+
+    .btn-ghost:hover {
+      color: var(--text-primary);
+      background: rgba(255, 255, 255, 0.05);
+    }
+
+    .btn-primary {
+      color: var(--bg-primary);
+      background: linear-gradient(135deg, var(--accent), #0d9488);
+      box-shadow: 0 0 20px var(--accent-glow), inset 0 1px 0 rgba(255,255,255,0.2);
+    }
+
+    .btn-primary:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 0 30px var(--accent-glow), 0 4px 20px rgba(45, 212, 191, 0.2), inset 0 1px 0 rgba(255,255,255,0.2);
+    }
+
+    .btn-primary:active {
+      transform: translateY(0);
+    }
+
+    .btn-outline {
+      color: var(--accent);
+      background: transparent;
+      border: 1.5px solid var(--border-color);
+    }
+
+    .btn-outline:hover {
+      border-color: var(--border-color-hover);
+      background: var(--accent-dim);
+    }
+
+    /* Mobile menu toggle */
+    .nav-toggle {
+      display: none;
+      flex-direction: column;
+      gap: 5px;
+      padding: 8px;
+      cursor: pointer;
+    }
+
+    .nav-toggle span {
+      display: block;
+      width: 22px;
+      height: 2px;
+      background: var(--text-secondary);
+      border-radius: 2px;
+      transition: all var(--transition-fast);
+    }
+
+    /* ========================================
+       HERO SECTION
+    ======================================== */
+    .hero {
+      padding: 160px 0 80px;
+      text-align: center;
+      position: relative;
+    }
+
+    .hero-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 6px 16px 6px 8px;
+      background: var(--accent-dim);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-full);
+      font-size: 0.8rem;
+      font-weight: 500;
+      color: var(--accent);
+      margin-bottom: 32px;
+      animation: fadeInUp 0.6s ease-out;
+    }
+
+    .hero-badge-dot {
+      width: 8px; height: 8px;
+      background: var(--accent);
+      border-radius: 50%;
+      animation: pulse 2s ease-in-out infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.5; transform: scale(0.8); }
+    }
+
+    .hero-title {
+      font-family: var(--font-display);
+      font-size: clamp(2.8rem, 6vw, 4.5rem);
+      font-weight: 700;
+      line-height: 1.08;
+      letter-spacing: -0.03em;
+      margin-bottom: 24px;
+      animation: fadeInUp 0.6s ease-out 0.1s both;
+    }
+
+    .hero-title .highlight {
+      background: linear-gradient(135deg, var(--accent), #5eead4, var(--accent-secondary));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    .hero-subtitle {
+      font-size: clamp(1rem, 2vw, 1.2rem);
+      color: var(--text-secondary);
+      max-width: 600px;
+      margin: 0 auto 48px;
+      line-height: 1.7;
+      font-weight: 400;
+      animation: fadeInUp 0.6s ease-out 0.2s both;
+    }
+
+    @keyframes fadeInUp {
+      from { opacity: 0; transform: translateY(20px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    /* ========================================
+       WALLET INPUT SECTION
+    ======================================== */
+    .wallet-input-section {
+      max-width: 680px;
+      margin: 0 auto 40px;
+      animation: fadeInUp 0.6s ease-out 0.3s both;
+    }
+
+    .wallet-input-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-xl);
+      padding: 8px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      box-shadow: var(--shadow-card), var(--shadow-glow);
+      transition: all var(--transition-base);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .wallet-input-card::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      border-radius: var(--radius-xl);
+      background: linear-gradient(135deg, rgba(45, 212, 191, 0.05), transparent 50%);
+      pointer-events: none;
+    }
+
+    .wallet-input-card:focus-within {
+      border-color: var(--border-color-hover);
+      box-shadow: var(--shadow-card), 0 0 50px rgba(45, 212, 191, 0.12);
+    }
+
+    .wallet-input-icon {
+      flex-shrink: 0;
+      width: 48px; height: 48px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--text-muted);
+      font-size: 1.1rem;
+      margin-left: 4px;
+    }
+
+    .wallet-input-wrapper {
+      flex: 1;
+      position: relative;
+    }
+
+    .wallet-input {
+      width: 100%;
+      background: transparent;
+      border: none;
+      outline: none;
+      font-family: 'Space Grotesk', monospace;
+      font-size: 1rem;
+      color: var(--text-primary);
+      padding: 14px 0;
+      letter-spacing: 0.02em;
+    }
+
+    .wallet-input::placeholder {
+      color: var(--text-muted);
+      font-family: var(--font-body);
+      letter-spacing: 0;
+    }
+
+    .wallet-input-btn {
+      flex-shrink: 0;
+      padding: 14px 32px;
+      border-radius: var(--radius-lg);
+      font-size: 0.95rem;
+    }
+
+    /* Input validation hint */
+    .input-hint {
+      text-align: left;
+      margin-top: 12px;
+      font-size: 0.8rem;
+      color: var(--text-muted);
+      min-height: 20px;
+      transition: all var(--transition-fast);
+    }
+
+    .input-hint.error {
+      color: var(--danger);
+    }
+
+    .input-hint.success {
+      color: var(--success);
+    }
+
+    /* Quick demo wallets */
+    .demo-wallets {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 8px;
+      margin-top: 20px;
+      animation: fadeInUp 0.6s ease-out 0.4s both;
+    }
+
+    .demo-wallet-btn {
+      padding: 6px 14px;
+      font-size: 0.78rem;
+      font-family: 'Space Grotesk', monospace;
+      color: var(--text-muted);
+      background: rgba(255,255,255,0.03);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-full);
+      transition: all var(--transition-fast);
+      cursor: pointer;
+    }
+
+    .demo-wallet-btn:hover {
+      color: var(--accent);
+      border-color: var(--border-color);
+      background: var(--accent-dim);
+    }
+
+    /* ========================================
+       STATS MARQUEE
+    ======================================== */
+    .stats-marquee {
+      border-top: 1px solid var(--border-subtle);
+      border-bottom: 1px solid var(--border-subtle);
+      padding: 20px 0;
+      overflow: hidden;
+      position: relative;
+      animation: fadeInUp 0.6s ease-out 0.5s both;
+    }
+
+    .stats-marquee::before,
+    .stats-marquee::after {
+      content: '';
+      position: absolute;
+      top: 0; bottom: 0;
+      width: 120px;
+      z-index: 2;
+      pointer-events: none;
+    }
+
+    .stats-marquee::before {
+      left: 0;
+      background: linear-gradient(90deg, var(--bg-primary), transparent);
+    }
+
+    .stats-marquee::after {
+      right: 0;
+      background: linear-gradient(-90deg, var(--bg-primary), transparent);
+    }
+
+    .marquee-track {
+      display: flex;
+      gap: 60px;
+      animation: marqueeScroll 30s linear infinite;
+      width: max-content;
+    }
+
+    .marquee-item {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      white-space: nowrap;
+      flex-shrink: 0;
+    }
+
+    .marquee-value {
+      font-family: var(--font-display);
+      font-size: 1.3rem;
+      font-weight: 700;
+      color: var(--text-primary);
+    }
+
+    .marquee-label {
+      font-size: 0.85rem;
+      color: var(--text-muted);
+    }
+
+    .marquee-divider {
+      width: 4px; height: 4px;
+      background: var(--text-muted);
+      border-radius: 50%;
+      opacity: 0.4;
+    }
+
+    @keyframes marqueeScroll {
+      from { transform: translateX(0); }
+      to { transform: translateX(-50%); }
+    }
+
+    /* ========================================
+       FEATURES SECTION
+    ======================================== */
+    .features {
+      padding: 100px 0;
+    }
+
+    .section-header {
+      text-align: center;
+      margin-bottom: 64px;
+    }
+
+    .section-label {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 0.8rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      color: var(--accent);
+      margin-bottom: 16px;
+    }
+
+    .section-label::before,
+    .section-label::after {
+      content: '';
+      width: 20px; height: 1px;
+      background: var(--accent);
+      opacity: 0.4;
+    }
+
+    .section-title {
+      font-family: var(--font-display);
+      font-size: clamp(1.8rem, 4vw, 2.5rem);
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      margin-bottom: 16px;
+    }
+
+    .section-desc {
+      font-size: 1.05rem;
+      color: var(--text-secondary);
+      max-width: 520px;
+      margin: 0 auto;
+    }
+
+    .features-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 20px;
+    }
+
+    .feature-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-lg);
+      padding: 32px 28px;
+      transition: all var(--transition-base);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .feature-card::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      height: 1px;
+      background: linear-gradient(90deg, transparent, var(--accent-glow), transparent);
+      opacity: 0;
+      transition: opacity var(--transition-base);
+    }
+
+    .feature-card:hover {
+      border-color: var(--border-color);
+      background: var(--bg-card-hover);
+      transform: translateY(-4px);
+      box-shadow: var(--shadow-card), var(--shadow-glow);
+    }
+
+    .feature-card:hover::before {
+      opacity: 1;
+    }
+
+    .feature-icon {
+      width: 48px; height: 48px;
+      border-radius: var(--radius-md);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.2rem;
+      margin-bottom: 20px;
+    }
+
+    .feature-icon.teal {
+      background: var(--accent-dim);
+      color: var(--accent);
+    }
+
+    .feature-icon.amber {
+      background: var(--accent-secondary-dim);
+      color: var(--accent-secondary);
+    }
+
+    .feature-icon.blue {
+      background: rgba(59, 130, 246, 0.15);
+      color: var(--info);
+    }
+
+    .feature-icon.green {
+      background: rgba(34, 197, 94, 0.15);
+      color: var(--success);
+    }
+
+    .feature-icon.red {
+      background: rgba(239, 68, 68, 0.15);
+      color: var(--danger);
+    }
+
+    .feature-icon.purple {
+      background: rgba(168, 85, 247, 0.15);
+      color: #a855f7;
+    }
+
+    .feature-title {
+      font-family: var(--font-display);
+      font-size: 1.1rem;
+      font-weight: 600;
+      margin-bottom: 10px;
+    }
+
+    .feature-desc {
+      font-size: 0.9rem;
+      color: var(--text-secondary);
+      line-height: 1.65;
+    }
+
+    /* ========================================
+       HOW IT WORKS
+    ======================================== */
+    .how-it-works {
+      padding: 100px 0;
+      background: linear-gradient(180deg, transparent, rgba(45, 212, 191, 0.02) 50%, transparent);
+    }
+
+    .steps-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 24px;
+      position: relative;
+    }
+
+    /* Connector line */
+    .steps-grid::before {
+      content: '';
+      position: absolute;
+      top: 40px;
+      left: calc(12.5% + 24px);
+      right: calc(12.5% + 24px);
+      height: 2px;
+      background: linear-gradient(90deg, var(--border-color), var(--accent-dim), var(--border-color));
+      z-index: 0;
+    }
+
+    .step-card {
+      text-align: center;
+      position: relative;
+      z-index: 1;
+    }
+
+    .step-number {
+      width: 56px; height: 56px;
+      border-radius: 50%;
+      background: var(--bg-secondary);
+      border: 2px solid var(--border-color);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: var(--font-display);
+      font-size: 1.2rem;
+      font-weight: 700;
+      color: var(--accent);
+      margin: 0 auto 20px;
+      position: relative;
+    }
+
+    .step-number::after {
+      content: '';
+      position: absolute;
+      inset: -6px;
+      border-radius: 50%;
+      border: 1px solid var(--accent-dim);
+    }
+
+    .step-title {
+      font-family: var(--font-display);
+      font-size: 1.05rem;
+      font-weight: 600;
+      margin-bottom: 8px;
+    }
+
+    .step-desc {
+      font-size: 0.85rem;
+      color: var(--text-secondary);
+      line-height: 1.6;
+      max-width: 220px;
+      margin: 0 auto;
+    }
+
+    /* ========================================
+       SCORE PREVIEW SECTION
+    ======================================== */
+    .score-preview {
+      padding: 100px 0;
+    }
+
+    .preview-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 40px;
+      align-items: center;
+    }
+
+    .preview-content {
+      padding-right: 20px;
+    }
+
+    .preview-content .section-label {
+      justify-content: flex-start;
+    }
+
+    .preview-content .section-title {
+      text-align: left;
+    }
+
+    .preview-features {
+      list-style: none;
+      margin-top: 28px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    .preview-features li {
+      display: flex;
+      align-items: flex-start;
+      gap: 12px;
+      font-size: 0.95rem;
+      color: var(--text-secondary);
+      line-height: 1.5;
+    }
+
+    .preview-features li i {
+      color: var(--accent);
+      margin-top: 4px;
+      flex-shrink: 0;
+      font-size: 0.85rem;
+    }
+
+    /* Score gauge visual */
+    .score-gauge-wrapper {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+
+    .score-gauge {
+      width: 300px; height: 300px;
+      position: relative;
+    }
+
+    .score-gauge svg {
+      width: 100%; height: 100%;
+      transform: rotate(-90deg);
+    }
+
+    .gauge-bg {
+      fill: none;
+      stroke: rgba(255, 255, 255, 0.04);
+      stroke-width: 12;
+    }
+
+    .gauge-fill {
+      fill: none;
+      stroke: url(#gaugeGradient);
+      stroke-width: 12;
+      stroke-linecap: round;
+      stroke-dasharray: 816;
+      stroke-dashoffset: 816;
+      transition: stroke-dashoffset 2s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    .gauge-fill.animated {
+      stroke-dashoffset: 196;
+    }
+
+    .gauge-inner {
+      fill: none;
+      stroke: rgba(255, 255, 255, 0.02);
+      stroke-width: 8;
+    }
+
+    .score-gauge-center {
+      position: absolute;
+      top: 50%; left: 50%;
+      transform: translate(-50%, -50%);
+      text-align: center;
+    }
+
+    .gauge-score-value {
+      font-family: var(--font-display);
+      font-size: 3.5rem;
+      font-weight: 700;
+      line-height: 1;
+      background: linear-gradient(135deg, var(--accent), #5eead4);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    .gauge-score-label {
+      font-size: 0.85rem;
+      font-weight: 600;
+      color: var(--success);
+      margin-top: 6px;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+    }
+
+    .gauge-score-max {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      margin-top: 2px;
+    }
+
+    /* Floating score labels around gauge */
+    .gauge-label {
+      position: absolute;
+      font-size: 0.7rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      padding: 4px 10px;
+      border-radius: var(--radius-full);
+      background: var(--bg-card);
+      border: 1px solid var(--border-subtle);
+      white-space: nowrap;
+      animation: floatGentle 4s ease-in-out infinite;
+    }
+
+    .gauge-label.top {
+      top: 5%; right: 0;
+      color: var(--success);
+      animation-delay: 0s;
+    }
+
+    .gauge-label.right {
+      bottom: 25%; right: -10px;
+      color: var(--warning);
+      animation-delay: -1.3s;
+    }
+
+    .gauge-label.bottom {
+      bottom: 5%; left: 10px;
+      color: var(--danger);
+      animation-delay: -2.6s;
+    }
+
+    @keyframes floatGentle {
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(-6px); }
+    }
+
+    /* ========================================
+       CTA SECTION
+    ======================================== */
+    .cta-section {
+      padding: 100px 0;
+    }
+
+    .cta-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-xl);
+      padding: 64px 48px;
+      text-align: center;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .cta-card::before {
+      content: '';
+      position: absolute;
+      top: -1px; left: 20%; right: 20%;
+      height: 2px;
+      background: linear-gradient(90deg, transparent, var(--accent), transparent);
+    }
+
+    .cta-card::after {
+      content: '';
+      position: absolute;
+      top: 0; left: 50%;
+      transform: translateX(-50%);
+      width: 400px; height: 300px;
+      background: radial-gradient(ellipse, var(--accent-glow) 0%, transparent 70%);
+      opacity: 0.3;
+      pointer-events: none;
+    }
+
+    .cta-title {
+      font-family: var(--font-display);
+      font-size: clamp(1.6rem, 3.5vw, 2.2rem);
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      margin-bottom: 16px;
+      position: relative;
+    }
+
+    .cta-desc {
+      font-size: 1.05rem;
+      color: var(--text-secondary);
+      max-width: 480px;
+      margin: 0 auto 32px;
+      position: relative;
+    }
+
+    .cta-actions {
+      display: flex;
+      justify-content: center;
+      gap: 12px;
+      position: relative;
+    }
+
+    /* ========================================
+       FOOTER
+    ======================================== */
+    .footer {
+      border-top: 1px solid var(--border-subtle);
+      padding: 48px 0 32px;
+    }
+
+    .footer-grid {
+      display: grid;
+      grid-template-columns: 2fr 1fr 1fr 1fr;
+      gap: 40px;
+      margin-bottom: 40px;
+    }
+
+    .footer-brand {
+      font-family: var(--font-display);
+      font-size: 1.1rem;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 12px;
+    }
+
+    .footer-desc {
+      font-size: 0.85rem;
+      color: var(--text-muted);
+      line-height: 1.6;
+      max-width: 280px;
+    }
+
+    .footer-heading {
+      font-family: var(--font-display);
+      font-size: 0.8rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      color: var(--text-secondary);
+      margin-bottom: 16px;
+    }
+
+    .footer-links {
+      list-style: none;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .footer-links a {
+      font-size: 0.85rem;
+      color: var(--text-muted);
+      transition: color var(--transition-fast);
+    }
+
+    .footer-links a:hover {
+      color: var(--accent);
+    }
+
+    .footer-bottom {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding-top: 24px;
+      border-top: 1px solid var(--border-subtle);
+      font-size: 0.8rem;
+      color: var(--text-muted);
+    }
+
+    .footer-socials {
+      display: flex;
+      gap: 16px;
+    }
+
+    .footer-socials a {
+      color: var(--text-muted);
+      font-size: 1rem;
+      transition: color var(--transition-fast);
+    }
+
+    .footer-socials a:hover {
+      color: var(--accent);
+    }
+
+    /* ========================================
+       TOAST NOTIFICATION
+    ======================================== */
+    .toast-container {
+      position: fixed;
+      top: 88px;
+      right: 24px;
+      z-index: 200;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .toast {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 14px 20px;
+      background: var(--bg-secondary);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-md);
+      box-shadow: 0 8px 32px rgba(0,0,0,0.4);
+      font-size: 0.88rem;
+      color: var(--text-primary);
+      transform: translateX(120%);
+      transition: transform var(--transition-base);
+      max-width: 360px;
+    }
+
+    .toast.show {
+      transform: translateX(0);
+    }
+
+    .toast i {
+      font-size: 1.1rem;
+      flex-shrink: 0;
+    }
+
+    .toast.success i { color: var(--success); }
+    .toast.error i { color: var(--danger); }
+    .toast.info i { color: var(--info); }
+
+    /* ========================================
+       LOADING OVERLAY (untuk transisi)
+    ======================================== */
+    .loading-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(6, 10, 19, 0.9);
+      backdrop-filter: blur(10px);
+      z-index: 300;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 24px;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity var(--transition-base);
+    }
+
+    .loading-overlay.active {
+      opacity: 1;
+      pointer-events: all;
+    }
+
+    .loading-spinner {
+      width: 48px; height: 48px;
+      border: 3px solid var(--border-subtle);
+      border-top-color: var(--accent);
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    .loading-text {
+      font-family: var(--font-display);
+      font-size: 0.95rem;
+      color: var(--text-secondary);
+    }
+
+    .loading-steps {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      margin-top: 8px;
+    }
+
+    .loading-step {
+      font-size: 0.8rem;
+      color: var(--text-muted);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      transition: color var(--transition-fast);
+    }
+
+    .loading-step.active {
+      color: var(--accent);
+    }
+
+    .loading-step.done {
+      color: var(--success);
+    }
+
+    .loading-step i {
+      width: 16px;
+      text-align: center;
+    }
+
+    /* ========================================
+       SCROLL REVEAL
+    ======================================== */
+    .reveal {
+      opacity: 0;
+      transform: translateY(30px);
+      transition: opacity 0.7s ease-out, transform 0.7s ease-out;
+    }
+
+    .reveal.visible {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    /* ========================================
+       RESPONSIVE
+    ======================================== */
+    @media (max-width: 1024px) {
+      .features-grid {
+        grid-template-columns: repeat(2, 1fr);
+      }
+
+      .steps-grid {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 40px;
+      }
+
+      .steps-grid::before {
+        display: none;
+      }
+
+      .preview-grid {
+        grid-template-columns: 1fr;
+        gap: 48px;
+      }
+
+      .preview-content {
+        padding-right: 0;
+        text-align: center;
+      }
+
+      .preview-content .section-label {
+        justify-content: center;
+      }
+
+      .preview-content .section-title {
+        text-align: center;
+      }
+
+      .preview-features {
+        align-items: center;
+      }
+
+      .footer-grid {
+        grid-template-columns: 1fr 1fr;
+      }
+    }
+
+    @media (max-width: 768px) {
+      .nav-links {
+        display: none;
+      }
+
+      .nav-toggle {
+        display: flex;
+      }
+
+      .nav-actions .btn-ghost {
+        display: none;
+      }
+
+      .hero {
+        padding: 140px 0 60px;
+      }
+
+      .wallet-input-card {
+        flex-direction: column;
+        padding: 12px;
+        gap: 4px;
+      }
+
+      .wallet-input-icon {
+        display: none;
+      }
+
+      .wallet-input-btn {
+        width: 100%;
+      }
+
+      .features-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .steps-grid {
+        grid-template-columns: 1fr;
+        max-width: 320px;
+        margin: 0 auto;
+      }
+
+      .score-gauge {
+        width: 240px; height: 240px;
+      }
+
+      .gauge-score-value {
+        font-size: 2.8rem;
+      }
+
+      .gauge-label {
+        display: none;
+      }
+
+      .cta-card {
+        padding: 48px 24px;
+      }
+
+      .cta-actions {
+        flex-direction: column;
+        align-items: center;
+      }
+
+      .footer-grid {
+        grid-template-columns: 1fr;
+        gap: 28px;
+      }
+
+      .footer-bottom {
+        flex-direction: column;
+        gap: 12px;
+        text-align: center;
+      }
+    }
+
+    @media (max-width: 480px) {
+      .container {
+        padding: 0 16px;
+      }
+
+      .hero-title {
+        font-size: 2rem;
+      }
+
+      .demo-wallets {
+        gap: 6px;
+      }
+
+      .demo-wallet-btn {
+        font-size: 0.7rem;
+        padding: 5px 10px;
+      }
+    }
+
+    /* Reduced motion preference */
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after {
+        animation-duration: 0.01ms !important;
+        transition-duration: 0.01ms !important;
+      }
+
+      .marquee-track {
+        animation: none;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Background Atmosphere -->
+  <div class="bg-atmosphere" aria-hidden="true">
+    <div class="orb orb-1"></div>
+    <div class="orb orb-2"></div>
+    <div class="orb orb-3"></div>
+  </div>
+  <div class="bg-grid" aria-hidden="true"></div>
+  <div class="bg-noise" aria-hidden="true"></div>
+
+  <!-- Loading Overlay -->
+  <div class="loading-overlay" id="loadingOverlay" role="alert" aria-live="polite">
+    <div class="loading-spinner"></div>
+    <div class="loading-text">Menganalisis Wallet...</div>
+    <div class="loading-steps">
+      <div class="loading-step" id="step1">
+        <i class="fa-solid fa-circle-notch fa-spin"></i>
+        <span>Mengambil data on-chain</span>
+      </div>
+      <div class="loading-step" id="step2">
+        <i class="fa-solid fa-circle"></i>
+        <span>Menganalisis pola transaksi</span>
+      </div>
+      <div class="loading-step" id="step3">
+        <i class="fa-solid fa-circle"></i>
+        <span>Menghitung risk score</span>
+      </div>
+      <div class="loading-step" id="step4">
+        <i class="fa-solid fa-circle"></i>
+        <span>Generate laporan</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast Container -->
+  <div class="toast-container" id="toastContainer" aria-live="polite"></div>
+
+  <!-- Page Wrapper -->
+  <div class="page-wrapper">
+
+    <!-- Navigation -->
+    <nav class="nav" id="mainNav" role="navigation" aria-label="Navigasi utama">
+      <div class="nav-inner">
+        <a href="index.html" class="nav-brand" aria-label="Wallet Health Score - Beranda">
+          <div class="nav-brand-icon">
+            <i class="fa-solid fa-shield-halved"></i>
+          </div>
+          <span>WalletScore</span>
+        </a>
+
+        <ul class="nav-links">
+          <li><a href="index.html">Beranda</a></li>
+          <li><a href="dashboard.html">Dashboard</a></li>
+          <li><a href="analytics.html">Analitik</a></li>
+          <li><a href="history.html">Riwayat</a></li>
+        </ul>
+
+        <div class="nav-actions">
+          <a href="login.html" class="btn btn-ghost">Masuk</a>
+          <a href="login.html" class="btn btn-primary">Mulai Gratis</a>
+          <button class="nav-toggle" id="navToggle" aria-label="Toggle menu" aria-expanded="false">
+            <span></span>
+            <span></span>
+            <span></span>
+          </button>
+        </div>
+      </div>
+    </nav>
+
+    <!-- Hero Section -->
+    <header class="hero">
+      <div class="container">
+        <div class="hero-badge">
+          <span class="hero-badge-dot" aria-hidden="true"></span>
+          Simulasi Data — Tanpa Koneksi Blockchain
+        </div>
+
+        <h1 class="hero-title">
+          Ukur Kesehatan<br />
+          <span class="highlight">Wallet On-Chain</span>
+        </h1>
+
+        <p class="hero-subtitle">
+          Sistem credit scoring berbasis analisis transaksi on-chain.
+          Masukkan alamat wallet dan dapatkan skor reputasi instan.
+        </p>
+
+        <!-- Wallet Input -->
+        <div class="wallet-input-section">
+          <div class="wallet-input-card" id="inputCard">
+            <div class="wallet-input-icon">
+              <i class="fa-solid fa-wallet"></i>
+            </div>
+            <div class="wallet-input-wrapper">
+              <input
+                type="text"
+                class="wallet-input"
+                id="walletInput"
+                placeholder="Masukkan alamat wallet (0x...)"
+                maxlength="42"
+                spellcheck="false"
+                autocomplete="off"
+                aria-label="Alamat wallet Ethereum"
+              />
+            </div>
+            <button class="btn btn-primary wallet-input-btn" id="analyzeBtn" aria-label="Analisis wallet">
+              <i class="fa-solid fa-magnifying-glass-chart"></i>
+              Analisis
+            </button>
+          </div>
+          <div class="input-hint" id="inputHint"></div>
+
+          <!-- Demo wallets -->
+          <div class="demo-wallets">
+            <span style="font-size: 0.78rem; color: var(--text-muted); margin-right: 4px;">Coba:</span>
+            <button class="demo-wallet-btn" data-wallet="0x742d35Cc6634C0532925a3b844Bc9e7595f2bD18">0x742d...bD18</button>
+            <button class="demo-wallet-btn" data-wallet="0xAb5801a7D398351b8bE11C439e05C5B3259aeC9B">0xAb58...eC9B</button>
+            <button class="demo-wallet-btn" data-wallet="0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045">0xd8dA...6045</button>
+            <button class="demo-wallet-btn" data-wallet="0x0000000000000000000000000000000000000001">0x0000...0001</button>
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <!-- Stats Marquee -->
+    <section class="stats-marquee" aria-label="Statistik platform">
+      <div class="marquee-track" id="marqueeTrack">
+        <!-- Diisi oleh JS (duplikat untuk seamless loop) -->
+      </div>
+    </section>
+
+    <!-- Features Section -->
+    <section class="features" id="features" aria-labelledby="featuresTitle">
+      <div class="container">
+        <div class="section-header reveal">
+          <div class="section-label">Fitur Utama</div>
+          <h2 class="section-title" id="featuresTitle">Analisis Mendalam untuk<br />Setiap Wallet</h2>
+          <p class="section-desc">
+            Enam dimensi penilaian yang memberikan gambaran lengkap tentang reputasi on-chain sebuah wallet.
+          </p>
+        </div>
+
+        <div class="features-grid">
+          <div class="feature-card reveal">
+            <div class="feature-icon teal">
+              <i class="fa-solid fa-chart-line"></i>
+            </div>
+            <h3 class="feature-title">Credit Score 0–1000</h3>
+            <p class="feature-desc">
+              Skor komposit yang dihitung dari berbagai faktor on-chain, memberikan penilaian reputasi yang menyeluruh dan mudah dipahami.
+            </p>
+          </div>
+
+          <div class="feature-card reveal">
+            <div class="feature-icon amber">
+              <i class="fa-solid fa-bolt"></i>
+            </div>
+            <h3 class="feature-title">Analisis Transaksi</h3>
+            <p class="feature-desc">
+              Evaluasi success rate, frekuensi, dan pola transaksi untuk mengidentifikasi perilaku wallet yang sehat atau mencurigakan.
+            </p>
+          </div>
+
+          <div class="feature-card reveal">
+            <div class="feature-icon red">
+              <i class="fa-solid fa-triangle-exclamation"></i>
+            </div>
+            <h3 class="feature-title">Risk Flag Detection</h3>
+            <p class="feature-desc">
+              Deteksi otomatis terhadap interaksi dengan kontrak berisiko, address terblacklist, dan pola transaksi anomali.
+            </p>
+          </div>
+
+          <div class="feature-card reveal">
+            <div class="feature-icon green">
+              <i class="fa-solid fa-clock-rotate-left"></i>
+            </div>
+            <h3 class="feature-title">Umur Wallet Tracking</h3>
+            <p class="feature-desc">
+              Analisis usia wallet sejak first transaction, faktor penting dalam menilai kredibilitas dan konsistensi aktivitas.
+            </p>
+          </div>
+
+          <div class="feature-card reveal">
+            <div class="feature-icon blue">
+              <i class="fa-solid fa-chart-pie"></i>
+            </div>
+            <h3 class="feature-title">Visual Analytics</h3>
+            <p class="feature-desc">
+              Dashboard interaktif dengan grafik breakdown skor, tren waktu, dan perbandingan dengan rata-rata network.
+            </p>
+          </div>
+
+          <div class="feature-card reveal">
+            <div class="feature-icon purple">
+              <i class="fa-solid fa-tags"></i>
+            </div>
+            <h3 class="feature-title">Status Klasifikasi</h3>
+            <p class="feature-desc">
+              Label otomatis: Excellent, Good, Risky, atau Dangerous — berdasarkan threshold skor yang telah ditentukan.
+            </p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- How It Works -->
+    <section class="how-it-works" id="howItWorks" aria-labelledby="howTitle">
+      <div class="container">
+        <div class="section-header reveal">
+          <div class="section-label">Cara Kerja</div>
+          <h2 class="section-title" id="howTitle">Empat Langkah Mudah</h2>
+          <p class="section-desc">
+            Dari input alamat hingga laporan lengkap, hanya dalam hitungan detik.
+          </p>
+        </div>
+
+        <div class="steps-grid">
+          <div class="step-card reveal">
+            <div class="step-number">1</div>
+            <h3 class="step-title">Input Address</h3>
+            <p class="step-desc">Masukkan alamat wallet Ethereum yang ingin dianalisis.</p>
+          </div>
+          <div class="step-card reveal">
+            <div class="step-number">2</div>
+            <h3 class="step-title">Data Fetching</h3>
+            <p class="step-desc">Sistem mengambil data transaksi dan aktivitas on-chain.</p>
+          </div>
+          <div class="step-card reveal">
+            <div class="step-number">3</div>
+            <h3 class="step-title">Score Calculation</h3>
+            <p class="step-desc">Algoritma menghitung skor berdasarkan multi-faktor.</p>
+          </div>
+          <div class="step-card reveal">
+            <div class="step-number">4</div>
+            <h3 class="step-title">Laporan Siap</h3>
+            <p class="step-desc">Dashboard lengkap dengan breakdown dan rekomendasi.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Score Preview -->
+    <section class="score-preview" id="scorePreview" aria-labelledby="previewTitle">
+      <div class="container">
+        <div class="preview-grid">
+          <div class="preview-content reveal">
+            <div class="section-label">Preview Skor</div>
+            <h2 class="section-title" id="previewTitle">Visualisasi Skor yang<br />Mudah Dipahami</h2>
+            <ul class="preview-features">
+              <li>
+                <i class="fa-solid fa-check"></i>
+                <span>Gauge skor real-time dengan indikator warna status</span>
+              </li>
+              <li>
+                <i class="fa-solid fa-check"></i>
+                <span>Breakdown per kategori: transaksi, umur, risk flags, konsistensi</span>
+              </li>
+              <li>
+                <i class="fa-solid fa-check"></i>
+                <span>Perbandingan skor dengan persentil wallet lain di network</span>
+              </li>
+              <li>
+                <i class="fa-solid fa-check"></i>
+                <span>Rekomendasi konkret untuk meningkatkan skor wallet</span>
+              </li>
+              <li>
+                <i class="fa-solid fa-check"></i>
+                <span>Riwayat perubahan skor dari waktu ke waktu</span>
+              </li>
+            </ul>
+          </div>
+
+          <div class="score-gauge-wrapper reveal">
+            <div class="score-gauge" id="scoreGauge">
+              <svg viewBox="0 0 280 280">
+                <defs>
+                  <linearGradient id="gaugeGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                    <stop offset="0%" stop-color="#2dd4bf" />
+                    <stop offset="50%" stop-color="#22c55e" />
+                    <stop offset="100%" stop-color="#f59e0b" />
+                  </linearGradient>
+                </defs>
+                <!-- Background circle -->
+                <circle class="gauge-bg" cx="140" cy="140" r="130" />
+                <!-- Inner decorative circle -->
+                <circle class="gauge-inner" cx="140" cy="140" r="110" />
+                <!-- Score fill arc -->
+                <circle class="gauge-fill" id="gaugeFill" cx="140" cy="140" r="130" />
+              </svg>
+              <div class="score-gauge-center">
+                <div class="gauge-score-value" id="gaugeValue">760</div>
+                <div class="gauge-score-label">Excellent</div>
+                <div class="gauge-score-max">dari 1000</div>
+              </div>
+              <!-- Floating labels -->
+              <div class="gauge-label top">Excellent</div>
+              <div class="gauge-label right">Risky</div>
+              <div class="gauge-label bottom">Dangerous</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- CTA Section -->
+    <section class="cta-section" aria-labelledby="ctaTitle">
+      <div class="container">
+        <div class="cta-card reveal">
+          <h2 class="cta-title" id="ctaTitle">Siap Menilai Kesehatan Wallet Anda?</h2>
+          <p class="cta-desc">
+            Mulai analisis gratis sekarang. Tidak perlu registrasi, tidak perlu koneksi wallet — cukup masukkan alamat.
+          </p>
+          <div class="cta-actions">
+            <button class="btn btn-primary" id="ctaAnalyzeBtn" style="padding: 14px 36px; font-size: 1rem;">
+              <i class="fa-solid fa-rocket"></i>
+              Mulai Analisis
+            </button>
+            <a href="dashboard.html" class="btn btn-outline" style="padding: 14px 36px; font-size: 1rem;">
+              Lihat Dashboard Demo
+            </a>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="footer" role="contentinfo">
+      <div class="container">
+        <div class="footer-grid">
+          <div>
+            <div class="footer-brand">
+              <i class="fa-solid fa-shield-halved" style="color: var(--accent);"></i>
+              WalletScore
+            </div>
+            <p class="footer-desc">
+              Sistem credit scoring on-chain untuk era Web3. Simulasi data — bukan analisis blockchain sesungguhnya.
+            </p>
+          </div>
+          <div>
+            <h4 class="footer-heading">Produk</h4>
+            <ul class="footer-links">
+              <li><a href="index.html">Credit Score</a></li>
+              <li><a href="analytics.html">Analitik</a></li>
+              <li><a href="history.html">Riwayat</a></li>
+              <li><a href="wallet.html">Wallet Detail</a></li>
+            </ul>
+          </div>
+          <div>
+            <h4 class="footer-heading">Sumber Daya</h4>
+            <ul class="footer-links">
+              <li><a href="#">Dokumentasi</a></li>
+              <li><a href="#">Metodologi Skor</a></li>
+              <li><a href="#">API Reference</a></li>
+              <li><a href="#">Changelog</a></li>
+            </ul>
+          </div>
+          <div>
+            <h4 class="footer-heading">Perusahaan</h4>
+            <ul class="footer-links">
+              <li><a href="#">Tentang</a></li>
+              <li><a href="#">Blog</a></li>
+              <li><a href="#">Kontak</a></li>
+              <li><a href="settings.html">Pengaturan</a></li>
+            </ul>
+          </div>
+        </div>
+        <div class="footer-bottom">
+          <span>2025 WalletScore. Simulasi — bukan produk finansial.</span>
+          <div class="footer-socials">
+            <a href="#" aria-label="Twitter"><i class="fa-brands fa-x-twitter"></i></a>
+            <a href="#" aria-label="GitHub"><i class="fa-brands fa-github"></i></a>
+            <a href="#" aria-label="Discord"><i class="fa-brands fa-discord"></i></a>
+            <a href="#" aria-label="Telegram"><i class="fa-brands fa-telegram"></i></a>
+          </div>
+        </div>
+      </div>
+    </footer>
+
+  </div><!-- /.page-wrapper -->
+
+  <script>
+    /* ========================================
+       UTILITY: Toast Notifications
+    ======================================== */
+    function showToast(message, type = 'info', duration = 3500) {
+      const container = document.getElementById('toastContainer');
+      const toast = document.createElement('div');
+      toast.className = `toast ${type}`;
+
+      const iconMap = {
+        success: 'fa-solid fa-circle-check',
+        error: 'fa-solid fa-circle-xmark',
+        info: 'fa-solid fa-circle-info'
+      };
+
+      toast.innerHTML = `<i class="${iconMap[type] || iconMap.info}"></i><span>${message}</span>`;
+      container.appendChild(toast);
+
+      // Trigger show animation
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+          toast.classList.add('show');
+        });
+      });
+
+      setTimeout(() => {
+        toast.classList.remove('show');
+        setTimeout(() => toast.remove(), 300);
+      }, duration);
+    }
+
+    /* ========================================
+       NAVIGATION: Scroll effect
+    ======================================== */
+    const nav = document.getElementById('mainNav');
+    let lastScroll = 0;
+
+    window.addEventListener('scroll', () => {
+      const scrollY = window.scrollY;
+      if (scrollY > 40) {
+        nav.classList.add('scrolled');
+      } else {
+        nav.classList.remove('scrolled');
+      }
+      lastScroll = scrollY;
+    }, { passive: true });
+
+    /* ========================================
+       NAVIGATION: Mobile toggle (placeholder)
+    ======================================== */
+    const navToggle = document.getElementById('navToggle');
+    navToggle.addEventListener('click', () => {
+      const expanded = navToggle.getAttribute('aria-expanded') === 'true';
+      navToggle.setAttribute('aria-expanded', String(!expanded));
+      // Mobile menu logic akan dikembangkan di step berikutnya
+      showToast('Menu mobile akan tersedia di update berikutnya', 'info');
+    });
+
+    /* ========================================
+       WALLET INPUT: Validasi & Analisis
+    ======================================== */
+    const walletInput = document.getElementById('walletInput');
+    const analyzeBtn = document.getElementById('analyzeBtn');
+    const inputHint = document.getElementById('inputHint');
+    const loadingOverlay = document.getElementById('loadingOverlay');
+
+    // Regex alamat Ethereum
+    const ethAddressRegex = /^0x[0-9a-fA-F]{40}$/;
+
+    // Validasi real-time
+    walletInput.addEventListener('input', () => {
+      const val = walletInput.value.trim();
+      inputHint.className = 'input-hint';
+      inputHint.textContent = '';
+
+      if (val.length === 0) return;
+
+      if (!val.startsWith('0x')) {
+        inputHint.classList.add('error');
+        inputHint.textContent = 'Alamat harus dimulai dengan 0x';
+        return;
+      }
+
+      if (val.length < 42) {
+        inputHint.textContent = `${42 - val.length} karakter lagi...`;
+        return;
+      }
+
+      if (val.length === 42) {
+        if (ethAddressRegex.test(val)) {
+          inputHint.classList.add('success');
+          inputHint.textContent = 'Alamat valid — siap dianalisis';
+        } else {
+          inputHint.classList.add('error');
+          inputHint.textContent = 'Format alamat tidak valid. Gunakan karakter hex (0-9, a-f)';
+        }
+      }
+    });
+
+    // Keyboard: Enter untuk analisis
+    walletInput.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') {
+        analyzeBtn.click();
+      }
+    });
+
+    // Fungsi analisis wallet
+    function analyzeWallet(address) {
+      if (!ethAddressRegex.test(address)) {
+        showToast('Masukkan alamat Ethereum yang valid (0x + 40 karakter hex)', 'error');
+        return;
+      }
+
+      // Simpan wallet yang sedang dianalisis ke sessionStorage
+      sessionStorage.setItem('currentWallet', address);
+
+      // Tampilkan loading overlay
+      loadingOverlay.classList.add('active');
+
+      // Simulasi langkah-langkah analisis
+      const steps = ['step1', 'step2', 'step3', 'step4'];
+      let currentStep = 0;
+
+      const stepInterval = setInterval(() => {
+        if (currentStep > 0) {
+          const prevStep = document.getElementById(steps[currentStep - 1]);
+          prevStep.classList.remove('active');
+          prevStep.classList.add('done');
+          prevStep.querySelector('i').className = 'fa-solid fa-circle-check';
+        }
+
+        if (currentStep < steps.length) {
+          const step = document.getElementById(steps[currentStep]);
+          step.classList.add('active');
+          step.querySelector('i').className = 'fa-solid fa-circle-notch fa-spin';
+          currentStep++;
+        } else {
+          clearInterval(stepInterval);
+          // Redirect ke dashboard
+          setTimeout(() => {
+            window.location.href = 'dashboard.html';
+          }, 400);
+        }
+      }, 600);
+    }
+
+    analyzeBtn.addEventListener('click', () => {
+      analyzeWallet(walletInput.value.trim());
+    });
+
+    // CTA button juga trigger analisis
+    document.getElementById('ctaAnalyzeBtn').addEventListener('click', () => {
+      // Scroll ke input
+      walletInput.focus();
+      if (walletInput.value.trim()) {
+        analyzeWallet(walletInput.value.trim());
+      } else {
+        showToast('Masukkan alamat wallet terlebih dahulu', 'info');
+        walletInput.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }
+    });
+
+    /* ========================================
+       DEMO WALLETS: Quick fill
+    ======================================== */
+    document.querySelectorAll('.demo-wallet-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const wallet = btn.getAttribute('data-wallet');
+        walletInput.value = wallet;
+        walletInput.dispatchEvent(new Event('input'));
+
+        // Efek visual singkat
+        btn.style.transform = 'scale(0.95)';
+        setTimeout(() => { btn.style.transform = ''; }, 150);
+
+        showToast(`Wallet demo dipilih: ${wallet.slice(0, 6)}...${wallet.slice(-4)}`, 'success', 2000);
+      });
+    });
+
+    /* ========================================
+       STATS MARQUEE: Generate & Duplikasi
+    ======================================== */
+    function buildMarquee() {
+      const stats = [
+        { value: '1.2M+', label: 'Wallet Dianalisis' },
+        { value: '847K', label: 'Transaksi/Hari' },
+        { value: '99.7%', label: 'Uptime' },
+        { value: '<2s', label: 'Waktu Analisis' },
+        { value: '156', label: 'Chain Didukung' },
+        { value: '4.9/5', label: 'Rating Pengguna' },
+        { value: '23TB', label: 'Data On-Chain' },
+        { value: '38K', label: 'Risk Flag Terdeteksi' },
+      ];
+
+      const track = document.getElementById('marqueeTrack');
+
+      // Buat HTML untuk satu set
+      function renderSet() {
+        return stats.map((s, i) => `
+          <div class="marquee-item">
+            <span class="marquee-value">${s.value}</span>
+            <span class="marquee-label">${s.label}</span>
+            ${i < stats.length - 1 ? '<span class="marquee-divider"></span>' : ''}
+          </div>
+        `).join('');
+      }
+
+      // Duplikat untuk seamless loop
+      track.innerHTML = renderSet() + renderSet();
+    }
+
+    buildMarquee();
+
+    /* ========================================
+       SCORE GAUGE: Animate on scroll
+    ======================================== */
+    const gaugeFill = document.getElementById('gaugeFill');
+    let gaugeAnimated = false;
+
+    function animateGauge() {
+      if (gaugeAnimated) return;
+      const gauge = document.getElementById('scoreGauge');
+      const rect = gauge.getBoundingClientRect();
+      const inView = rect.top < window.innerHeight * 0.8 && rect.bottom > 0;
+
+      if (inView) {
+        gaugeAnimated = true;
+        gaugeFill.classList.add('animated');
+
+        // Animasi angka
+        const valueEl = document.getElementById('gaugeValue');
+        const target = 760;
+        let current = 0;
+        const duration = 2000;
+        const startTime = performance.now();
+
+        function updateNumber(now) {
+          const elapsed = now - startTime;
+          const progress = Math.min(elapsed / duration, 1);
+          // Easing: ease-out cubic
+          const eased = 1 - Math.pow(1 - progress, 3);
+          current = Math.round(eased * target);
+          valueEl.textContent = current;
+          if (progress < 1) {
+            requestAnimationFrame(updateNumber);
+          }
+        }
+
+        requestAnimationFrame(updateNumber);
+      }
+    }
+
+    window.addEventListener('scroll', animateGauge, { passive: true });
+    // Juga cek saat pertama kali load
+    animateGauge();
+
+    /* ========================================
+       SCROLL REVEAL: IntersectionObserver
+    ======================================== */
+    const revealElements = document.querySelectorAll('.reveal');
+    const revealObserver = new IntersectionObserver((entries) => {
+      entries.forEach((entry, index) => {
+        if (entry.isIntersecting) {
+          // Stagger animation berdasarkan urutan
+          setTimeout(() => {
+            entry.target.classList.add('visible');
+          }, index * 80);
+          revealObserver.unobserve(entry.target);
+        }
+      });
+    }, {
+      threshold: 0.15,
+      rootMargin: '0px 0px -40px 0px'
+    });
+
+    revealElements.forEach(el => revealObserver.observe(el));
+
+    /* ========================================
+       PARTICLES: Canvas background subtle
+    ======================================== */
+    (function initParticles() {
+      const canvas = document.createElement('canvas');
+      canvas.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:0;opacity:0.35;';
+      canvas.setAttribute('aria-hidden', 'true');
+      document.body.prepend(canvas);
+
+      const ctx = canvas.getContext('2d');
+      let w, h;
+      let particles = [];
+      const PARTICLE_COUNT = 50;
+      let mouse = { x: -1000, y: -1000 };
+      let animId;
+
+      function resize() {
+        w = canvas.width = window.innerWidth;
+        h = canvas.height = window.innerHeight;
+      }
+
+      function createParticles() {
+        particles = [];
+        for (let i = 0; i < PARTICLE_COUNT; i++) {
+          particles.push({
+            x: Math.random() * w,
+            y: Math.random() * h,
+            vx: (Math.random() - 0.5) * 0.3,
+            vy: (Math.random() - 0.5) * 0.3,
+            r: Math.random() * 1.5 + 0.5,
+            opacity: Math.random() * 0.5 + 0.2
+          });
+        }
+      }
+
+      function draw() {
+        ctx.clearRect(0, 0, w, h);
+
+        particles.forEach(p => {
+          p.x += p.vx;
+          p.y += p.vy;
+
+          // Wrap around
+          if (p.x < 0) p.x = w;
+          if (p.x > w) p.x = 0;
+          if (p.y < 0) p.y = h;
+          if (p.y > h) p.y = 0;
+
+          // Mouse interaction: gentle repel
+          const dx = p.x - mouse.x;
+          const dy = p.y - mouse.y;
+          const dist = Math.sqrt(dx * dx + dy * dy);
+          if (dist < 120) {
+            const force = (120 - dist) / 120 * 0.5;
+            p.x += (dx / dist) * force;
+            p.y += (dy / dist) * force;
+          }
+
+          ctx.beginPath();
+          ctx.arc(p.x, p.y, Math.max(0.1, p.r), 0, Math.PI * 2);
+          ctx.fillStyle = `rgba(45, 212, 191, ${p.opacity})`;
+          ctx.fill();
+        });
+
+        // Garis koneksi antar partikel yang dekat
+        for (let i = 0; i < particles.length; i++) {
+          for (let j = i + 1; j < particles.length; j++) {
+            const dx = particles[i].x - particles[j].x;
+            const dy = particles[i].y - particles[j].y;
+            const dist = Math.sqrt(dx * dx + dy * dy);
+            if (dist < 140) {
+              const alpha = (1 - dist / 140) * 0.12;
+              ctx.beginPath();
+              ctx.moveTo(particles[i].x, particles[i].y);
+              ctx.lineTo(particles[j].x, particles[j].y);
+              ctx.strokeStyle = `rgba(45, 212, 191, ${alpha})`;
+              ctx.lineWidth = 0.5;
+              ctx.stroke();
+            }
+          }
+        }
+
+        animId = requestAnimationFrame(draw);
+      }
+
+      // Reduced motion check
+      const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
+
+      function start() {
+        if (!prefersReducedMotion.matches) {
+          resize();
+          createParticles();
+          draw();
+        }
+      }
+
+      function stop() {
+        cancelAnimationFrame(animId);
+        ctx.clearRect(0, 0, w, h);
+      }
+
+      prefersReducedMotion.addEventListener('change', () => {
+        if (prefersReducedMotion.matches) {
+          stop();
+        } else {
+          start();
+        }
+      });
+
+      window.addEventListener('resize', () => {
+        resize();
+        createParticles();
+      }, { passive: true });
+
+      window.addEventListener('mousemove', (e) => {
+        mouse.x = e.clientX;
+        mouse.y = e.clientY;
+      }, { passive: true });
+
+      start();
+    })();
+  </script>
+
+</body>
+</html>
