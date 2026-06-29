@@ -1,0 +1,933 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Riwayat Transaksi — Wallet Health Score</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=DM+Sans:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
+
+  <style>
+    :root {
+      --bg-primary: #060a13;
+      --bg-secondary: #0c1222;
+      --bg-card: rgba(14, 22, 42, 0.65);
+      --bg-card-hover: rgba(20, 32, 58, 0.75);
+      --bg-sidebar: rgba(8, 14, 28, 0.92);
+      --bg-input: rgba(6, 10, 19, 0.6);
+      --bg-row-hover: rgba(45, 212, 191, 0.03);
+      --border-color: rgba(45, 212, 191, 0.12);
+      --border-color-hover: rgba(45, 212, 191, 0.3);
+      --border-subtle: rgba(255, 255, 255, 0.06);
+
+      --accent: #2dd4bf;
+      --accent-dim: rgba(45, 212, 191, 0.12);
+      --accent-glow: rgba(45, 212, 191, 0.2);
+      --accent-secondary: #f59e0b;
+      --accent-secondary-dim: rgba(245, 158, 11, 0.12);
+
+      --text-primary: #f1f5f9;
+      --text-secondary: #94a3b8;
+      --text-muted: #475569;
+      --text-accent: #2dd4bf;
+
+      --success: #22c55e;
+      --warning: #f59e0b;
+      --danger: #ef4444;
+      --info: #3b82f6;
+
+      --radius-sm: 8px;
+      --radius-md: 12px;
+      --radius-lg: 16px;
+      --radius-xl: 24px;
+      --radius-full: 9999px;
+
+      --font-display: 'Space Grotesk', sans-serif;
+      --font-body: 'DM Sans', sans-serif;
+
+      --shadow-card: 0 4px 24px rgba(0, 0, 0, 0.3);
+      --shadow-glow: 0 0 40px rgba(45, 212, 191, 0.06);
+
+      --sidebar-width: 260px;
+      --topbar-height: 64px;
+
+      --transition-fast: 150ms cubic-bezier(0.4, 0, 0.2, 1);
+      --transition-base: 250ms cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+    html { scroll-behavior: smooth; -webkit-font-smoothing: antialiased; }
+    body {
+      font-family: var(--font-body);
+      background: var(--bg-primary);
+      color: var(--text-primary);
+      line-height: 1.6;
+      overflow-x: hidden;
+      min-height: 100vh;
+    }
+    a { color: inherit; text-decoration: none; transition: color var(--transition-fast); }
+    button { font-family: var(--font-body); cursor: pointer; border: none; outline: none; background: none; }
+
+    /* Background */
+    .bg-atmosphere {
+      position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+      pointer-events: none; z-index: 0; overflow: hidden;
+    }
+    .bg-atmosphere .orb {
+      position: absolute; border-radius: 50%; filter: blur(120px); opacity: 0.2;
+      animation: orbFloat 25s ease-in-out infinite;
+    }
+    .bg-atmosphere .orb-1 {
+      width: 500px; height: 500px;
+      background: radial-gradient(circle, rgba(45, 212, 191, 0.1) 0%, transparent 70%);
+      top: -10%; left: -5%;
+    }
+    .bg-atmosphere .orb-2 {
+      width: 400px; height: 400px;
+      background: radial-gradient(circle, rgba(245, 158, 11, 0.06) 0%, transparent 70%);
+      bottom: -10%; right: -5%;
+      animation-delay: -10s; animation-duration: 28s;
+    }
+    @keyframes orbFloat {
+      0%, 100% { transform: translate(0, 0) scale(1); }
+      33% { transform: translate(20px, -30px) scale(1.03); }
+      66% { transform: translate(-15px, 15px) scale(0.97); }
+    }
+    .bg-noise {
+      position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+      pointer-events: none; z-index: 0; opacity: 0.02;
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+      background-size: 256px 256px;
+    }
+
+    /* Layout */
+    .dashboard-layout { position: relative; z-index: 1; display: flex; min-height: 100vh; }
+
+    /* Sidebar */
+    .sidebar {
+      width: var(--sidebar-width);
+      background: var(--bg-sidebar);
+      border-right: 1px solid var(--border-subtle);
+      backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+      display: flex; flex-direction: column;
+      position: fixed; top: 0; left: 0; bottom: 0;
+      z-index: 50; transition: transform var(--transition-base);
+    }
+    .sidebar-brand {
+      padding: 20px 24px; display: flex; align-items: center; gap: 10px;
+      border-bottom: 1px solid var(--border-subtle);
+      font-family: var(--font-display); font-weight: 700; font-size: 1.1rem;
+    }
+    .sidebar-brand-icon {
+      width: 32px; height: 32px;
+      background: linear-gradient(135deg, var(--accent), #0d9488);
+      border-radius: var(--radius-sm);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 0.85rem; color: var(--bg-primary);
+      box-shadow: 0 0 14px var(--accent-glow);
+    }
+    .sidebar-nav {
+      flex: 1; padding: 16px 12px;
+      display: flex; flex-direction: column; gap: 4px; overflow-y: auto;
+    }
+    .nav-section-label {
+      font-size: 0.68rem; font-weight: 600; text-transform: uppercase;
+      letter-spacing: 0.1em; color: var(--text-muted); padding: 16px 12px 8px;
+    }
+    .nav-item {
+      display: flex; align-items: center; gap: 12px;
+      padding: 11px 14px; border-radius: var(--radius-md);
+      font-size: 0.9rem; font-weight: 500; color: var(--text-secondary);
+      transition: all var(--transition-fast); position: relative;
+    }
+    .nav-item i { width: 20px; text-align: center; font-size: 0.9rem; }
+    .nav-item:hover { color: var(--text-primary); background: rgba(255,255,255,0.04); }
+    .nav-item.active { color: var(--accent); background: var(--accent-dim); }
+    .nav-item.active::before {
+      content: ''; position: absolute; left: 0; top: 50%; transform: translateY(-50%);
+      width: 3px; height: 20px; background: var(--accent); border-radius: 0 3px 3px 0;
+    }
+    .nav-item .badge {
+      margin-left: auto; padding: 2px 8px; font-size: 0.7rem; font-weight: 600;
+      border-radius: var(--radius-full); background: rgba(239,68,68,0.15); color: var(--danger);
+    }
+    .sidebar-footer { padding: 16px; border-top: 1px solid var(--border-subtle); }
+    .sidebar-wallet {
+      display: flex; align-items: center; gap: 10px; padding: 10px 12px;
+      background: rgba(255,255,255,0.02); border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-md); cursor: pointer; transition: all var(--transition-fast);
+    }
+    .sidebar-wallet:hover { border-color: var(--border-color); background: rgba(255,255,255,0.04); }
+    .sidebar-wallet-avatar {
+      width: 32px; height: 32px; border-radius: 50%;
+      background: linear-gradient(135deg, var(--accent-dim), rgba(45,212,191,0.25));
+      display: flex; align-items: center; justify-content: center;
+      font-size: 0.75rem; color: var(--accent);
+      font-family: var(--font-display); font-weight: 700; flex-shrink: 0;
+    }
+    .sidebar-wallet-info { flex: 1; min-width: 0; }
+    .sidebar-wallet-addr {
+      font-family: 'Space Grotesk', monospace; font-size: 0.8rem; font-weight: 500;
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    }
+    .sidebar-wallet-label { font-size: 0.7rem; color: var(--text-muted); }
+
+    /* Main */
+    .main-content {
+      flex: 1; margin-left: var(--sidebar-width);
+      display: flex; flex-direction: column; min-height: 100vh;
+    }
+
+    /* Topbar */
+    .topbar {
+      height: var(--topbar-height); padding: 0 32px;
+      display: flex; align-items: center; justify-content: space-between;
+      border-bottom: 1px solid var(--border-subtle);
+      background: rgba(6,10,19,0.6); backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      position: sticky; top: 0; z-index: 40;
+    }
+    .topbar-left { display: flex; align-items: center; gap: 16px; }
+    .sidebar-toggle {
+      display: none; width: 36px; height: 36px; border-radius: var(--radius-sm);
+      align-items: center; justify-content: center; color: var(--text-secondary);
+      font-size: 1.1rem; transition: all var(--transition-fast);
+    }
+    .sidebar-toggle:hover { color: var(--text-primary); background: rgba(255,255,255,0.05); }
+    .topbar-breadcrumb { display: flex; align-items: center; gap: 8px; font-size: 0.85rem; }
+    .topbar-breadcrumb a { color: var(--text-muted); }
+    .topbar-breadcrumb a:hover { color: var(--accent); }
+    .topbar-breadcrumb .sep { color: var(--text-muted); opacity: 0.4; }
+    .topbar-breadcrumb .current { color: var(--text-primary); font-weight: 500; }
+    .topbar-right { display: flex; align-items: center; gap: 12px; }
+    .btn-logout {
+      display: inline-flex; align-items: center; gap: 8px;
+      padding: 8px 16px; font-size: 0.82rem; font-weight: 500;
+      color: var(--text-muted); border-radius: var(--radius-full); transition: all var(--transition-fast);
+    }
+    .btn-logout:hover { color: var(--danger); background: rgba(239,68,68,0.08); }
+
+    /* Page Content */
+    .page-content { flex: 1; padding: 32px; }
+
+    /* ---- Summary Stats ---- */
+    .summary-row {
+      display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 24px;
+    }
+    .summary-card {
+      background: var(--bg-card); border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-md); padding: 18px 20px;
+      display: flex; align-items: center; gap: 14px;
+      transition: all var(--transition-fast);
+    }
+    .summary-card:hover { border-color: var(--border-color); }
+    .summary-icon {
+      width: 42px; height: 42px; border-radius: var(--radius-sm);
+      display: flex; align-items: center; justify-content: center; font-size: 0.95rem; flex-shrink: 0;
+    }
+    .summary-icon.total { background: var(--accent-dim); color: var(--accent); }
+    .summary-icon.success { background: rgba(34,197,94,0.12); color: var(--success); }
+    .summary-icon.failed { background: rgba(239,68,68,0.12); color: var(--danger); }
+    .summary-icon.gas { background: var(--accent-secondary-dim); color: var(--accent-secondary); }
+    .summary-value {
+      font-family: var(--font-display); font-size: 1.3rem; font-weight: 700; line-height: 1.1;
+    }
+    .summary-label { font-size: 0.78rem; color: var(--text-muted); margin-top: 2px; }
+
+    /* ---- Filter & Search Bar ---- */
+    .toolbar {
+      display: flex; align-items: center; justify-content: space-between;
+      gap: 16px; margin-bottom: 20px; flex-wrap: wrap;
+    }
+    .filter-tabs {
+      display: flex; gap: 4px; padding: 4px;
+      background: rgba(255,255,255,0.02);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-full);
+    }
+    .filter-tab {
+      padding: 8px 20px; border-radius: var(--radius-full);
+      font-size: 0.82rem; font-weight: 500;
+      color: var(--text-muted); transition: all var(--transition-fast);
+      display: flex; align-items: center; gap: 6px;
+    }
+    .filter-tab:hover { color: var(--text-secondary); background: rgba(255,255,255,0.03); }
+    .filter-tab.active {
+      color: var(--accent); background: var(--accent-dim);
+      box-shadow: 0 0 12px rgba(45, 212, 191, 0.08);
+    }
+    .filter-tab .count {
+      font-size: 0.7rem; font-weight: 700;
+      padding: 1px 6px; border-radius: 10px;
+      background: rgba(255,255,255,0.06); color: var(--text-muted);
+    }
+    .filter-tab.active .count { background: rgba(45,212,191,0.2); color: var(--accent); }
+
+    .search-box {
+      display: flex; align-items: center; gap: 8px;
+      padding: 0 14px; height: 40px;
+      background: var(--bg-input); border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-full); transition: all var(--transition-fast);
+      min-width: 260px;
+    }
+    .search-box:focus-within { border-color: var(--border-color-hover); box-shadow: 0 0 0 3px rgba(45,212,191,0.08); }
+    .search-box i { color: var(--text-muted); font-size: 0.85rem; flex-shrink: 0; }
+    .search-box input {
+      flex: 1; background: none; border: none; outline: none;
+      font-family: var(--font-body); font-size: 0.85rem;
+      color: var(--text-primary); padding: 0;
+    }
+    .search-box input::placeholder { color: var(--text-muted); }
+
+    /* ---- Table Card ---- */
+    .table-card {
+      background: var(--bg-card); border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-lg); overflow: hidden;
+    }
+
+    .table-scroll {
+      overflow-x: auto; max-height: calc(100vh - 380px); overflow-y: auto;
+    }
+
+    /* Custom scrollbar */
+    .table-scroll::-webkit-scrollbar { width: 6px; height: 6px; }
+    .table-scroll::-webkit-scrollbar-track { background: transparent; }
+    .table-scroll::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.08); border-radius: 3px; }
+    .table-scroll::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.14); }
+
+    .tx-table { width: 100%; border-collapse: collapse; min-width: 800px; }
+    .tx-table thead { position: sticky; top: 0; z-index: 5; }
+    .tx-table th {
+      text-align: left; padding: 14px 20px;
+      font-size: 0.72rem; font-weight: 600; text-transform: uppercase;
+      letter-spacing: 0.08em; color: var(--text-muted);
+      background: var(--bg-secondary); border-bottom: 1px solid var(--border-subtle);
+      white-space: nowrap; user-select: none;
+    }
+    .tx-table td {
+      padding: 16px 20px; font-size: 0.85rem;
+      border-bottom: 1px solid rgba(255,255,255,0.025);
+      vertical-align: middle; white-space: nowrap;
+    }
+    .tx-table tbody tr {
+      transition: background var(--transition-fast);
+    }
+    .tx-table tbody tr:hover { background: var(--bg-row-hover); }
+    .tx-table tbody tr:last-child td { border-bottom: none; }
+
+    /* TX Hash */
+    .tx-hash {
+      font-family: 'Space Grotesk', monospace; font-size: 0.82rem;
+      color: var(--text-accent); cursor: pointer;
+      display: inline-flex; align-items: center; gap: 6px;
+      transition: gap var(--transition-fast);
+    }
+    .tx-hash:hover { gap: 8px; }
+    .tx-hash i { font-size: 0.65rem; opacity: 0; transition: opacity var(--transition-fast); }
+    .tx-hash:hover i { opacity: 1; }
+
+    /* Status Badge */
+    .status-badge {
+      display: inline-flex; align-items: center; gap: 6px;
+      padding: 5px 12px; border-radius: var(--radius-full);
+      font-size: 0.78rem; font-weight: 600;
+    }
+    .status-badge.success { background: rgba(34,197,94,0.1); color: #4ade80; }
+    .status-badge.failed { background: rgba(239,68,68,0.1); color: #f87171; }
+    .status-badge i { font-size: 0.6rem; }
+
+    /* Type Badge */
+    .type-badge {
+      display: inline-flex; align-items: center; gap: 6px;
+      padding: 4px 10px; border-radius: var(--radius-full);
+      font-size: 0.75rem; font-weight: 600; text-transform: capitalize;
+    }
+    .type-badge.send { background: rgba(239,68,68,0.1); color: #f87171; }
+    .type-badge.receive { background: rgba(34,197,94,0.1); color: #4ade80; }
+    .type-badge.swap { background: rgba(168,85,247,0.1); color: #c084fc; }
+    .type-badge.approve { background: rgba(59,130,246,0.1); color: #60a5fa; }
+    .type-badge.stake { background: var(--accent-dim); color: var(--accent); }
+    .type-badge.unstake { background: var(--accent-secondary-dim); color: var(--accent-secondary); }
+    .type-badge.bridge { background: rgba(236,72,153,0.1); color: #f472b6; }
+    .type-badge.mint { background: rgba(34,197,94,0.1); color: #4ade80; }
+    .type-badge.burn { background: rgba(239,68,68,0.1); color: #f87171; }
+
+    /* Amount */
+    .tx-amount {
+      font-family: var(--font-display); font-weight: 600; font-size: 0.85rem;
+    }
+    .tx-amount.negative { color: #f87171; }
+    .tx-amount.positive { color: #4ade80; }
+    .tx-token {
+      font-size: 0.75rem; color: var(--text-muted); font-weight: 400; margin-left: 4px;
+    }
+
+    /* Address */
+    .tx-addr {
+      font-family: 'Space Grotesk', monospace; font-size: 0.8rem; color: var(--text-muted);
+    }
+    .tx-addr-label { font-size: 0.7rem; color: var(--text-muted); opacity: 0.6; margin-bottom: 1px; }
+
+    /* Time */
+    .tx-time { font-size: 0.8rem; color: var(--text-muted); }
+    .tx-date { font-size: 0.72rem; color: var(--text-muted); opacity: 0.6; margin-top: 1px; }
+
+    /* Gas */
+    .tx-gas {
+      font-family: 'Space Grotesk', monospace; font-size: 0.8rem; color: var(--text-muted);
+    }
+
+    /* ---- Table Footer ---- */
+    .table-footer {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 14px 20px; border-top: 1px solid var(--border-subtle);
+      background: rgba(6,10,19,0.3); font-size: 0.82rem; color: var(--text-muted);
+    }
+    .table-footer-info { display: flex; align-items: center; gap: 6px; }
+    .table-footer-info strong { color: var(--text-secondary); font-weight: 600; }
+
+    .pagination {
+      display: flex; align-items: center; gap: 4px;
+    }
+    .page-btn {
+      width: 34px; height: 34px; border-radius: var(--radius-sm);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 0.82rem; font-weight: 500;
+      color: var(--text-muted); transition: all var(--transition-fast);
+    }
+    .page-btn:hover { color: var(--text-primary); background: rgba(255,255,255,0.05); }
+    .page-btn.active {
+      color: var(--bg-primary); background: var(--accent); font-weight: 700;
+    }
+    .page-btn:disabled { opacity: 0.3; cursor: not-allowed; }
+    .page-btn:disabled:hover { background: none; color: var(--text-muted); }
+    .page-ellipsis { color: var(--text-muted); padding: 0 4px; font-size: 0.8rem; }
+
+    /* ---- Empty State ---- */
+    .empty-state {
+      text-align: center; padding: 60px 24px; color: var(--text-muted);
+    }
+    .empty-state i { font-size: 2.5rem; opacity: 0.3; margin-bottom: 12px; }
+    .empty-state p { font-size: 0.9rem; }
+    .empty-state .sub { font-size: 0.82rem; opacity: 0.6; margin-top: 4px; }
+
+    /* Guard */
+    .guard-screen {
+      display: none; position: fixed; inset: 0; z-index: 500;
+      background: var(--bg-primary); flex-direction: column; align-items: center;
+      justify-content: center; gap: 20px; text-align: center; padding: 24px;
+    }
+    .guard-screen.active { display: flex; }
+    .guard-screen i { font-size: 2.5rem; color: var(--text-muted); opacity: 0.4; }
+    .guard-screen h2 { font-family: var(--font-display); font-size: 1.4rem; font-weight: 600; }
+    .guard-screen p { font-size: 0.95rem; color: var(--text-muted); max-width: 360px; }
+    .btn-primary {
+      display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+      font-family: var(--font-body); font-weight: 600; font-size: 0.9rem;
+      padding: 12px 28px; border-radius: var(--radius-full); transition: all var(--transition-base);
+      color: var(--bg-primary); background: linear-gradient(135deg, var(--accent), #0d9488);
+      box-shadow: 0 0 20px var(--accent-glow);
+    }
+    .btn-primary:hover { transform: translateY(-1px); box-shadow: 0 0 30px var(--accent-glow), 0 4px 16px rgba(45,212,191,0.2); }
+
+    /* Sidebar Overlay */
+    .sidebar-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.6); z-index: 45; opacity: 0; transition: opacity var(--transition-base); }
+    .sidebar-overlay.active { opacity: 1; }
+
+    /* Toast */
+    .toast-container { position: fixed; top: 80px; right: 24px; z-index: 200; display: flex; flex-direction: column; gap: 8px; }
+    .toast {
+      display: flex; align-items: center; gap: 12px; padding: 14px 20px;
+      background: var(--bg-secondary); border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-md); box-shadow: 0 8px 32px rgba(0,0,0,0.5);
+      font-size: 0.88rem; color: var(--text-primary); transform: translateX(120%);
+      transition: transform var(--transition-base); max-width: 380px;
+    }
+    .toast.show { transform: translateX(0); }
+    .toast i { font-size: 1.1rem; flex-shrink: 0; }
+    .toast.success { border-left: 3px solid var(--success); }
+    .toast.success i { color: var(--success); }
+    .toast.error { border-left: 3px solid var(--danger); }
+    .toast.error i { color: var(--danger); }
+    .toast.info { border-left: 3px solid var(--info); }
+    .toast.info i { color: var(--info); }
+
+    /* Responsive */
+    @media (max-width: 1100px) {
+      .summary-row { grid-template-columns: repeat(2, 1fr); }
+    }
+    @media (max-width: 768px) {
+      .sidebar { transform: translateX(-100%); }
+      .sidebar.open { transform: translateX(0); }
+      .sidebar-overlay { display: block; }
+      .main-content { margin-left: 0; }
+      .sidebar-toggle { display: flex; }
+      .page-content { padding: 20px 16px; }
+      .summary-row { grid-template-columns: 1fr 1fr; gap: 10px; }
+      .summary-card { padding: 14px 16px; }
+      .summary-value { font-size: 1.1rem; }
+      .toolbar { flex-direction: column; align-items: stretch; }
+      .search-box { min-width: unset; }
+      .table-scroll { max-height: calc(100vh - 440px); }
+      /* Sembunyikan kolom di mobile */
+      .hide-mobile { display: none !important; }
+    }
+    @media (max-width: 480px) {
+      .summary-row { grid-template-columns: 1fr; }
+      .filter-tab { padding: 8px 14px; font-size: 0.78rem; }
+      .filter-tab .count { display: none; }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; }
+    }
+  </style>
+</head>
+<body>
+
+  <div class="bg-atmosphere" aria-hidden="true"><div class="orb orb-1"></div><div class="orb orb-2"></div></div>
+  <div class="bg-noise" aria-hidden="true"></div>
+
+  <div class="guard-screen" id="guardScreen">
+    <i class="fa-solid fa-lock"></i>
+    <h2>Belum Masuk</h2>
+    <p>Anda harus login dengan wallet address terlebih dahulu.</p>
+    <a href="login.html" class="btn-primary"><i class="fa-solid fa-arrow-right-to-bracket"></i> Masuk Sekarang</a>
+  </div>
+
+  <div class="toast-container" id="toastContainer" aria-live="polite"></div>
+  <div class="sidebar-overlay" id="sidebarOverlay"></div>
+
+  <div class="dashboard-layout" id="dashboardLayout" style="display:none;">
+    <aside class="sidebar" id="sidebar" role="navigation" aria-label="Sidebar navigasi">
+      <div class="sidebar-brand">
+        <div class="sidebar-brand-icon"><i class="fa-solid fa-shield-halved"></i></div>
+        <span>WalletScore</span>
+      </div>
+      <nav class="sidebar-nav">
+        <div class="nav-section-label">Menu Utama</div>
+        <a href="dashboard.html" class="nav-item"><i class="fa-solid fa-grid-2"></i> Dashboard</a>
+        <a href="wallet.html" class="nav-item"><i class="fa-solid fa-wallet"></i> Wallet Detail</a>
+        <a href="history.html" class="nav-item active"><i class="fa-solid fa-clock-rotate-left"></i> Riwayat <span class="badge" id="txBadge" style="display:none;"></span></a>
+        <a href="analytics.html" class="nav-item"><i class="fa-solid fa-chart-mixed"></i> Analitik</a>
+        <div class="nav-section-label">Lainnya</div>
+        <a href="settings.html" class="nav-item"><i class="fa-solid fa-gear"></i> Pengaturan</a>
+        <a href="index.html" class="nav-item"><i class="fa-solid fa-house"></i> Beranda</a>
+      </nav>
+      <div class="sidebar-footer">
+        <div class="sidebar-wallet" id="sidebarWallet" title="Klik untuk salin">
+          <div class="sidebar-wallet-avatar" id="sidebarAvatar">?</div>
+          <div class="sidebar-wallet-info">
+            <div class="sidebar-wallet-addr" id="sidebarAddr">—</div>
+            <div class="sidebar-wallet-label">Tersambung</div>
+          </div>
+          <i class="fa-solid fa-copy" style="color:var(--text-muted); font-size:0.75rem;"></i>
+        </div>
+      </div>
+    </aside>
+
+    <div class="main-content">
+      <header class="topbar">
+        <div class="topbar-left">
+          <button class="sidebar-toggle" id="sidebarToggle" aria-label="Toggle sidebar"><i class="fa-solid fa-bars"></i></button>
+          <div class="topbar-breadcrumb">
+            <a href="dashboard.html">Dashboard</a>
+            <span class="sep"><i class="fa-solid fa-chevron-right" style="font-size:0.6rem;"></i></span>
+            <span class="current">Riwayat Transaksi</span>
+          </div>
+        </div>
+        <div class="topbar-right">
+          <button class="btn-logout" id="logoutBtn"><i class="fa-solid fa-right-from-bracket"></i><span>Keluar</span></button>
+        </div>
+      </header>
+
+      <main class="page-content" id="pageContent"></main>
+    </div>
+  </div>
+
+  <script src="js/data.js"></script>
+  <script>
+    /* Utilitas */
+    function showToast(msg, type = 'info', dur = 3000) {
+      const c = document.getElementById('toastContainer');
+      const t = document.createElement('div');
+      t.className = `toast ${type}`;
+      const ic = { success: 'fa-circle-check', error: 'fa-circle-xmark', info: 'fa-circle-info' };
+      t.innerHTML = `<i class="fa-solid ${ic[type]||ic.info}"></i><span>${msg}</span>`;
+      c.appendChild(t);
+      requestAnimationFrame(() => requestAnimationFrame(() => t.classList.add('show')));
+      setTimeout(() => { t.classList.remove('show'); setTimeout(() => t.remove(), 300); }, dur);
+    }
+
+    /* Auth Guard */
+    const walletAddress = localStorage.getItem('whs_wallet');
+    if (!walletAddress) {
+      document.getElementById('guardScreen').classList.add('active');
+    } else {
+      document.getElementById('dashboardLayout').style.display = 'flex';
+      init(walletAddress);
+    }
+
+    /* Sidebar */
+    const sidebar = document.getElementById('sidebar');
+    const sidebarOverlay = document.getElementById('sidebarOverlay');
+    document.getElementById('sidebarToggle').addEventListener('click', () => {
+      sidebar.classList.toggle('open'); sidebarOverlay.classList.toggle('active');
+    });
+    sidebarOverlay.addEventListener('click', () => {
+      sidebar.classList.remove('open'); sidebarOverlay.classList.remove('active');
+    });
+    document.getElementById('sidebarWallet').addEventListener('click', () => {
+      if (walletAddress) navigator.clipboard.writeText(walletAddress).then(() => showToast('Alamat disalin', 'success', 2000));
+    });
+    document.getElementById('logoutBtn').addEventListener('click', () => {
+      localStorage.removeItem('whs_wallet'); localStorage.removeItem('whs_login_time');
+      sessionStorage.removeItem('currentWallet');
+      showToast('Berhasil keluar', 'info', 2000);
+      setTimeout(() => { window.location.href = 'login.html'; }, 600);
+    });
+
+    /* State */
+    let allTransactions = [];
+    let filteredTransactions = [];
+    let currentFilter = 'all';
+    let searchQuery = '';
+    let currentPage = 1;
+    const perPage = 20;
+
+    /* Init */
+    function init(addr) {
+      document.getElementById('sidebarAddr').textContent = addr;
+      document.getElementById('sidebarAvatar').textContent = addr.slice(2, 4).toUpperCase();
+
+      let data = null;
+      try {
+        const stored = sessionStorage.getItem('walletData');
+        if (stored) data = JSON.parse(stored);
+      } catch (e) {}
+
+      if (!data || data.walletAddress !== addr) {
+        data = calculateCreditScore(addr);
+        sessionStorage.setItem('walletData', JSON.stringify(data));
+      }
+
+      allTransactions = data.transactions.list;
+      const badge = document.getElementById('txBadge');
+      if (allTransactions.length > 0) {
+        badge.style.display = 'inline';
+        badge.textContent = allTransactions.length > 99 ? '99+' : allTransactions.length;
+      }
+
+      applyFilters();
+      render();
+    }
+
+    /* Filter & Search Logic */
+    function applyFilters() {
+      filteredTransactions = allTransactions.filter(tx => {
+        // Status filter
+        if (currentFilter === 'success' && tx.status !== 'success') return false;
+        if (currentFilter === 'failed' && tx.status !== 'failed') return false;
+
+        // Search filter
+        if (searchQuery) {
+          const q = searchQuery.toLowerCase();
+          const inHash = tx.txHash.toLowerCase().includes(q);
+          const inToken = tx.token.toLowerCase().includes(q);
+          const inType = tx.type.toLowerCase().includes(q);
+          const inAddr = tx.from.toLowerCase().includes(q) || tx.to.toLowerCase().includes(q);
+          if (!inHash && !inToken && !inType && !inAddr) return false;
+        }
+
+        return true;
+      });
+
+      // Reset ke halaman 1 saat filter berubah
+      currentPage = 1;
+    }
+
+    /* Type icons map */
+    const typeIcons = {
+      send: 'fa-arrow-up-right', receive: 'fa-arrow-down-left',
+      swap: 'fa-repeat', approve: 'fa-check-double',
+      stake: 'fa-lock', unstake: 'fa-lock-open',
+      bridge: 'fa-bridge', mint: 'fa-plus', burn: 'fa-fire'
+    };
+
+    /* Render */
+    function render() {
+      const pc = document.getElementById('pageContent');
+      const total = allTransactions.length;
+      const successCount = allTransactions.filter(t => t.status === 'success').length;
+      const failedCount = total - successCount;
+      const totalGas = allTransactions.filter(t => t.status === 'success').reduce((s, t) => s + t.gasCostETH, 0);
+
+      const filtered = filteredTransactions;
+      const totalPages = Math.max(1, Math.ceil(filtered.length / perPage));
+      if (currentPage > totalPages) currentPage = totalPages;
+      const startIdx = (currentPage - 1) * perPage;
+      const pageTxs = filtered.slice(startIdx, startIdx + perPage);
+
+      pc.innerHTML = `
+        <!-- Summary -->
+        <div class="summary-row">
+          <div class="summary-card">
+            <div class="summary-icon total"><i class="fa-solid fa-arrow-right-arrow-left"></i></div>
+            <div>
+              <div class="summary-value">${formatNumber(total)}</div>
+              <div class="summary-label">Total Transaksi</div>
+            </div>
+          </div>
+          <div class="summary-card">
+            <div class="summary-icon success"><i class="fa-solid fa-circle-check"></i></div>
+            <div>
+              <div class="summary-value" style="color:var(--success)">${formatNumber(successCount)}</div>
+              <div class="summary-label">Berhasil</div>
+            </div>
+          </div>
+          <div class="summary-card">
+            <div class="summary-icon failed"><i class="fa-solid fa-circle-xmark"></i></div>
+            <div>
+              <div class="summary-value" style="color:var(--danger)">${formatNumber(failedCount)}</div>
+              <div class="summary-label">Gagal</div>
+            </div>
+          </div>
+          <div class="summary-card">
+            <div class="summary-icon gas"><i class="fa-solid fa-gas-pump"></i></div>
+            <div>
+              <div class="summary-value" style="color:var(--accent-secondary)">${totalGas.toFixed(4)}</div>
+              <div class="summary-label">Total Gas (ETH)</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Toolbar -->
+        <div class="toolbar">
+          <div class="filter-tabs" id="filterTabs">
+            <button class="filter-tab ${currentFilter === 'all' ? 'active' : ''}" data-filter="all">
+              Semua <span class="count">${formatNumber(total)}</span>
+            </button>
+            <button class="filter-tab ${currentFilter === 'success' ? 'active' : ''}" data-filter="success">
+              Berhasil <span class="count">${formatNumber(successCount)}</span>
+            </button>
+            <button class="filter-tab ${currentFilter === 'failed' ? 'active' : ''}" data-filter="failed">
+              Gagal <span class="count">${formatNumber(failedCount)}</span>
+            </button>
+          </div>
+          <div class="search-box">
+            <i class="fa-solid fa-magnifying-glass"></i>
+            <input type="text" id="searchInput" placeholder="Cari hash, token, tipe..." value="${searchQuery}" />
+            ${searchQuery ? `<button id="clearSearch" style="color:var(--text-muted);font-size:0.8rem;padding:4px;" aria-label="Hapus pencarian"><i class="fa-solid fa-xmark"></i></button>` : ''}
+          </div>
+        </div>
+
+        <!-- Table -->
+        <div class="table-card">
+          <div class="table-scroll">
+            ${pageTxs.length > 0 ? `
+              <table class="tx-table">
+                <thead>
+                  <tr>
+                    <th>Tx Hash</th>
+                    <th>Tipe</th>
+                    <th>Dari / Ke</th>
+                    <th class="hide-mobile">Gas</th>
+                    <th>Jumlah</th>
+                    <th>Status</th>
+                    <th>Waktu</th>
+                  </tr>
+                </thead>
+                <tbody id="txBody">
+                  ${pageTxs.map(tx => renderRow(tx)).join('')}
+                </tbody>
+              </table>
+            ` : `
+              <div class="empty-state">
+                <i class="fa-solid fa-inbox"></i>
+                <p>Tidak ada transaksi ditemukan</p>
+                <p class="sub">${searchQuery ? 'Coba ubah kata kunci pencarian' : 'Tidak ada transaksi dengan filter ini'}</p>
+              </div>
+            `}
+          </div>
+          ${filtered.length > 0 ? `
+            <div class="table-footer">
+              <div class="table-footer-info">
+                Menampilkan <strong>${startIdx + 1}-${Math.min(startIdx + perPage, filtered.length)}</strong> dari <strong>${formatNumber(filtered.length)}</strong> transaksi
+              </div>
+              <div class="pagination" id="pagination"></div>
+            </div>
+          ` : ''}
+        </div>
+      `;
+
+      // Render pagination
+      renderPagination(totalPages);
+
+      // Bind events
+      bindEvents();
+    }
+
+    /* Render satu row */
+    function renderRow(tx) {
+      const isOutgoing = ['send', 'approve', 'stake', 'bridge', 'burn'].includes(tx.type);
+      const counterparty = isOutgoing ? tx.to : tx.from;
+      const dirLabel = isOutgoing ? 'Ke' : 'Dari';
+      const amountClass = isOutgoing ? 'negative' : 'positive';
+      const amountPrefix = isOutgoing ? '-' : '+';
+
+      return `
+        <tr>
+          <td>
+            <span class="tx-hash" onclick="copyHash('${tx.txHash}')" title="Klik untuk salin">
+              ${tx.txHash.slice(0, 10)}...${tx.txHash.slice(-6)}
+              <i class="fa-solid fa-copy"></i>
+            </span>
+          </td>
+          <td>
+            <span class="type-badge ${tx.type}">
+              <i class="fa-solid ${typeIcons[tx.type] || 'fa-circle'}"></i>
+              ${tx.type}
+            </span>
+          </td>
+          <td>
+            <div class="tx-addr-label">${dirLabel}</div>
+            <span class="tx-addr">${shortAddress(counterparty)}</span>
+          </td>
+          <td class="hide-mobile">
+            <span class="tx-gas">${tx.gasCostETH.toFixed(6)}</span>
+          </td>
+          <td>
+            <span class="tx-amount ${amountClass}">${amountPrefix}${tx.amount}</span>
+            <span class="tx-token">${tx.token}</span>
+          </td>
+          <td>
+            <span class="status-badge ${tx.status}">
+              <i class="fa-solid ${tx.status === 'success' ? 'fa-circle-check' : 'fa-circle-xmark'}"></i>
+              ${tx.status === 'success' ? 'Berhasil' : 'Gagal'}
+            </span>
+          </td>
+          <td>
+            <div class="tx-time">${formatTimestamp(tx.timestamp)}</div>
+            <div class="tx-date">${formatDate(tx.timestamp)}</div>
+          </td>
+        </tr>
+      `;
+    }
+
+    /* Render pagination */
+    function renderPagination(totalPages) {
+      const container = document.getElementById('pagination');
+      if (!container || totalPages <= 1) return;
+
+      let html = '';
+
+      // Previous
+      html += `<button class="page-btn" data-page="${currentPage - 1}" ${currentPage === 1 ? 'disabled' : ''} aria-label="Halaman sebelumnya">
+        <i class="fa-solid fa-chevron-left" style="font-size:0.7rem;"></i>
+      </button>`;
+
+      // Page numbers dengan ellipsis
+      const pages = getPageNumbers(currentPage, totalPages);
+      pages.forEach(p => {
+        if (p === '...') {
+          html += `<span class="page-ellipsis">...</span>`;
+        } else {
+          html += `<button class="page-btn ${p === currentPage ? 'active' : ''}" data-page="${p}">${p}</button>`;
+        }
+      });
+
+      // Next
+      html += `<button class="page-btn" data-page="${currentPage + 1}" ${currentPage === totalPages ? 'disabled' : ''} aria-label="Halaman berikutnya">
+        <i class="fa-solid fa-chevron-right" style="font-size:0.7rem;"></i>
+      </button>`;
+
+      container.innerHTML = html;
+    }
+
+    /* Hitung nomor halaman dengan ellipsis */
+    function getPageNumbers(current, total) {
+      if (total <= 7) return Array.from({ length: total }, (_, i) => i + 1);
+
+      const pages = [];
+      pages.push(1);
+
+      if (current > 3) pages.push('...');
+
+      const start = Math.max(2, current - 1);
+      const end = Math.min(total - 1, current + 1);
+
+      for (let i = start; i <= end; i++) pages.push(i);
+
+      if (current < total - 2) pages.push('...');
+
+      pages.push(total);
+      return pages;
+    }
+
+    /* Bind events */
+    function bindEvents() {
+      // Filter tabs
+      document.querySelectorAll('.filter-tab').forEach(tab => {
+        tab.addEventListener('click', () => {
+          currentFilter = tab.getAttribute('data-filter');
+          applyFilters();
+          render();
+        });
+      });
+
+      // Search input
+      const searchInput = document.getElementById('searchInput');
+      if (searchInput) {
+        let debounceTimer;
+        searchInput.addEventListener('input', () => {
+          clearTimeout(debounceTimer);
+          debounceTimer = setTimeout(() => {
+            searchQuery = searchInput.value.trim();
+            applyFilters();
+            render();
+            // Restore cursor position
+            const newInput = document.getElementById('searchInput');
+            if (newInput) {
+              newInput.focus();
+              newInput.setSelectionRange(newInput.value.length, newInput.value.length);
+            }
+          }, 300);
+        });
+      }
+
+      // Clear search
+      const clearBtn = document.getElementById('clearSearch');
+      if (clearBtn) {
+        clearBtn.addEventListener('click', () => {
+          searchQuery = '';
+          applyFilters();
+          render();
+        });
+      }
+
+      // Pagination
+      document.querySelectorAll('.page-btn[data-page]').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const page = parseInt(btn.getAttribute('data-page'));
+          if (!isNaN(page) && page >= 1 && page <= Math.ceil(filteredTransactions.length / perPage)) {
+            currentPage = page;
+            render();
+            // Scroll ke atas tabel
+            const tableCard = document.querySelector('.table-card');
+            if (tableCard) tableCard.scrollIntoView({ behavior: 'smooth', block: 'start' });
+          }
+        });
+      });
+    }
+
+    /* Copy hash */
+    function copyHash(hash) {
+      navigator.clipboard.writeText(hash)
+        .then(() => showToast('Tx hash disalin', 'success', 2000))
+        .catch(() => showToast('Gagal menyalin', 'error'));
+    }
+  </script>
+</body>
+</html>
