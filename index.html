@@ -547,7 +547,7 @@
           if (isLoggedIn()) {
             window.location.href = page + '.html';
           } else {
-            showToast('Silakan login terlebih dahulu untuk mengakses ' + page, 'error');
+            showToast('Silakan login terlebih dahulu' + page, 'error');
             setTimeout(function() { window.location.href = 'login.html'; }, 800);
           }
         }
