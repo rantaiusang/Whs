@@ -3,989 +3,1512 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Wallet Health Score — Web3 Credit Intelligence</title>
+  <title>Dashboard — Wallet Health Score</title>
+
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=DM+Sans:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
 
-  <!-- === COPY INI KE SEMUA FILE === -->
   <style>
+    /* ========================================
+       CSS VARIABLES
+    ======================================== */
     :root {
       --bg-primary: #060a13;
       --bg-secondary: #0c1222;
-      --bg-card: rgba(14, 22, 42, 0.7);
-      --bg-card-hover: rgba(20, 32, 58, 0.8);
-      --bg-glass: rgba(14, 22, 42, 0.45);
+      --bg-card: rgba(14, 22, 42, 0.65);
+      --bg-card-hover: rgba(20, 32, 58, 0.75);
+      --bg-sidebar: rgba(8, 14, 28, 0.92);
+      --bg-input: rgba(6, 10, 19, 0.6);
       --border-color: rgba(45, 212, 191, 0.12);
       --border-color-hover: rgba(45, 212, 191, 0.3);
       --border-subtle: rgba(255, 255, 255, 0.06);
+
       --accent: #2dd4bf;
-      --accent-dim: rgba(45, 212, 191, 0.15);
-      --accent-glow: rgba(45, 212, 191, 0.25);
+      --accent-dim: rgba(45, 212, 191, 0.12);
+      --accent-glow: rgba(45, 212, 191, 0.2);
       --accent-secondary: #f59e0b;
-      --accent-secondary-dim: rgba(245, 158, 11, 0.15);
+      --accent-secondary-dim: rgba(245, 158, 11, 0.12);
+
       --text-primary: #f1f5f9;
       --text-secondary: #94a3b8;
       --text-muted: #475569;
       --text-accent: #2dd4bf;
+
       --success: #22c55e;
       --warning: #f59e0b;
       --danger: #ef4444;
       --info: #3b82f6;
+
       --radius-sm: 8px;
       --radius-md: 12px;
       --radius-lg: 16px;
       --radius-xl: 24px;
       --radius-full: 9999px;
+
       --font-display: 'Space Grotesk', sans-serif;
       --font-body: 'DM Sans', sans-serif;
-      --shadow-card: 0 4px 24px rgba(0,0,0,0.3), 0 1px 2px rgba(0,0,0,0.2);
-      --shadow-glow: 0 0 40px rgba(45, 212, 191, 0.08);
+
+      --shadow-card: 0 4px 24px rgba(0, 0, 0, 0.3);
+      --shadow-glow: 0 0 40px rgba(45, 212, 191, 0.06);
+
+      --sidebar-width: 260px;
+      --topbar-height: 64px;
+
       --transition-fast: 150ms cubic-bezier(0.4, 0, 0.2, 1);
       --transition-base: 250ms cubic-bezier(0.4, 0, 0.2, 1);
-      --transition-slow: 400ms cubic-bezier(0.4, 0, 0.2, 1);
-      --sidebar-width: 260px;
-      --sidebar-collapsed: 72px;
-      --topbar-height: 64px;
     }
-    *, *::before, *::after { margin:0; padding:0; box-sizing:border-box; }
-    html { scroll-behavior:smooth; -webkit-font-smoothing:antialiased; }
-    body { font-family:var(--font-body); background:var(--bg-primary); color:var(--text-primary); line-height:1.6; overflow-x:hidden; min-height:100vh; }
-    a { color:inherit; text-decoration:none; transition:color var(--transition-fast); }
-    button { font-family:var(--font-body); cursor:pointer; border:none; outline:none; background:none; }
-    img { max-width:100%; display:block; }
-
-    /* Background Atmosphere */
-    .bg-atmosphere { position:fixed; top:0; left:0; width:100%; height:100%; pointer-events:none; z-index:0; overflow:hidden; }
-    .bg-atmosphere .orb { position:absolute; border-radius:50%; filter:blur(100px); opacity:0.4; animation:orbFloat 20s ease-in-out infinite; }
-    .bg-atmosphere .orb-1 { width:600px; height:600px; background:radial-gradient(circle,rgba(45,212,191,0.12) 0%,transparent 70%); top:-15%; left:-10%; }
-    .bg-atmosphere .orb-2 { width:500px; height:500px; background:radial-gradient(circle,rgba(245,158,11,0.08) 0%,transparent 70%); top:40%; right:-10%; animation-delay:-7s; animation-duration:25s; }
-    .bg-atmosphere .orb-3 { width:400px; height:400px; background:radial-gradient(circle,rgba(45,212,191,0.06) 0%,transparent 70%); bottom:-10%; left:30%; animation-delay:-14s; animation-duration:22s; }
-    @keyframes orbFloat { 0%,100%{transform:translate(0,0) scale(1)} 25%{transform:translate(30px,-40px) scale(1.05)} 50%{transform:translate(-20px,20px) scale(0.95)} 75%{transform:translate(15px,30px) scale(1.02)} }
-    .bg-grid { position:fixed; top:0; left:0; width:100%; height:100%; pointer-events:none; z-index:0; background-image:linear-gradient(rgba(45,212,191,0.03) 1px,transparent 1px),linear-gradient(90deg,rgba(45,212,191,0.03) 1px,transparent 1px); background-size:60px 60px; mask-image:radial-gradient(ellipse 70% 60% at 50% 30%,black 20%,transparent 100%); -webkit-mask-image:radial-gradient(ellipse 70% 60% at 50% 30%,black 20%,transparent 100%); }
-    .bg-noise { position:fixed; top:0; left:0; width:100%; height:100%; pointer-events:none; z-index:0; opacity:0.025; background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E"); background-repeat:repeat; background-size:256px 256px; }
-
-    .page-wrapper { position:relative; z-index:1; min-height:100vh; }
-    .container { width:100%; max-width:1200px; margin:0 auto; padding:0 24px; }
-
-    /* === LANDING NAV === */
-    .nav { position:fixed; top:0; left:0; right:0; z-index:100; padding:0 24px; transition:background var(--transition-base), backdrop-filter var(--transition-base); }
-    .nav.scrolled { background:rgba(6,10,19,0.85); backdrop-filter:blur(20px); -webkit-backdrop-filter:blur(20px); border-bottom:1px solid var(--border-subtle); }
-    .nav-inner { max-width:1200px; margin:0 auto; display:flex; align-items:center; justify-content:space-between; height:72px; }
-    .nav-brand { display:flex; align-items:center; gap:10px; font-family:var(--font-display); font-weight:700; font-size:1.2rem; letter-spacing:-0.02em; }
-    .nav-brand-icon { width:36px; height:36px; background:linear-gradient(135deg,var(--accent),#0d9488); border-radius:var(--radius-sm); display:flex; align-items:center; justify-content:center; font-size:1rem; color:var(--bg-primary); box-shadow:0 0 20px var(--accent-glow); }
-    .nav-links { display:flex; align-items:center; gap:8px; list-style:none; }
-    .nav-links a { padding:8px 16px; font-size:0.9rem; font-weight:500; color:var(--text-secondary); border-radius:var(--radius-full); transition:all var(--transition-fast); }
-    .nav-links a:hover, .nav-links a.active { color:var(--text-primary); background:rgba(255,255,255,0.05); }
-    .nav-actions { display:flex; align-items:center; gap:12px; }
-    .btn { display:inline-flex; align-items:center; justify-content:center; gap:8px; font-family:var(--font-body); font-weight:600; font-size:0.9rem; padding:10px 22px; border-radius:var(--radius-full); transition:all var(--transition-base); white-space:nowrap; }
-    .btn-ghost { color:var(--text-secondary); background:transparent; }
-    .btn-ghost:hover { color:var(--text-primary); background:rgba(255,255,255,0.05); }
-    .btn-primary { color:var(--bg-primary); background:linear-gradient(135deg,var(--accent),#0d9488); box-shadow:0 0 20px var(--accent-glow),inset 0 1px 0 rgba(255,255,255,0.2); }
-    .btn-primary:hover { transform:translateY(-1px); box-shadow:0 0 30px var(--accent-glow),0 4px 20px rgba(45,212,191,0.2),inset 0 1px 0 rgba(255,255,255,0.2); }
-    .btn-primary:active { transform:translateY(0); }
-    .btn-outline { color:var(--accent); background:transparent; border:1.5px solid var(--border-color); }
-    .btn-outline:hover { border-color:var(--border-color-hover); background:var(--accent-dim); }
-    .btn-sm { padding:7px 16px; font-size:0.82rem; }
-    .btn-danger { color:#fff; background:var(--danger); }
-    .btn-danger:hover { opacity:0.9; }
-    .nav-toggle { display:none; flex-direction:column; gap:5px; padding:8px; cursor:pointer; }
-    .nav-toggle span { display:block; width:22px; height:2px; background:var(--text-secondary); border-radius:2px; transition:all var(--transition-fast); }
-
-    /* === HERO === */
-    .hero { padding:160px 0 80px; text-align:center; position:relative; }
-    .hero-badge { display:inline-flex; align-items:center; gap:8px; padding:6px 16px 6px 8px; background:var(--accent-dim); border:1px solid var(--border-color); border-radius:var(--radius-full); font-size:0.8rem; font-weight:500; color:var(--accent); margin-bottom:32px; animation:fadeInUp 0.6s ease-out; }
-    .hero-badge-dot { width:8px; height:8px; background:var(--accent); border-radius:50%; animation:pulse 2s ease-in-out infinite; }
-    @keyframes pulse { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:0.5;transform:scale(0.8)} }
-    .hero-title { font-family:var(--font-display); font-size:clamp(2.8rem,6vw,4.5rem); font-weight:700; line-height:1.08; letter-spacing:-0.03em; margin-bottom:24px; animation:fadeInUp 0.6s ease-out 0.1s both; }
-    .hero-title .highlight { background:linear-gradient(135deg,var(--accent),#5eead4,var(--accent-secondary)); -webkit-background-clip:text; -webkit-text-fill-color:transparent; background-clip:text; }
-    .hero-subtitle { font-size:clamp(1rem,2vw,1.2rem); color:var(--text-secondary); max-width:600px; margin:0 auto 48px; line-height:1.7; animation:fadeInUp 0.6s ease-out 0.2s both; }
-    @keyframes fadeInUp { from{opacity:0;transform:translateY(20px)} to{opacity:1;transform:translateY(0)} }
-
-    /* Wallet Input */
-    .wallet-input-section { max-width:680px; margin:0 auto 40px; animation:fadeInUp 0.6s ease-out 0.3s both; }
-    .wallet-input-card { background:var(--bg-card); border:1px solid var(--border-color); border-radius:var(--radius-xl); padding:8px; display:flex; align-items:center; gap:8px; box-shadow:var(--shadow-card),var(--shadow-glow); transition:all var(--transition-base); position:relative; overflow:hidden; }
-    .wallet-input-card::before { content:''; position:absolute; inset:0; border-radius:var(--radius-xl); background:linear-gradient(135deg,rgba(45,212,191,0.05),transparent 50%); pointer-events:none; }
-    .wallet-input-card:focus-within { border-color:var(--border-color-hover); box-shadow:var(--shadow-card),0 0 50px rgba(45,212,191,0.12); }
-    .wallet-input-icon { flex-shrink:0; width:48px; height:48px; display:flex; align-items:center; justify-content:center; color:var(--text-muted); font-size:1.1rem; margin-left:4px; }
-    .wallet-input-wrapper { flex:1; position:relative; }
-    .wallet-input { width:100%; background:transparent; border:none; outline:none; font-family:'Space Grotesk',monospace; font-size:1rem; color:var(--text-primary); padding:14px 0; letter-spacing:0.02em; }
-    .wallet-input::placeholder { color:var(--text-muted); font-family:var(--font-body); letter-spacing:0; }
-    .wallet-input-btn { flex-shrink:0; padding:14px 32px; border-radius:var(--radius-lg); font-size:0.95rem; }
-    .input-hint { text-align:left; margin-top:12px; font-size:0.8rem; color:var(--text-muted); min-height:20px; transition:all var(--transition-fast); }
-    .input-hint.error { color:var(--danger); }
-    .input-hint.success { color:var(--success); }
-    .demo-wallets { display:flex; flex-wrap:wrap; justify-content:center; gap:8px; margin-top:20px; animation:fadeInUp 0.6s ease-out 0.4s both; }
-    .demo-wallet-btn { padding:6px 14px; font-size:0.78rem; font-family:'Space Grotesk',monospace; color:var(--text-muted); background:rgba(255,255,255,0.03); border:1px solid var(--border-subtle); border-radius:var(--radius-full); transition:all var(--transition-fast); cursor:pointer; }
-    .demo-wallet-btn:hover { color:var(--accent); border-color:var(--border-color); background:var(--accent-dim); }
-
-    /* Stats Marquee */
-    .stats-marquee { border-top:1px solid var(--border-subtle); border-bottom:1px solid var(--border-subtle); padding:20px 0; overflow:hidden; position:relative; animation:fadeInUp 0.6s ease-out 0.5s both; }
-    .stats-marquee::before, .stats-marquee::after { content:''; position:absolute; top:0; bottom:0; width:120px; z-index:2; pointer-events:none; }
-    .stats-marquee::before { left:0; background:linear-gradient(90deg,var(--bg-primary),transparent); }
-    .stats-marquee::after { right:0; background:linear-gradient(-90deg,var(--bg-primary),transparent); }
-    .marquee-track { display:flex; gap:60px; animation:marqueeScroll 30s linear infinite; width:max-content; }
-    .marquee-item { display:flex; align-items:center; gap:12px; white-space:nowrap; flex-shrink:0; }
-    .marquee-value { font-family:var(--font-display); font-size:1.3rem; font-weight:700; color:var(--text-primary); }
-    .marquee-label { font-size:0.85rem; color:var(--text-muted); }
-    .marquee-divider { width:4px; height:4px; background:var(--text-muted); border-radius:50%; opacity:0.4; }
-    @keyframes marqueeScroll { from{transform:translateX(0)} to{transform:translateX(-50%)} }
-
-    /* Sections */
-    .section-header { text-align:center; margin-bottom:64px; }
-    .section-label { display:inline-flex; align-items:center; gap:8px; font-size:0.8rem; font-weight:600; text-transform:uppercase; letter-spacing:0.1em; color:var(--accent); margin-bottom:16px; }
-    .section-label::before, .section-label::after { content:''; width:20px; height:1px; background:var(--accent); opacity:0.4; }
-    .section-title { font-family:var(--font-display); font-size:clamp(1.8rem,4vw,2.5rem); font-weight:700; letter-spacing:-0.02em; margin-bottom:16px; }
-    .section-desc { font-size:1.05rem; color:var(--text-secondary); max-width:520px; margin:0 auto; }
-    .features { padding:100px 0; }
-    .features-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:20px; }
-    .feature-card { background:var(--bg-card); border:1px solid var(--border-subtle); border-radius:var(--radius-lg); padding:32px 28px; transition:all var(--transition-base); position:relative; overflow:hidden; }
-    .feature-card::before { content:''; position:absolute; top:0; left:0; right:0; height:1px; background:linear-gradient(90deg,transparent,var(--accent-glow),transparent); opacity:0; transition:opacity var(--transition-base); }
-    .feature-card:hover { border-color:var(--border-color); background:var(--bg-card-hover); transform:translateY(-4px); box-shadow:var(--shadow-card),var(--shadow-glow); }
-    .feature-card:hover::before { opacity:1; }
-    .feature-icon { width:48px; height:48px; border-radius:var(--radius-md); display:flex; align-items:center; justify-content:center; font-size:1.2rem; margin-bottom:20px; }
-    .feature-icon.teal { background:var(--accent-dim); color:var(--accent); }
-    .feature-icon.amber { background:var(--accent-secondary-dim); color:var(--accent-secondary); }
-    .feature-icon.blue { background:rgba(59,130,246,0.15); color:var(--info); }
-    .feature-icon.green { background:rgba(34,197,94,0.15); color:var(--success); }
-    .feature-icon.red { background:rgba(239,68,68,0.15); color:var(--danger); }
-    .feature-icon.purple { background:rgba(168,85,247,0.15); color:#a855f7; }
-    .feature-title { font-family:var(--font-display); font-size:1.1rem; font-weight:600; margin-bottom:10px; }
-    .feature-desc { font-size:0.9rem; color:var(--text-secondary); line-height:1.65; }
-
-    /* How it works */
-    .how-it-works { padding:100px 0; background:linear-gradient(180deg,transparent,rgba(45,212,191,0.02) 50%,transparent); }
-    .steps-grid { display:grid; grid-template-columns:repeat(4,1fr); gap:24px; position:relative; }
-    .steps-grid::before { content:''; position:absolute; top:40px; left:calc(12.5% + 24px); right:calc(12.5% + 24px); height:2px; background:linear-gradient(90deg,var(--border-color),var(--accent-dim),var(--border-color)); z-index:0; }
-    .step-card { text-align:center; position:relative; z-index:1; }
-    .step-number { width:56px; height:56px; border-radius:50%; background:var(--bg-secondary); border:2px solid var(--border-color); display:flex; align-items:center; justify-content:center; font-family:var(--font-display); font-size:1.2rem; font-weight:700; color:var(--accent); margin:0 auto 20px; position:relative; }
-    .step-number::after { content:''; position:absolute; inset:-6px; border-radius:50%; border:1px solid var(--accent-dim); }
-    .step-title { font-family:var(--font-display); font-size:1.05rem; font-weight:600; margin-bottom:8px; }
-    .step-desc { font-size:0.85rem; color:var(--text-secondary); line-height:1.6; max-width:220px; margin:0 auto; }
-
-    /* Score Preview */
-    .score-preview { padding:100px 0; }
-    .preview-grid { display:grid; grid-template-columns:1fr 1fr; gap:40px; align-items:center; }
-    .preview-content { padding-right:20px; }
-    .preview-content .section-label { justify-content:flex-start; }
-    .preview-content .section-title { text-align:left; }
-    .preview-features { list-style:none; margin-top:28px; display:flex; flex-direction:column; gap:16px; }
-    .preview-features li { display:flex; align-items:flex-start; gap:12px; font-size:0.95rem; color:var(--text-secondary); line-height:1.5; }
-    .preview-features li i { color:var(--accent); margin-top:4px; flex-shrink:0; font-size:0.85rem; }
-    .score-gauge-wrapper { display:flex; justify-content:center; align-items:center; }
-    .score-gauge { width:300px; height:300px; position:relative; }
-    .score-gauge svg { width:100%; height:100%; transform:rotate(-90deg); }
-    .gauge-bg { fill:none; stroke:rgba(255,255,255,0.04); stroke-width:12; }
-    .gauge-fill { fill:none; stroke:url(#gaugeGradient); stroke-width:12; stroke-linecap:round; stroke-dasharray:816; stroke-dashoffset:816; transition:stroke-dashoffset 2s cubic-bezier(0.4,0,0.2,1); }
-    .gauge-fill.animated { stroke-dashoffset:196; }
-    .gauge-inner { fill:none; stroke:rgba(255,255,255,0.02); stroke-width:8; }
-    .score-gauge-center { position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); text-align:center; }
-    .gauge-score-value { font-family:var(--font-display); font-size:3.5rem; font-weight:700; line-height:1; background:linear-gradient(135deg,var(--accent),#5eead4); -webkit-background-clip:text; -webkit-text-fill-color:transparent; background-clip:text; }
-    .gauge-score-label { font-size:0.85rem; font-weight:600; color:var(--success); margin-top:6px; text-transform:uppercase; letter-spacing:0.08em; }
-    .gauge-score-max { font-size:0.75rem; color:var(--text-muted); margin-top:2px; }
-    .gauge-label { position:absolute; font-size:0.7rem; font-weight:600; text-transform:uppercase; letter-spacing:0.08em; padding:4px 10px; border-radius:var(--radius-full); background:var(--bg-card); border:1px solid var(--border-subtle); white-space:nowrap; animation:floatGentle 4s ease-in-out infinite; }
-    .gauge-label.top { top:5%; right:0; color:var(--success); }
-    .gauge-label.right { bottom:25%; right:-10px; color:var(--warning); animation-delay:-1.3s; }
-    .gauge-label.bottom { bottom:5%; left:10px; color:var(--danger); animation-delay:-2.6s; }
-    @keyframes floatGentle { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-6px)} }
-
-    /* CTA */
-    .cta-section { padding:100px 0; }
-    .cta-card { background:var(--bg-card); border:1px solid var(--border-color); border-radius:var(--radius-xl); padding:64px 48px; text-align:center; position:relative; overflow:hidden; }
-    .cta-card::before { content:''; position:absolute; top:-1px; left:20%; right:20%; height:2px; background:linear-gradient(90deg,transparent,var(--accent),transparent); }
-    .cta-card::after { content:''; position:absolute; top:0; left:50%; transform:translateX(-50%); width:400px; height:300px; background:radial-gradient(ellipse,var(--accent-glow) 0%,transparent 70%); opacity:0.3; pointer-events:none; }
-    .cta-title { font-family:var(--font-display); font-size:clamp(1.6rem,3.5vw,2.2rem); font-weight:700; letter-spacing:-0.02em; margin-bottom:16px; position:relative; }
-    .cta-desc { font-size:1.05rem; color:var(--text-secondary); max-width:480px; margin:0 auto 32px; position:relative; }
-    .cta-actions { display:flex; justify-content:center; gap:12px; position:relative; }
-
-    /* Footer (Landing) */
-    .footer { border-top:1px solid var(--border-subtle); padding:48px 0 32px; }
-    .footer-grid { display:grid; grid-template-columns:2fr 1fr 1fr 1fr; gap:40px; margin-bottom:40px; }
-    .footer-brand { font-family:var(--font-display); font-size:1.1rem; font-weight:700; display:flex; align-items:center; gap:8px; margin-bottom:12px; }
-    .footer-desc { font-size:0.85rem; color:var(--text-muted); line-height:1.6; max-width:280px; }
-    .footer-heading { font-family:var(--font-display); font-size:0.8rem; font-weight:600; text-transform:uppercase; letter-spacing:0.1em; color:var(--text-secondary); margin-bottom:16px; }
-    .footer-links { list-style:none; display:flex; flex-direction:column; gap:10px; }
-    .footer-links a { font-size:0.85rem; color:var(--text-muted); transition:color var(--transition-fast); }
-    .footer-links a:hover { color:var(--accent); }
-    .footer-bottom { display:flex; justify-content:space-between; align-items:center; padding-top:24px; border-top:1px solid var(--border-subtle); font-size:0.8rem; color:var(--text-muted); }
-    .footer-socials { display:flex; gap:16px; }
-    .footer-socials a { color:var(--text-muted); font-size:1rem; transition:color var(--transition-fast); }
-    .footer-socials a:hover { color:var(--accent); }
-
-    /* Toast */
-    .toast-container { position:fixed; top:88px; right:24px; z-index:500; display:flex; flex-direction:column; gap:8px; }
-    .toast { display:flex; align-items:center; gap:12px; padding:14px 20px; background:var(--bg-secondary); border:1px solid var(--border-subtle); border-radius:var(--radius-md); box-shadow:0 8px 32px rgba(0,0,0,0.4); font-size:0.88rem; color:var(--text-primary); transform:translateX(120%); transition:transform var(--transition-base); max-width:360px; }
-    .toast.show { transform:translateX(0); }
-    .toast i { font-size:1.1rem; flex-shrink:0; }
-    .toast.success i { color:var(--success); }
-    .toast.error i { color:var(--danger); }
-    .toast.info i { color:var(--info); }
-
-    /* Loading Overlay */
-    .loading-overlay { position:fixed; inset:0; background:rgba(6,10,19,0.92); backdrop-filter:blur(10px); z-index:400; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:24px; opacity:0; pointer-events:none; transition:opacity var(--transition-base); }
-    .loading-overlay.active { opacity:1; pointer-events:all; }
-    .loading-spinner { width:48px; height:48px; border:3px solid var(--border-subtle); border-top-color:var(--accent); border-radius:50%; animation:spin 0.8s linear infinite; }
-    @keyframes spin { to{transform:rotate(360deg)} }
-    .loading-text { font-family:var(--font-display); font-size:0.95rem; color:var(--text-secondary); }
-    .loading-steps { display:flex; flex-direction:column; gap:8px; margin-top:8px; }
-    .loading-step { font-size:0.8rem; color:var(--text-muted); display:flex; align-items:center; gap:8px; transition:color var(--transition-fast); }
-    .loading-step.active { color:var(--accent); }
-    .loading-step.done { color:var(--success); }
-    .loading-step i { width:16px; text-align:center; }
-
-    /* Scroll Reveal */
-    .reveal { opacity:0; transform:translateY(30px); transition:opacity 0.7s ease-out,transform 0.7s ease-out; }
-    .reveal.visible { opacity:1; transform:translateY(0); }
 
     /* ========================================
-       APP SHELL (Dashboard, Analytics, History, Wallet, Settings)
+       RESET & BASE
     ======================================== */
-    .app-shell { display:flex; min-height:100vh; }
-    .sidebar { width:var(--sidebar-width); background:var(--bg-secondary); border-right:1px solid var(--border-subtle); display:flex; flex-direction:column; position:fixed; top:0; left:0; bottom:0; z-index:50; transition:transform var(--transition-base), width var(--transition-base); }
-    .sidebar-header { padding:20px; display:flex; align-items:center; gap:10px; border-bottom:1px solid var(--border-subtle); min-height:var(--topbar-height); }
-    .sidebar-brand { font-family:var(--font-display); font-weight:700; font-size:1.05rem; white-space:nowrap; }
-    .sidebar-nav { flex:1; padding:16px 12px; overflow-y:auto; display:flex; flex-direction:column; gap:4px; }
-    .sidebar-nav-label { font-size:0.7rem; font-weight:600; text-transform:uppercase; letter-spacing:0.1em; color:var(--text-muted); padding:16px 12px 8px; }
-    .sidebar-link { display:flex; align-items:center; gap:12px; padding:10px 14px; border-radius:var(--radius-md); font-size:0.9rem; font-weight:500; color:var(--text-secondary); transition:all var(--transition-fast); white-space:nowrap; }
-    .sidebar-link:hover { color:var(--text-primary); background:rgba(255,255,255,0.04); }
-    .sidebar-link.active { color:var(--accent); background:var(--accent-dim); }
-    .sidebar-link i { width:20px; text-align:center; font-size:0.95rem; }
-    .sidebar-link .link-badge { margin-left:auto; background:var(--danger); color:#fff; font-size:0.7rem; font-weight:700; padding:2px 7px; border-radius:var(--radius-full); }
-    .sidebar-footer { padding:16px; border-top:1px solid var(--border-subtle); }
-    .sidebar-user { display:flex; align-items:center; gap:10px; padding:8px; border-radius:var(--radius-md); transition:background var(--transition-fast); cursor:pointer; }
-    .sidebar-user:hover { background:rgba(255,255,255,0.04); }
-    .sidebar-avatar { width:36px; height:36px; border-radius:50%; background:linear-gradient(135deg,var(--accent),#0d9488); display:flex; align-items:center; justify-content:center; font-weight:700; font-size:0.85rem; color:var(--bg-primary); flex-shrink:0; }
-    .sidebar-user-info { overflow:hidden; }
-    .sidebar-user-name { font-size:0.85rem; font-weight:600; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
-    .sidebar-user-role { font-size:0.72rem; color:var(--text-muted); }
+    *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+    html { scroll-behavior: smooth; -webkit-font-smoothing: antialiased; }
+    body {
+      font-family: var(--font-body);
+      background: var(--bg-primary);
+      color: var(--text-primary);
+      line-height: 1.6;
+      overflow-x: hidden;
+      min-height: 100vh;
+    }
+    a { color: inherit; text-decoration: none; transition: color var(--transition-fast); }
+    button { font-family: var(--font-body); cursor: pointer; border: none; outline: none; background: none; }
 
-    .main-area { flex:1; margin-left:var(--sidebar-width); min-height:100vh; }
-    .topbar { height:var(--topbar-height); border-bottom:1px solid var(--border-subtle); display:flex; align-items:center; justify-content:space-between; padding:0 32px; position:sticky; top:0; background:rgba(6,10,19,0.8); backdrop-filter:blur(16px); -webkit-backdrop-filter:blur(16px); z-index:40; }
-    .topbar-left { display:flex; align-items:center; gap:16px; }
-    .topbar-title { font-family:var(--font-display); font-size:1.15rem; font-weight:600; }
-    .topbar-breadcrumb { font-size:0.8rem; color:var(--text-muted); }
-    .topbar-breadcrumb a { color:var(--text-secondary); }
-    .topbar-breadcrumb a:hover { color:var(--accent); }
-    .topbar-right { display:flex; align-items:center; gap:12px; }
-    .topbar-search { display:flex; align-items:center; gap:8px; padding:8px 14px; background:rgba(255,255,255,0.04); border:1px solid var(--border-subtle); border-radius:var(--radius-full); font-size:0.85rem; color:var(--text-muted); cursor:pointer; transition:all var(--transition-fast); }
-    .topbar-search:hover { border-color:var(--border-color); color:var(--text-secondary); }
-    .topbar-icon-btn { width:38px; height:38px; border-radius:50%; display:flex; align-items:center; justify-content:center; color:var(--text-secondary); transition:all var(--transition-fast); position:relative; }
-    .topbar-icon-btn:hover { color:var(--text-primary); background:rgba(255,255,255,0.05); }
-    .topbar-icon-btn .notif-dot { position:absolute; top:6px; right:6px; width:8px; height:8px; background:var(--danger); border-radius:50%; border:2px solid var(--bg-primary); }
+    /* ========================================
+       BACKGROUND
+    ======================================== */
+    .bg-atmosphere {
+      position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+      pointer-events: none; z-index: 0; overflow: hidden;
+    }
+    .bg-atmosphere .orb {
+      position: absolute; border-radius: 50%; filter: blur(120px); opacity: 0.25;
+      animation: orbFloat 25s ease-in-out infinite;
+    }
+    .bg-atmosphere .orb-1 {
+      width: 500px; height: 500px;
+      background: radial-gradient(circle, rgba(45, 212, 191, 0.1) 0%, transparent 70%);
+      top: -10%; left: -5%;
+    }
+    .bg-atmosphere .orb-2 {
+      width: 400px; height: 400px;
+      background: radial-gradient(circle, rgba(245, 158, 11, 0.06) 0%, transparent 70%);
+      bottom: -10%; right: -5%;
+      animation-delay: -10s; animation-duration: 28s;
+    }
+    @keyframes orbFloat {
+      0%, 100% { transform: translate(0, 0) scale(1); }
+      33% { transform: translate(20px, -30px) scale(1.03); }
+      66% { transform: translate(-15px, 15px) scale(0.97); }
+    }
+    .bg-noise {
+      position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+      pointer-events: none; z-index: 0; opacity: 0.02;
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+      background-size: 256px 256px;
+    }
 
-    .page-content { padding:32px; }
+    /* ========================================
+       DASHBOARD LAYOUT
+    ======================================== */
+    .dashboard-layout {
+      position: relative; z-index: 1;
+      display: flex; min-height: 100vh;
+    }
 
-    /* Card komponen umum */
-    .card { background:var(--bg-card); border:1px solid var(--border-subtle); border-radius:var(--radius-lg); padding:24px; transition:all var(--transition-base); }
-    .card:hover { border-color:var(--border-color); }
-    .card-header { display:flex; align-items:center; justify-content:space-between; margin-bottom:20px; }
-    .card-title { font-family:var(--font-display); font-size:1rem; font-weight:600; }
+    /* ========================================
+       SIDEBAR
+    ======================================== */
+    .sidebar {
+      width: var(--sidebar-width);
+      background: var(--bg-sidebar);
+      border-right: 1px solid var(--border-subtle);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      display: flex; flex-direction: column;
+      position: fixed; top: 0; left: 0; bottom: 0;
+      z-index: 50;
+      transition: transform var(--transition-base);
+    }
 
-    /* Stat cards */
-    .stats-grid { display:grid; grid-template-columns:repeat(4,1fr); gap:20px; margin-bottom:32px; }
-    .stat-card { background:var(--bg-card); border:1px solid var(--border-subtle); border-radius:var(--radius-lg); padding:24px; transition:all var(--transition-base); }
-    .stat-card:hover { border-color:var(--border-color); transform:translateY(-2px); box-shadow:var(--shadow-glow); }
-    .stat-card-header { display:flex; align-items:center; justify-content:space-between; margin-bottom:12px; }
-    .stat-card-icon { width:40px; height:40px; border-radius:var(--radius-md); display:flex; align-items:center; justify-content:center; font-size:1rem; }
-    .stat-card-change { font-size:0.75rem; font-weight:600; padding:3px 8px; border-radius:var(--radius-full); }
-    .stat-card-change.up { color:var(--success); background:rgba(34,197,94,0.12); }
-    .stat-card-change.down { color:var(--danger); background:rgba(239,68,68,0.12); }
-    .stat-card-value { font-family:var(--font-display); font-size:1.8rem; font-weight:700; margin-bottom:4px; }
-    .stat-card-label { font-size:0.82rem; color:var(--text-muted); }
+    .sidebar-brand {
+      padding: 20px 24px;
+      display: flex; align-items: center; gap: 10px;
+      border-bottom: 1px solid var(--border-subtle);
+      font-family: var(--font-display);
+      font-weight: 700; font-size: 1.1rem;
+    }
 
-    /* Table */
-    .data-table { width:100%; border-collapse:collapse; }
-    .data-table th { text-align:left; font-size:0.75rem; font-weight:600; text-transform:uppercase; letter-spacing:0.08em; color:var(--text-muted); padding:12px 16px; border-bottom:1px solid var(--border-subtle); }
-    .data-table td { padding:14px 16px; font-size:0.88rem; border-bottom:1px solid var(--border-subtle); }
-    .data-table tr:hover td { background:rgba(255,255,255,0.02); }
-    .data-table tr:last-child td { border-bottom:none; }
-    .wallet-addr { font-family:'Space Grotesk',monospace; font-size:0.82rem; color:var(--text-accent); }
-    .status-badge { display:inline-flex; align-items:center; gap:5px; padding:4px 12px; border-radius:var(--radius-full); font-size:0.75rem; font-weight:600; }
-    .status-badge.excellent { color:var(--success); background:rgba(34,197,94,0.12); }
-    .status-badge.good { color:var(--info); background:rgba(59,130,246,0.12); }
-    .status-badge.risky { color:var(--warning); background:rgba(245,158,11,0.12); }
-    .status-badge.dangerous { color:var(--danger); background:rgba(239,68,68,0.12); }
+    .sidebar-brand-icon {
+      width: 32px; height: 32px;
+      background: linear-gradient(135deg, var(--accent), #0d9488);
+      border-radius: var(--radius-sm);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 0.85rem; color: var(--bg-primary);
+      box-shadow: 0 0 14px var(--accent-glow);
+    }
 
-    /* Gauge kecil untuk dashboard */
-    .mini-gauge { width:120px; height:120px; position:relative; display:flex; align-items:center; justify-content:center; }
-    .mini-gauge svg { position:absolute; top:0; left:0; transform:rotate(-90deg); }
-    .mini-gauge-value { font-family:var(--font-display); font-size:1.6rem; font-weight:700; z-index:1; }
+    .sidebar-nav {
+      flex: 1; padding: 16px 12px;
+      display: flex; flex-direction: column; gap: 4px;
+      overflow-y: auto;
+    }
 
-    /* Chart container */
-    .chart-container { position:relative; height:280px; }
+    .nav-section-label {
+      font-size: 0.68rem; font-weight: 600;
+      text-transform: uppercase; letter-spacing: 0.1em;
+      color: var(--text-muted); padding: 16px 12px 8px;
+    }
 
-    /* Progress bar */
-    .progress-bar { height:6px; background:rgba(255,255,255,0.06); border-radius:var(--radius-full); overflow:hidden; }
-    .progress-bar-fill { height:100%; border-radius:var(--radius-full); transition:width 1.5s cubic-bezier(0.4,0,0.2,1); }
+    .nav-item {
+      display: flex; align-items: center; gap: 12px;
+      padding: 11px 14px; border-radius: var(--radius-md);
+      font-size: 0.9rem; font-weight: 500;
+      color: var(--text-secondary);
+      transition: all var(--transition-fast);
+      position: relative;
+    }
 
-    /* Breakdown item */
-    .breakdown-item { display:flex; align-items:center; gap:16px; padding:14px 0; border-bottom:1px solid var(--border-subtle); }
-    .breakdown-item:last-child { border-bottom:none; }
-    .breakdown-icon { width:36px; height:36px; border-radius:var(--radius-sm); display:flex; align-items:center; justify-content:center; font-size:0.85rem; flex-shrink:0; }
-    .breakdown-info { flex:1; min-width:0; }
-    .breakdown-name { font-size:0.88rem; font-weight:500; margin-bottom:4px; }
-    .breakdown-bar { height:4px; background:rgba(255,255,255,0.06); border-radius:var(--radius-full); overflow:hidden; }
-    .breakdown-bar-fill { height:100%; border-radius:var(--radius-full); }
-    .breakdown-score { font-family:var(--font-display); font-size:0.95rem; font-weight:700; flex-shrink:0; min-width:40px; text-align:right; }
+    .nav-item i {
+      width: 20px; text-align: center; font-size: 0.9rem;
+    }
 
-    /* Risk flag */
-    .risk-flag { display:flex; align-items:center; gap:12px; padding:12px 16px; background:rgba(239,68,68,0.06); border:1px solid rgba(239,68,68,0.15); border-radius:var(--radius-md); margin-bottom:8px; }
-    .risk-flag i { color:var(--danger); flex-shrink:0; }
-    .risk-flag-text { font-size:0.85rem; color:var(--text-secondary); }
-    .risk-flag-text strong { color:var(--text-primary); }
+    .nav-item:hover {
+      color: var(--text-primary);
+      background: rgba(255, 255, 255, 0.04);
+    }
 
-    /* Settings form */
-    .form-group { margin-bottom:24px; }
-    .form-label { display:block; font-size:0.82rem; font-weight:600; color:var(--text-secondary); margin-bottom:8px; }
-    .form-input { width:100%; padding:12px 16px; background:rgba(255,255,255,0.04); border:1px solid var(--border-subtle); border-radius:var(--radius-md); color:var(--text-primary); font-family:var(--font-body); font-size:0.9rem; transition:all var(--transition-fast); outline:none; }
-    .form-input:focus { border-color:var(--border-color-hover); box-shadow:0 0 0 3px var(--accent-dim); }
-    .form-input::placeholder { color:var(--text-muted); }
-    .form-hint { font-size:0.75rem; color:var(--text-muted); margin-top:6px; }
-    .form-switch { display:flex; align-items:center; justify-content:space-between; padding:16px 0; border-bottom:1px solid var(--border-subtle); }
-    .form-switch-info { }
-    .form-switch-label { font-size:0.9rem; font-weight:500; margin-bottom:2px; }
-    .form-switch-desc { font-size:0.78rem; color:var(--text-muted); }
-    .switch { width:44px; height:24px; background:rgba(255,255,255,0.1); border-radius:var(--radius-full); position:relative; cursor:pointer; transition:background var(--transition-fast); flex-shrink:0; }
-    .switch.on { background:var(--accent); }
-    .switch::after { content:''; position:absolute; top:3px; left:3px; width:18px; height:18px; background:#fff; border-radius:50%; transition:transform var(--transition-fast); }
-    .switch.on::after { transform:translateX(20px); }
+    .nav-item.active {
+      color: var(--accent);
+      background: var(--accent-dim);
+    }
 
-    /* Login page */
-    .login-wrapper { min-height:100vh; display:flex; }
-    .login-visual { flex:1; background:var(--bg-secondary); display:flex; flex-direction:column; align-items:center; justify-content:center; position:relative; overflow:hidden; }
-    .login-visual-content { position:relative; z-index:2; text-align:center; padding:48px; }
-    .login-form-side { flex:1; display:flex; align-items:center; justify-content:center; padding:48px; }
-    .login-form-card { width:100%; max-width:420px; }
-    .login-form-card h1 { font-family:var(--font-display); font-size:1.8rem; font-weight:700; margin-bottom:8px; }
-    .login-form-card .subtitle { color:var(--text-secondary); margin-bottom:36px; font-size:0.95rem; }
-    .form-divider { display:flex; align-items:center; gap:16px; margin:24px 0; color:var(--text-muted); font-size:0.82rem; }
-    .form-divider::before, .form-divider::after { content:''; flex:1; height:1px; background:var(--border-subtle); }
-    .social-btns { display:flex; gap:12px; }
-    .social-btn { flex:1; padding:12px; border:1px solid var(--border-subtle); border-radius:var(--radius-md); display:flex; align-items:center; justify-content:center; gap:8px; font-size:0.88rem; color:var(--text-secondary); transition:all var(--transition-fast); }
-    .social-btn:hover { border-color:var(--border-color); color:var(--text-primary); background:rgba(255,255,255,0.03); }
+    .nav-item.active::before {
+      content: '';
+      position: absolute; left: 0; top: 50%;
+      transform: translateY(-50%);
+      width: 3px; height: 20px;
+      background: var(--accent);
+      border-radius: 0 3px 3px 0;
+    }
+
+    .nav-item .badge {
+      margin-left: auto;
+      padding: 2px 8px;
+      font-size: 0.7rem; font-weight: 600;
+      border-radius: var(--radius-full);
+      background: rgba(239, 68, 68, 0.15);
+      color: var(--danger);
+    }
+
+    .sidebar-footer {
+      padding: 16px;
+      border-top: 1px solid var(--border-subtle);
+    }
+
+    .sidebar-wallet {
+      display: flex; align-items: center; gap: 10px;
+      padding: 10px 12px;
+      background: rgba(255, 255, 255, 0.02);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-md);
+      cursor: pointer;
+      transition: all var(--transition-fast);
+    }
+
+    .sidebar-wallet:hover {
+      border-color: var(--border-color);
+      background: rgba(255, 255, 255, 0.04);
+    }
+
+    .sidebar-wallet-avatar {
+      width: 32px; height: 32px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, var(--accent-dim), rgba(45, 212, 191, 0.25));
+      display: flex; align-items: center; justify-content: center;
+      font-size: 0.75rem; color: var(--accent);
+      font-family: var(--font-display); font-weight: 700;
+      flex-shrink: 0;
+    }
+
+    .sidebar-wallet-info {
+      flex: 1; min-width: 0;
+    }
+
+    .sidebar-wallet-addr {
+      font-family: 'Space Grotesk', monospace;
+      font-size: 0.8rem; font-weight: 500;
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    }
+
+    .sidebar-wallet-label {
+      font-size: 0.7rem; color: var(--text-muted);
+    }
+
+    /* ========================================
+       MAIN CONTENT
+    ======================================== */
+    .main-content {
+      flex: 1;
+      margin-left: var(--sidebar-width);
+      display: flex; flex-direction: column;
+      min-height: 100vh;
+    }
+
+    /* ----------------------------------------
+       TOPBAR
+    ---------------------------------------- */
+    .topbar {
+      height: var(--topbar-height);
+      padding: 0 32px;
+      display: flex; align-items: center; justify-content: space-between;
+      border-bottom: 1px solid var(--border-subtle);
+      background: rgba(6, 10, 19, 0.6);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      position: sticky; top: 0; z-index: 40;
+    }
+
+    .topbar-left {
+      display: flex; align-items: center; gap: 16px;
+    }
+
+    .sidebar-toggle {
+      display: none;
+      width: 36px; height: 36px;
+      border-radius: var(--radius-sm);
+      align-items: center; justify-content: center;
+      color: var(--text-secondary);
+      font-size: 1.1rem;
+      transition: all var(--transition-fast);
+    }
+
+    .sidebar-toggle:hover {
+      color: var(--text-primary);
+      background: rgba(255, 255, 255, 0.05);
+    }
+
+    .topbar-title {
+      font-family: var(--font-display);
+      font-size: 1.15rem; font-weight: 600;
+    }
+
+    .topbar-right {
+      display: flex; align-items: center; gap: 8px;
+    }
+
+    .topbar-btn {
+      width: 38px; height: 38px;
+      border-radius: var(--radius-sm);
+      display: flex; align-items: center; justify-content: center;
+      color: var(--text-muted);
+      font-size: 0.95rem;
+      transition: all var(--transition-fast);
+      position: relative;
+    }
+
+    .topbar-btn:hover {
+      color: var(--text-primary);
+      background: rgba(255, 255, 255, 0.05);
+    }
+
+    .topbar-btn .notif-dot {
+      position: absolute; top: 6px; right: 6px;
+      width: 7px; height: 7px;
+      background: var(--danger);
+      border-radius: 50%;
+      border: 1.5px solid var(--bg-primary);
+    }
+
+    /* ========================================
+       TOPBAR NAV BUTTONS (TAMBAHAN)
+    ======================================== */
+    .topbar-nav-btn {
+      display: inline-flex; align-items: center; gap: 7px;
+      padding: 8px 16px;
+      font-size: 0.82rem; font-weight: 500;
+      color: var(--text-secondary);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-full);
+      transition: all var(--transition-fast);
+      white-space: nowrap;
+    }
+
+    .topbar-nav-btn:hover {
+      color: var(--text-primary);
+      border-color: var(--border-color);
+      background: rgba(255, 255, 255, 0.04);
+    }
+
+    .topbar-nav-btn i {
+      font-size: 0.85rem;
+    }
+
+    .topbar-nav-btn.back-btn {
+      color: var(--accent);
+      border-color: var(--border-color);
+    }
+
+    .topbar-nav-btn.back-btn:hover {
+      background: var(--accent-dim);
+      border-color: var(--border-color-hover);
+    }
+
+    .topbar-divider {
+      width: 1px;
+      height: 24px;
+      background: var(--border-subtle);
+      margin: 0 4px;
+      flex-shrink: 0;
+    }
+
+    .btn-logout {
+      display: inline-flex; align-items: center; gap: 8px;
+      padding: 8px 16px;
+      font-size: 0.82rem; font-weight: 500;
+      color: var(--text-muted);
+      border-radius: var(--radius-full);
+      transition: all var(--transition-fast);
+    }
+
+    .btn-logout:hover {
+      color: var(--danger);
+      background: rgba(239, 68, 68, 0.08);
+    }
+
+    /* ----------------------------------------
+       PAGE CONTENT
+    ---------------------------------------- */
+    .page-content {
+      flex: 1; padding: 32px;
+    }
+
+    /* Wallet header info */
+    .wallet-header {
+      display: flex; align-items: flex-start; justify-content: space-between;
+      margin-bottom: 28px; flex-wrap: wrap; gap: 16px;
+    }
+
+    .wallet-header-left {
+      display: flex; align-items: center; gap: 16px;
+    }
+
+    .wallet-avatar-lg {
+      width: 52px; height: 52px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, var(--accent), #0d9488);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 1.1rem; color: var(--bg-primary);
+      font-family: var(--font-display); font-weight: 700;
+      box-shadow: 0 0 24px var(--accent-glow);
+      flex-shrink: 0;
+    }
+
+    .wallet-header-info h2 {
+      font-family: var(--font-display);
+      font-size: 1.2rem; font-weight: 600;
+      letter-spacing: 0.02em;
+    }
+
+    .wallet-header-meta {
+      display: flex; align-items: center; gap: 16px;
+      margin-top: 4px; font-size: 0.82rem; color: var(--text-muted);
+    }
+
+    .wallet-header-meta span {
+      display: flex; align-items: center; gap: 5px;
+    }
+
+    .copy-btn {
+      display: inline-flex; align-items: center; gap: 6px;
+      padding: 6px 12px;
+      font-size: 0.78rem; font-weight: 500;
+      color: var(--text-muted);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-full);
+      transition: all var(--transition-fast);
+    }
+
+    .copy-btn:hover {
+      color: var(--accent);
+      border-color: var(--border-color);
+      background: var(--accent-dim);
+    }
+
+    .wallet-header-right {
+      display: flex; align-items: center; gap: 12px;
+    }
+
+    .status-badge {
+      display: inline-flex; align-items: center; gap: 8px;
+      padding: 8px 18px;
+      border-radius: var(--radius-full);
+      font-size: 0.85rem; font-weight: 600;
+      letter-spacing: 0.02em;
+    }
+
+    .status-badge i { font-size: 0.8rem; }
+
+    .sim-badge {
+      display: inline-flex; align-items: center; gap: 6px;
+      padding: 6px 14px;
+      font-size: 0.72rem; font-weight: 500;
+      color: var(--text-muted);
+      background: rgba(255, 255, 255, 0.03);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-full);
+    }
+
+    /* ----------------------------------------
+       STAT CARDS GRID
+    ---------------------------------------- */
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 20px;
+      margin-bottom: 28px;
+    }
+
+    .stat-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-lg);
+      padding: 24px;
+      position: relative; overflow: hidden;
+      transition: all var(--transition-base);
+    }
+
+    .stat-card::before {
+      content: '';
+      position: absolute; top: 0; left: 0; right: 0;
+      height: 2px;
+      opacity: 0; transition: opacity var(--transition-base);
+    }
+
+    .stat-card:hover {
+      border-color: var(--border-color);
+      transform: translateY(-2px);
+      box-shadow: var(--shadow-card), var(--shadow-glow);
+    }
+
+    .stat-card:hover::before { opacity: 1; }
+
+    .stat-card.accent::before { background: linear-gradient(90deg, var(--accent), transparent); }
+    .stat-card.green::before { background: linear-gradient(90deg, var(--success), transparent); }
+    .stat-card.amber::before { background: linear-gradient(90deg, var(--warning), transparent); }
+    .stat-card.red::before { background: linear-gradient(90deg, var(--danger), transparent); }
+
+    .stat-card-header {
+      display: flex; align-items: center; justify-content: space-between;
+      margin-bottom: 16px;
+    }
+
+    .stat-card-label {
+      font-size: 0.82rem; font-weight: 500;
+      color: var(--text-muted);
+    }
+
+    .stat-card-icon {
+      width: 36px; height: 36px;
+      border-radius: var(--radius-sm);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 0.9rem;
+    }
+
+    .stat-card.accent .stat-card-icon { background: var(--accent-dim); color: var(--accent); }
+    .stat-card.green .stat-card-icon { background: rgba(34,197,94,0.12); color: var(--success); }
+    .stat-card.amber .stat-card-icon { background: var(--accent-secondary-dim); color: var(--warning); }
+    .stat-card.red .stat-card-icon { background: rgba(239,68,68,0.12); color: var(--danger); }
+
+    .stat-card-value {
+      font-family: var(--font-display);
+      font-size: 1.9rem; font-weight: 700;
+      line-height: 1; margin-bottom: 8px;
+    }
+
+    .stat-card.accent .stat-card-value { color: var(--accent); }
+
+    .stat-card-change {
+      display: inline-flex; align-items: center; gap: 4px;
+      font-size: 0.78rem; font-weight: 600;
+      padding: 2px 8px; border-radius: var(--radius-full);
+    }
+
+    .stat-card-change.up {
+      color: var(--success);
+      background: rgba(34, 197, 94, 0.1);
+    }
+
+    .stat-card-change.down {
+      color: var(--danger);
+      background: rgba(239, 68, 68, 0.1);
+    }
+
+    .stat-card-sub {
+      font-size: 0.78rem; color: var(--text-muted);
+      margin-top: 6px;
+    }
+
+    /* ----------------------------------------
+       BOTTOM GRID: Score Breakdown + Recent Tx
+    ---------------------------------------- */
+    .bottom-grid {
+      display: grid;
+      grid-template-columns: 1fr 1.2fr;
+      gap: 20px;
+    }
+
+    .card {
+      background: var(--bg-card);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-lg);
+      overflow: hidden;
+    }
+
+    .card-header {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 20px 24px;
+      border-bottom: 1px solid var(--border-subtle);
+    }
+
+    .card-title {
+      font-family: var(--font-display);
+      font-size: 0.95rem; font-weight: 600;
+    }
+
+    .card-action {
+      font-size: 0.8rem; font-weight: 500;
+      color: var(--accent);
+      display: flex; align-items: center; gap: 4px;
+      transition: all var(--transition-fast);
+    }
+
+    .card-action:hover {
+      gap: 6px;
+    }
+
+    .card-body {
+      padding: 24px;
+    }
+
+    /* Breakdown bars */
+    .breakdown-list {
+      display: flex; flex-direction: column; gap: 20px;
+    }
+
+    .breakdown-item-label {
+      display: flex; align-items: center; justify-content: space-between;
+      margin-bottom: 8px;
+    }
+
+    .breakdown-label-text {
+      font-size: 0.85rem; font-weight: 500;
+      color: var(--text-secondary);
+    }
+
+    .breakdown-label-value {
+      font-family: var(--font-display);
+      font-size: 0.85rem; font-weight: 600;
+    }
+
+    .breakdown-bar {
+      height: 8px;
+      background: rgba(255, 255, 255, 0.04);
+      border-radius: var(--radius-full);
+      overflow: hidden;
+    }
+
+    .breakdown-bar-fill {
+      height: 100%;
+      border-radius: var(--radius-full);
+      transition: width 1.2s cubic-bezier(0.4, 0, 0.2, 1);
+      width: 0;
+    }
+
+    .breakdown-bar-fill.teal { background: linear-gradient(90deg, var(--accent), #5eead4); }
+    .breakdown-bar-fill.green { background: linear-gradient(90deg, #16a34a, #4ade80); }
+    .breakdown-bar-fill.amber { background: linear-gradient(90deg, #d97706, #fbbf24); }
+    .breakdown-bar-fill.red { background: linear-gradient(90deg, #dc2626, #f87171); }
+
+    /* Risk flags mini list */
+    .risk-flags-mini {
+      margin-top: 24px;
+      padding-top: 20px;
+      border-top: 1px solid var(--border-subtle);
+    }
+
+    .risk-flags-mini-title {
+      font-size: 0.82rem; font-weight: 600;
+      color: var(--text-muted); margin-bottom: 12px;
+      text-transform: uppercase; letter-spacing: 0.06em;
+    }
+
+    .risk-flag-item {
+      display: flex; align-items: flex-start; gap: 10px;
+      padding: 10px 12px;
+      background: rgba(239, 68, 68, 0.04);
+      border: 1px solid rgba(239, 68, 68, 0.1);
+      border-radius: var(--radius-sm);
+      margin-bottom: 8px;
+      font-size: 0.82rem;
+      color: var(--text-secondary);
+      line-height: 1.45;
+    }
+
+    .risk-flag-item i {
+      color: var(--danger);
+      margin-top: 2px; flex-shrink: 0;
+      font-size: 0.75rem;
+    }
+
+    .risk-flag-severity {
+      display: inline-block;
+      padding: 1px 6px;
+      font-size: 0.65rem; font-weight: 600;
+      text-transform: uppercase; letter-spacing: 0.05em;
+      border-radius: 4px;
+      margin-left: 8px; vertical-align: middle;
+    }
+
+    .risk-flag-severity.critical { background: rgba(239,68,68,0.2); color: #f87171; }
+    .risk-flag-severity.high { background: rgba(249,115,22,0.2); color: #fb923c; }
+    .risk-flag-severity.medium { background: rgba(245,158,11,0.2); color: #fbbf24; }
+    .risk-flag-severity.low { background: rgba(59,130,246,0.2); color: #60a5fa; }
+
+    .no-flags {
+      display: flex; align-items: center; gap: 10px;
+      padding: 14px 16px;
+      background: rgba(34, 197, 94, 0.05);
+      border: 1px solid rgba(34, 197, 94, 0.12);
+      border-radius: var(--radius-sm);
+      font-size: 0.85rem; color: var(--success);
+    }
+
+    /* Recent transactions table */
+    .tx-table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+
+    .tx-table th {
+      text-align: left;
+      font-size: 0.72rem; font-weight: 600;
+      text-transform: uppercase; letter-spacing: 0.08em;
+      color: var(--text-muted);
+      padding: 0 0 14px;
+      border-bottom: 1px solid var(--border-subtle);
+    }
+
+    .tx-table td {
+      padding: 14px 0;
+      font-size: 0.85rem;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.03);
+      vertical-align: middle;
+    }
+
+    .tx-table tr:last-child td { border-bottom: none; }
+
+    .tx-type-badge {
+      display: inline-flex; align-items: center; gap: 6px;
+      padding: 4px 10px;
+      border-radius: var(--radius-full);
+      font-size: 0.75rem; font-weight: 600;
+      text-transform: capitalize;
+    }
+
+    .tx-type-badge.send { background: rgba(239,68,68,0.1); color: #f87171; }
+    .tx-type-badge.receive { background: rgba(34,197,94,0.1); color: #4ade80; }
+    .tx-type-badge.swap { background: rgba(168,85,247,0.1); color: #c084fc; }
+    .tx-type-badge.approve { background: rgba(59,130,246,0.1); color: #60a5fa; }
+    .tx-type-badge.stake { background: var(--accent-dim); color: var(--accent); }
+    .tx-type-badge.unstake { background: var(--accent-secondary-dim); color: var(--accent-secondary); }
+    .tx-type-badge.bridge { background: rgba(236,72,153,0.1); color: #f472b6; }
+    .tx-type-badge.mint { background: rgba(34,197,94,0.1); color: #4ade80; }
+    .tx-type-badge.burn { background: rgba(239,68,68,0.1); color: #f87171; }
+
+    .tx-addr {
+      font-family: 'Space Grotesk', monospace;
+      font-size: 0.8rem; color: var(--text-muted);
+    }
+
+    .tx-amount {
+      font-family: var(--font-display);
+      font-weight: 600; font-size: 0.85rem;
+    }
+
+    .tx-amount.negative { color: #f87171; }
+    .tx-amount.positive { color: #4ade80; }
+
+    .tx-status {
+      display: inline-flex; align-items: center; gap: 5px;
+      font-size: 0.75rem; font-weight: 500;
+    }
+
+    .tx-status.success { color: var(--success); }
+    .tx-status.failed { color: var(--danger); }
+
+    .tx-status i { font-size: 0.6rem; }
+
+    .tx-time {
+      font-size: 0.78rem; color: var(--text-muted);
+      white-space: nowrap;
+    }
 
     /* Empty state */
-    .empty-state { text-align:center; padding:80px 24px; }
-    .empty-state-icon { width:80px; height:80px; border-radius:50%; background:var(--accent-dim); display:flex; align-items:center; justify-content:center; margin:0 auto 24px; font-size:2rem; color:var(--accent); }
-    .empty-state-title { font-family:var(--font-display); font-size:1.3rem; font-weight:600; margin-bottom:8px; }
-    .empty-state-desc { font-size:0.92rem; color:var(--text-secondary); max-width:400px; margin:0 auto 28px; }
+    .empty-state {
+      text-align: center; padding: 48px 24px;
+      color: var(--text-muted);
+    }
 
-    /* Mobile sidebar overlay */
-    .sidebar-overlay { display:none; position:fixed; inset:0; background:rgba(0,0,0,0.5); z-index:45; }
-    .sidebar-overlay.active { display:block; }
-    .mobile-toggle { display:none; width:38px; height:38px; border-radius:var(--radius-md); align-items:center; justify-content:center; color:var(--text-secondary); font-size:1.1rem; }
-    .mobile-toggle:hover { color:var(--text-primary); background:rgba(255,255,255,0.05); }
-
-    /* Tag */
-    .tag { display:inline-flex; align-items:center; gap:4px; padding:4px 10px; border-radius:var(--radius-full); font-size:0.72rem; font-weight:600; }
-
-    /* Detail wallet header */
-    .wallet-detail-header { display:flex; align-items:center; gap:20px; margin-bottom:32px; flex-wrap:wrap; }
-    .wallet-detail-avatar { width:56px; height:56px; border-radius:50%; background:linear-gradient(135deg,var(--accent),#0d9488); display:flex; align-items:center; justify-content:center; font-family:var(--font-display); font-size:1.4rem; font-weight:700; color:var(--bg-primary); }
-    .wallet-detail-addr { font-family:'Space Grotesk',monospace; font-size:1.1rem; font-weight:500; }
-    .wallet-detail-meta { font-size:0.82rem; color:var(--text-muted); display:flex; gap:16px; margin-top:4px; }
+    .empty-state i { font-size: 2rem; margin-bottom: 12px; opacity: 0.4; }
+    .empty-state p { font-size: 0.9rem; }
 
     /* ========================================
-       RESPONSIVE
+       SIDEBAR OVERLAY (mobile)
     ======================================== */
-    @media (max-width:1024px) {
-      .features-grid { grid-template-columns:repeat(2,1fr); }
-      .steps-grid { grid-template-columns:repeat(2,1fr); gap:40px; }
-      .steps-grid::before { display:none; }
-      .preview-grid { grid-template-columns:1fr; gap:48px; }
-      .preview-content { padding-right:0; text-align:center; }
-      .preview-content .section-label { justify-content:center; }
-      .preview-content .section-title { text-align:center; }
-      .preview-features { align-items:center; }
-      .footer-grid { grid-template-columns:1fr 1fr; }
-      .stats-grid { grid-template-columns:repeat(2,1fr); }
+    .sidebar-overlay {
+      display: none;
+      position: fixed; inset: 0;
+      background: rgba(0, 0, 0, 0.6);
+      z-index: 45;
+      opacity: 0;
+      transition: opacity var(--transition-base);
     }
-    @media (max-width:768px) {
-      .nav-links { display:none; }
-      .nav-toggle { display:flex; }
-      .nav-actions .btn-ghost { display:none; }
-      .hero { padding:140px 0 60px; }
-      .wallet-input-card { flex-direction:column; padding:12px; gap:4px; }
-      .wallet-input-icon { display:none; }
-      .wallet-input-btn { width:100%; }
-      .features-grid { grid-template-columns:1fr; }
-      .steps-grid { grid-template-columns:1fr; max-width:320px; margin:0 auto; }
-      .score-gauge { width:240px; height:240px; }
-      .gauge-score-value { font-size:2.8rem; }
-      .gauge-label { display:none; }
-      .cta-card { padding:48px 24px; }
-      .cta-actions { flex-direction:column; align-items:center; }
-      .footer-grid { grid-template-columns:1fr; gap:28px; }
-      .footer-bottom { flex-direction:column; gap:12px; text-align:center; }
-      .sidebar { transform:translateX(-100%); }
-      .sidebar.open { transform:translateX(0); }
-      .main-area { margin-left:0; }
-      .mobile-toggle { display:flex; }
-      .page-content { padding:20px 16px; }
-      .topbar { padding:0 16px; }
-      .stats-grid { grid-template-columns:1fr; }
-      .login-visual { display:none; }
-      .login-form-side { padding:32px 24px; }
+
+    .sidebar-overlay.active {
+      opacity: 1;
     }
-    @media (max-width:480px) {
-      .container { padding:0 16px; }
-      .hero-title { font-size:2rem; }
-      .demo-wallets { gap:6px; }
-      .demo-wallet-btn { font-size:0.7rem; padding:5px 10px; }
-    }
-    @media (prefers-reduced-motion:reduce) {
-      *,*::before,*::after { animation-duration:0.01ms!important; transition-duration:0.01ms!important; }
-      .marquee-track { animation:none; }
-    }
-  </style>
-</head>
-<body>
-  <!-- Background Atmosphere -->
-  <div class="bg-atmosphere" aria-hidden="true">
-    <div class="orb orb-1"></div>
-    <div class="orb orb-2"></div>
-    <div class="orb orb-3"></div>
-  </div>
-  <div class="bg-grid" aria-hidden="true"></div>
-  <div class="bg-noise" aria-hidden="true"></div>
-
-  <!-- Loading Overlay -->
-  <div class="loading-overlay" id="loadingOverlay" role="alert" aria-live="polite">
-    <div class="loading-spinner"></div>
-    <div class="loading-text">Menganalisis Wallet...</div>
-    <div class="loading-steps">
-      <div class="loading-step" id="step1"><i class="fa-solid fa-circle-notch fa-spin"></i><span>Mengambil data on-chain</span></div>
-      <div class="loading-step" id="step2"><i class="fa-solid fa-circle"></i><span>Menganalisis pola transaksi</span></div>
-      <div class="loading-step" id="step3"><i class="fa-solid fa-circle"></i><span>Menghitung risk score</span></div>
-      <div class="loading-step" id="step4"><i class="fa-solid fa-circle"></i><span>Generate laporan</span></div>
-    </div>
-  </div>
-
-  <!-- Toast Container -->
-  <div class="toast-container" id="toastContainer" aria-live="polite"></div>
-
-  <!-- Page Wrapper -->
-  <div class="page-wrapper">
-
-    <!-- Navigation -->
-    <nav class="nav" id="mainNav" role="navigation" aria-label="Navigasi utama">
-      <div class="nav-inner">
-        <a href="index.html" class="nav-brand" aria-label="Wallet Health Score - Beranda">
-          <div class="nav-brand-icon"><i class="fa-solid fa-shield-halved"></i></div>
-          <span>WalletScore</span>
-        </a>
-        <ul class="nav-links">
-          <li><a href="index.html" class="active">Beranda</a></li>
-          <li><a href="dashboard.html">Dashboard</a></li>
-          <li><a href="wallet.html">Wallet</a></li>
-          <li><a href="analytics.html">Analitik</a></li>
-          <li><a href="history.html">Riwayat</a></li>
-          <li><a href="settings.html">Pengaturan</a></li>
-        </ul>
-        <div class="nav-actions">
-          <a href="login.html" class="btn btn-ghost">Masuk</a>
-          <a href="login.html" class="btn btn-primary">Mulai Gratis</a>
-          <button class="nav-toggle" id="navToggle" aria-label="Toggle menu" aria-expanded="false">
-            <span></span><span></span><span></span>
-          </button>
-        </div>
-      </div>
-    </nav>
-
-    <!-- Hero Section -->
-    <header class="hero">
-      <div class="container">
-        <div class="hero-badge">
-          <span class="hero-badge-dot" aria-hidden="true"></span>
-          Simulasi Data — Tanpa Koneksi Blockchain
-        </div>
-        <h1 class="hero-title">
-          Ukur Kesehatan<br /><span class="highlight">Wallet On-Chain</span>
-        </h1>
-        <p class="hero-subtitle">
-          Sistem credit scoring berbasis analisis transaksi on-chain.
-          Masukkan alamat wallet dan dapatkan skor reputasi instan.
-        </p>
-
-        <!-- Wallet Input -->
-        <div class="wallet-input-section">
-          <div class="wallet-input-card" id="inputCard">
-            <div class="wallet-input-icon"><i class="fa-solid fa-wallet"></i></div>
-            <div class="wallet-input-wrapper">
-              <input type="text" class="wallet-input" id="walletInput" placeholder="Masukkan alamat wallet (0x...)" maxlength="42" spellcheck="false" autocomplete="off" aria-label="Alamat wallet Ethereum" />
-            </div>
-            <button class="btn btn-primary wallet-input-btn" id="analyzeBtn" aria-label="Analisis wallet">
-              <i class="fa-solid fa-magnifying-glass-chart"></i> Analisis
-            </button>
-          </div>
-          <div class="input-hint" id="inputHint"></div>
-          <div class="demo-wallets">
-            <span style="font-size:0.78rem;color:var(--text-muted);margin-right:4px;">Coba:</span>
-            <button class="demo-wallet-btn" data-wallet="0x742d35Cc6634C0532925a3b844Bc9e7595f2bD18">0x742d...bD18</button>
-            <button class="demo-wallet-btn" data-wallet="0xAb5801a7D398351b8bE11C439e05C5B3259aeC9B">0xAb58...eC9B</button>
-            <button class="demo-wallet-btn" data-wallet="0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045">0xd8dA...6045</button>
-            <button class="demo-wallet-btn" data-wallet="0x0000000000000000000000000000000000000001">0x0000...0001</button>
-          </div>
-        </div>
-      </div>
-    </header>
-
-    <!-- Stats Marquee -->
-    <section class="stats-marquee" aria-label="Statistik platform">
-      <div class="marquee-track" id="marqueeTrack"></div>
-    </section>
-
-    <!-- Features Section -->
-    <section class="features" id="features" aria-labelledby="featuresTitle">
-      <div class="container">
-        <div class="section-header reveal">
-          <div class="section-label">Fitur Utama</div>
-          <h2 class="section-title" id="featuresTitle">Analisis Mendalam untuk<br />Setiap Wallet</h2>
-          <p class="section-desc">Enam dimensi penilaian yang memberikan gambaran lengkap tentang reputasi on-chain sebuah wallet.</p>
-        </div>
-        <div class="features-grid">
-          <div class="feature-card reveal"><div class="feature-icon teal"><i class="fa-solid fa-chart-line"></i></div><h3 class="feature-title">Credit Score 0–1000</h3><p class="feature-desc">Skor komposit dari berbagai faktor on-chain, memberikan penilaian reputasi yang menyeluruh.</p></div>
-          <div class="feature-card reveal"><div class="feature-icon amber"><i class="fa-solid fa-bolt"></i></div><h3 class="feature-title">Analisis Transaksi</h3><p class="feature-desc">Evaluasi success rate, frekuensi, dan pola transaksi untuk mengidentifikasi perilaku wallet.</p></div>
-          <div class="feature-card reveal"><div class="feature-icon red"><i class="fa-solid fa-triangle-exclamation"></i></div><h3 class="feature-title">Risk Flag Detection</h3><p class="feature-desc">Deteksi otomatis interaksi dengan kontrak berisiko, address terblacklist, dan pola anomali.</p></div>
-          <div class="feature-card reveal"><div class="feature-icon green"><i class="fa-solid fa-clock-rotate-left"></i></div><h3 class="feature-title">Umur Wallet Tracking</h3><p class="feature-desc">Analisis usia wallet sejak first transaction, faktor penting dalam menilai kredibilitas.</p></div>
-          <div class="feature-card reveal"><div class="feature-icon blue"><i class="fa-solid fa-chart-pie"></i></div><h3 class="feature-title">Visual Analytics</h3><p class="feature-desc">Dashboard interaktif dengan grafik breakdown skor, tren waktu, dan perbandingan network.</p></div>
-          <div class="feature-card reveal"><div class="feature-icon purple"><i class="fa-solid fa-tags"></i></div><h3 class="feature-title">Status Klasifikasi</h3><p class="feature-desc">Label otomatis: Excellent, Good, Risky, atau Dangerous berdasarkan threshold skor.</p></div>
-        </div>
-      </div>
-    </section>
-
-    <!-- How It Works -->
-    <section class="how-it-works" id="howItWorks" aria-labelledby="howTitle">
-      <div class="container">
-        <div class="section-header reveal">
-          <div class="section-label">Cara Kerja</div>
-          <h2 class="section-title" id="howTitle">Empat Langkah Mudah</h2>
-          <p class="section-desc">Dari input alamat hingga laporan lengkap, hanya dalam hitungan detik.</p>
-        </div>
-        <div class="steps-grid">
-          <div class="step-card reveal"><div class="step-number">1</div><h3 class="step-title">Input Address</h3><p class="step-desc">Masukkan alamat wallet Ethereum yang ingin dianalisis.</p></div>
-          <div class="step-card reveal"><div class="step-number">2</div><h3 class="step-title">Data Fetching</h3><p class="step-desc">Sistem mengambil data transaksi dan aktivitas on-chain.</p></div>
-          <div class="step-card reveal"><div class="step-number">3</div><h3 class="step-title">Score Calculation</h3><p class="step-desc">Algoritma menghitung skor berdasarkan multi-faktor.</p></div>
-          <div class="step-card reveal"><div class="step-number">4</div><h3 class="step-title">Laporan Siap</h3><p class="step-desc">Dashboard lengkap dengan breakdown dan rekomendasi.</p></div>
-        </div>
-      </div>
-    </section>
-
-    <!-- Score Preview -->
-    <section class="score-preview" id="scorePreview" aria-labelledby="previewTitle">
-      <div class="container">
-        <div class="preview-grid">
-          <div class="preview-content reveal">
-            <div class="section-label">Preview Skor</div>
-            <h2 class="section-title" id="previewTitle">Visualisasi Skor yang<br />Mudah Dipahami</h2>
-            <ul class="preview-features">
-              <li><i class="fa-solid fa-check"></i><span>Gauge skor real-time dengan indikator warna status</span></li>
-              <li><i class="fa-solid fa-check"></i><span>Breakdown per kategori: transaksi, umur, risk flags, konsistensi</span></li>
-              <li><i class="fa-solid fa-check"></i><span>Perbandingan skor dengan persentil wallet lain di network</span></li>
-              <li><i class="fa-solid fa-check"></i><span>Rekomendasi konkret untuk meningkatkan skor wallet</span></li>
-              <li><i class="fa-solid fa-check"></i><span>Riwayat perubahan skor dari waktu ke waktu</span></li>
-            </ul>
-          </div>
-          <div class="score-gauge-wrapper reveal">
-            <div class="score-gauge" id="scoreGauge">
-              <svg viewBox="0 0 280 280">
-                <defs><linearGradient id="gaugeGradient" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#2dd4bf" /><stop offset="50%" stop-color="#22c55e" /><stop offset="100%" stop-color="#f59e0b" /></linearGradient></defs>
-                <circle class="gauge-bg" cx="140" cy="140" r="130" />
-                <circle class="gauge-inner" cx="140" cy="140" r="110" />
-                <circle class="gauge-fill" id="gaugeFill" cx="140" cy="140" r="130" />
-              </svg>
-              <div class="score-gauge-center">
-                <div class="gauge-score-value" id="gaugeValue">760</div>
-                <div class="gauge-score-label">Excellent</div>
-                <div class="gauge-score-max">dari 1000</div>
-              </div>
-              <div class="gauge-label top">Excellent</div>
-              <div class="gauge-label right">Risky</div>
-              <div class="gauge-label bottom">Dangerous</div>
-            </div>
-          </div>
-        </div>
-      </div>
-    </section>
-
-    <!-- CTA Section -->
-    <section class="cta-section" aria-labelledby="ctaTitle">
-      <div class="container">
-        <div class="cta-card reveal">
-          <h2 class="cta-title" id="ctaTitle">Siap Menilai Kesehatan Wallet Anda?</h2>
-          <p class="cta-desc">Mulai analisis gratis sekarang. Tidak perlu registrasi, tidak perlu koneksi wallet.</p>
-          <div class="cta-actions">
-            <button class="btn btn-primary" id="ctaAnalyzeBtn" style="padding:14px 36px;font-size:1rem;"><i class="fa-solid fa-rocket"></i> Mulai Analisis</button>
-            <a href="dashboard.html" class="btn btn-outline" style="padding:14px 36px;font-size:1rem;">Lihat Dashboard Demo</a>
-          </div>
-        </div>
-      </div>
-    </section>
-
-    <!-- Footer -->
-    <footer class="footer" role="contentinfo">
-      <div class="container">
-        <div class="footer-grid">
-          <div>
-            <div class="footer-brand">
-              <div class="nav-brand-icon" style="width:28px;height:28px;font-size:0.8rem;"><i class="fa-solid fa-shield-halved"></i></div>
-              WalletScore
-            </div>
-            <p class="footer-desc">Sistem credit scoring on-chain berbasis analisis transaksi untuk mengukur reputasi wallet Ethereum.</p>
-          </div>
-          <div>
-            <h4 class="footer-heading">Menu</h4>
-            <ul class="footer-links">
-              <li><a href="index.html">Beranda</a></li>
-              <li><a href="dashboard.html">Dashboard</a></li>
-              <li><a href="wallet.html">Wallet</a></li>
-              <li><a href="analytics.html">Analitik</a></li>
-            </ul>
-          </div>
-          <div>
-            <h4 class="footer-heading">Lainnya</h4>
-            <ul class="footer-links">
-              <li><a href="history.html">Riwayat Transaksi</a></li>
-              <li><a href="settings.html">Pengaturan</a></li>
-              <li><a href="login.html">Masuk</a></li>
-            </ul>
-          </div>
-          <div>
-            <h4 class="footer-heading">Sumber</h4>
-            <ul class="footer-links">
-              <li><a href="https://etherscan.io" target="_blank" rel="noopener">Etherscan</a></li>
-              <li><a href="https://ethereum.org" target="_blank" rel="noopener">Ethereum</a></li>
-            </ul>
-          </div>
-        </div>
-        <div class="footer-bottom">
-          <span>WalletScore v1.0.0-beta — Data simulasi, bukan produk finansial</span>
-          <div class="footer-socials">
-            <a href="#" aria-label="GitHub"><i class="fa-brands fa-github"></i></a>
-            <a href="#" aria-label="Twitter"><i class="fa-brands fa-x-twitter"></i></a>
-            <a href="#" aria-label="Discord"><i class="fa-brands fa-discord"></i></a>
-          </div>
-        </div>
-      </div>
-    </footer>
-
-  </div>
-
-  <script src="js/data.js"></script>
-  <script>
-    /* ========================================
-       NAV SCROLL EFFECT
-    ======================================== */
-    (function() {
-      var nav = document.getElementById('mainNav');
-      var lastScroll = 0;
-      window.addEventListener('scroll', function() {
-        var y = window.scrollY;
-        if (y > 40) { nav.classList.add('scrolled'); }
-        else { nav.classList.remove('scrolled'); }
-        lastScroll = y;
-      }, { passive: true });
-    })();
-
-    /* ========================================
-       MOBILE NAV TOGGLE
-    ======================================== */
-    (function() {
-      var toggle = document.getElementById('navToggle');
-      var navLinks = document.querySelector('.nav-links');
-      var isOpen = false;
-
-      toggle.addEventListener('click', function() {
-        isOpen = !isOpen;
-        toggle.setAttribute('aria-expanded', isOpen);
-
-        if (isOpen) {
-          navLinks.style.display = 'flex';
-          navLinks.style.flexDirection = 'column';
-          navLinks.style.position = 'absolute';
-          navLinks.style.top = '72px';
-          navLinks.style.left = '0';
-          navLinks.style.right = '0';
-          navLinks.style.background = 'rgba(6,10,19,0.95)';
-          navLinks.style.backdropFilter = 'blur(20px)';
-          navLinks.style.padding = '16px 24px';
-          navLinks.style.borderBottom = '1px solid var(--border-subtle)';
-          navLinks.style.gap = '4px';
-          navLinks.style.borderRadius = '0 0 var(--radius-lg) var(--radius-lg)';
-          navLinks.style.animation = 'fadeInUp 0.25s ease-out';
-        } else {
-          navLinks.style.display = '';
-          navLinks.style.flexDirection = '';
-          navLinks.style.position = '';
-          navLinks.style.top = '';
-          navLinks.style.left = '';
-          navLinks.style.right = '';
-          navLinks.style.background = '';
-          navLinks.style.backdropFilter = '';
-          navLinks.style.padding = '';
-          navLinks.style.borderBottom = '';
-          navLinks.style.gap = '';
-          navLinks.style.borderRadius = '';
-          navLinks.style.animation = '';
-        }
-
-        /* Animate hamburger */
-        var spans = toggle.querySelectorAll('span');
-        if (isOpen) {
-          spans[0].style.transform = 'rotate(45deg) translate(5px, 5px)';
-          spans[1].style.opacity = '0';
-          spans[2].style.transform = 'rotate(-45deg) translate(5px, -5px)';
-        } else {
-          spans[0].style.transform = '';
-          spans[1].style.opacity = '';
-          spans[2].style.transform = '';
-        }
-      });
-
-      /* Tutup saat klik link */
-      navLinks.addEventListener('click', function(e) {
-        if (e.target.tagName === 'A' && isOpen) {
-          toggle.click();
-        }
-      });
-    })();
 
     /* ========================================
        TOAST
     ======================================== */
-    function showToast(msg, type, dur) {
-      type = type || 'info';
-      dur = dur || 3000;
-      var c = document.getElementById('toastContainer');
-      var t = document.createElement('div');
-      t.className = 'toast ' + type;
-      var ic = { success: 'fa-circle-check', error: 'fa-circle-xmark', info: 'fa-circle-info' };
-      t.innerHTML = '<i class="fa-solid ' + (ic[type] || ic.info) + '"></i><span>' + msg + '</span>';
-      c.appendChild(t);
-      requestAnimationFrame(function() {
-        requestAnimationFrame(function() { t.classList.add('show'); });
-      });
-      setTimeout(function() {
-        t.classList.remove('show');
-        setTimeout(function() { t.remove(); }, 300);
-      }, dur);
+    .toast-container {
+      position: fixed; top: 80px; right: 24px;
+      z-index: 200; display: flex; flex-direction: column; gap: 8px;
+    }
+
+    .toast {
+      display: flex; align-items: center; gap: 12px;
+      padding: 14px 20px;
+      background: var(--bg-secondary);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-md);
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+      font-size: 0.88rem; color: var(--text-primary);
+      transform: translateX(120%);
+      transition: transform var(--transition-base);
+      max-width: 380px;
+    }
+
+    .toast.show { transform: translateX(0); }
+    .toast i { font-size: 1.1rem; flex-shrink: 0; }
+    .toast.success { border-left: 3px solid var(--success); }
+    .toast.success i { color: var(--success); }
+    .toast.error { border-left: 3px solid var(--danger); }
+    .toast.error i { color: var(--danger); }
+    .toast.info { border-left: 3px solid var(--info); }
+    .toast.info i { color: var(--info); }
+
+    /* ========================================
+       REDIRECT GUARD (jika belum login)
+    ======================================== */
+    .guard-screen {
+      display: none;
+      position: fixed; inset: 0; z-index: 500;
+      background: var(--bg-primary);
+      flex-direction: column; align-items: center; justify-content: center;
+      gap: 20px; text-align: center; padding: 24px;
+    }
+
+    .guard-screen.active { display: flex; }
+
+    .guard-screen i { font-size: 2.5rem; color: var(--text-muted); opacity: 0.4; }
+    .guard-screen h2 {
+      font-family: var(--font-display);
+      font-size: 1.4rem; font-weight: 600;
+    }
+    .guard-screen p { font-size: 0.95rem; color: var(--text-muted); max-width: 360px; }
+
+    .btn {
+      display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+      font-family: var(--font-body); font-weight: 600; font-size: 0.9rem;
+      padding: 12px 28px; border-radius: var(--radius-full);
+      transition: all var(--transition-base);
+    }
+
+    .btn-primary {
+      color: var(--bg-primary);
+      background: linear-gradient(135deg, var(--accent), #0d9488);
+      box-shadow: 0 0 20px var(--accent-glow);
+    }
+
+    .btn-primary:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 0 30px var(--accent-glow), 0 4px 16px rgba(45, 212, 191, 0.2);
     }
 
     /* ========================================
-       WALLET INPUT VALIDATION & ANALYSIS
+       RESPONSIVE
     ======================================== */
-    (function() {
-      var input = document.getElementById('walletInput');
-      var hint = document.getElementById('inputHint');
-      var analyzeBtn = document.getElementById('analyzeBtn');
-      var ctaBtn = document.getElementById('ctaAnalyzeBtn');
+    @media (max-width: 1100px) {
+      .stats-grid { grid-template-columns: repeat(2, 1fr); }
+      .bottom-grid { grid-template-columns: 1fr; }
+      
+      /* Sembunyikan teks di tombol navigasi topbar jika layar kecil */
+      .topbar-nav-btn .btn-text {
+        display: none;
+      }
+      .topbar-nav-btn {
+        padding: 8px 10px;
+      }
+    }
 
-      function isValidAddress(addr) {
-        return /^0x[0-9a-fA-F]{40}$/.test(addr);
+    @media (max-width: 768px) {
+      .sidebar {
+        transform: translateX(-100%);
       }
 
-      function validate() {
-        var val = input.value.trim();
-        if (!val) {
-          hint.textContent = '';
-          hint.className = 'input-hint';
-          return false;
-        }
-        if (!val.startsWith('0x')) {
-          hint.textContent = 'Alamat harus dimulai dengan 0x';
-          hint.className = 'input-hint error';
-          return false;
-        }
-        if (val.length < 42) {
-          hint.textContent = 'Alamat terlalu pendek — butuh 42 karakter';
-          hint.className = 'input-hint error';
-          return false;
-        }
-        if (val.length > 42) {
-          hint.textContent = 'Alamat terlalu panjang — maksimal 42 karakter';
-          hint.className = 'input-hint error';
-          return false;
-        }
-        if (!isValidAddress(val)) {
-          hint.textContent = 'Format alamat tidak valid — gunakan karakter hex (0-9, a-f)';
-          hint.className = 'input-hint error';
-          return false;
-        }
-        hint.textContent = 'Alamat valid — siap dianalisis';
-        hint.className = 'input-hint success';
-        return true;
+      .sidebar.open {
+        transform: translateX(0);
       }
 
-      input.addEventListener('input', validate);
-
-      function startAnalysis(addr) {
-        if (!addr || !isValidAddress(addr)) return;
-
-        var overlay = document.getElementById('loadingOverlay');
-        var steps = [
-          document.getElementById('step1'),
-          document.getElementById('step2'),
-          document.getElementById('step3'),
-          document.getElementById('step4')
-        ];
-
-        /* Reset steps */
-        for (var i = 0; i < steps.length; i++) {
-          steps[i].className = 'loading-step';
-          steps[i].querySelector('i').className = 'fa-solid fa-circle';
-        }
-        steps[0].className = 'loading-step active';
-        steps[0].querySelector('i').className = 'fa-solid fa-circle-notch fa-spin';
-
-        overlay.classList.add('active');
-
-        /* Simulasi loading steps */
-        setTimeout(function() {
-          steps[0].className = 'loading-step done';
-          steps[0].querySelector('i').className = 'fa-solid fa-circle-check';
-          steps[1].className = 'loading-step active';
-          steps[1].querySelector('i').className = 'fa-solid fa-circle-notch fa-spin';
-        }, 800);
-
-        setTimeout(function() {
-          steps[1].className = 'loading-step done';
-          steps[1].querySelector('i').className = 'fa-solid fa-circle-check';
-          steps[2].className = 'loading-step active';
-          steps[2].querySelector('i').className = 'fa-solid fa-circle-notch fa-spin';
-        }, 1600);
-
-        setTimeout(function() {
-          steps[2].className = 'loading-step done';
-          steps[2].querySelector('i').className = 'fa-solid fa-circle-check';
-          steps[3].className = 'loading-step active';
-          steps[3].querySelector('i').className = 'fa-solid fa-circle-notch fa-spin';
-        }, 2200);
-
-        setTimeout(function() {
-          steps[3].className = 'loading-step done';
-          steps[3].querySelector('i').className = 'fa-solid fa-circle-check';
-
-          /* Simpan wallet dan redirect ke dashboard */
-          localStorage.setItem('whs_wallet', addr);
-          localStorage.setItem('whs_login_time', new Date().toISOString());
-          sessionStorage.removeItem('walletData');
-
-          setTimeout(function() {
-            window.location.href = 'dashboard.html';
-          }, 400);
-        }, 2800);
+      .sidebar-overlay {
+        display: block;
       }
 
-      analyzeBtn.addEventListener('click', function() {
-        var val = input.value.trim();
-        if (validate()) {
-          startAnalysis(val);
-        } else if (!val) {
-          hint.textContent = 'Masukkan alamat wallet terlebih dahulu';
-          hint.className = 'input-hint error';
-          input.focus();
+      .main-content {
+        margin-left: 0;
+      }
+
+      .sidebar-toggle {
+        display: flex;
+      }
+
+      .page-content {
+        padding: 20px 16px;
+      }
+
+      .stats-grid {
+        grid-template-columns: 1fr 1fr;
+        gap: 12px;
+      }
+
+      .stat-card { padding: 18px; }
+      .stat-card-value { font-size: 1.5rem; }
+
+      .wallet-header { flex-direction: column; }
+      .wallet-header-right { width: 100%; justify-content: flex-start; }
+
+      .tx-table { font-size: 0.8rem; }
+      .tx-table th:nth-child(4),
+      .tx-table td:nth-child(4) { display: none; }
+
+      /* Di mobile, sembunyikan divider dan beberapa tombol topbar */
+      .topbar-divider {
+        display: none;
+      }
+      .topbar-nav-btn.back-btn {
+        display: none;
+      }
+    }
+
+    @media (max-width: 480px) {
+      .stats-grid { grid-template-columns: 1fr; }
+      .topbar { padding: 0 16px; }
+      .topbar-title { font-size: 1rem; }
+      .topbar-nav-btn {
+        padding: 8px;
+      }
+      .topbar-nav-btn .btn-text {
+        display: none;
+      }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after {
+        animation-duration: 0.01ms !important;
+        transition-duration: 0.01ms !important;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Background -->
+  <div class="bg-atmosphere" aria-hidden="true">
+    <div class="orb orb-1"></div>
+    <div class="orb orb-2"></div>
+  </div>
+  <div class="bg-noise" aria-hidden="true"></div>
+
+  <!-- Guard Screen (belum login) -->
+  <div class="guard-screen" id="guardScreen">
+    <i class="fa-solid fa-lock"></i>
+    <h2>Belum Masuk</h2>
+    <p>Anda harus login dengan wallet address terlebih dahulu untuk mengakses dashboard.</p>
+    <a href="login.html" class="btn btn-primary">
+      <i class="fa-solid fa-arrow-right-to-bracket"></i> Masuk Sekarang
+    </a>
+  </div>
+
+  <!-- Toast -->
+  <div class="toast-container" id="toastContainer" aria-live="polite"></div>
+
+  <!-- Sidebar Overlay (mobile) -->
+  <div class="sidebar-overlay" id="sidebarOverlay"></div>
+
+  <!-- Dashboard Layout -->
+  <div class="dashboard-layout" id="dashboardLayout" style="display:none;">
+
+    <!-- Sidebar -->
+    <aside class="sidebar" id="sidebar" role="navigation" aria-label="Sidebar navigasi">
+      <div class="sidebar-brand">
+        <div class="sidebar-brand-icon"><i class="fa-solid fa-shield-halved"></i></div>
+        <span>WalletScore</span>
+      </div>
+
+      <nav class="sidebar-nav">
+        <div class="nav-section-label">Menu Utama</div>
+        <a href="dashboard.html" class="nav-item active">
+          <i class="fa-solid fa-grid-2"></i> Dashboard
+        </a>
+        <a href="wallet.html" class="nav-item">
+          <i class="fa-solid fa-wallet"></i> Wallet Detail
+        </a>
+        <a href="history.html" class="nav-item">
+          <i class="fa-solid fa-clock-rotate-left"></i> Riwayat
+          <span class="badge" id="txBadge" style="display:none;"></span>
+        </a>
+        <a href="analytics.html" class="nav-item">
+          <i class="fa-solid fa-chart-mixed"></i> Analitik
+        </a>
+
+        <div class="nav-section-label">Lainnya</div>
+        <a href="settings.html" class="nav-item">
+          <i class="fa-solid fa-gear"></i> Pengaturan
+        </a>
+        <a href="index.html" class="nav-item">
+          <i class="fa-solid fa-house"></i> Beranda
+        </a>
+      </nav>
+
+      <div class="sidebar-footer">
+        <div class="sidebar-wallet" id="sidebarWallet" title="Klik untuk salin alamat">
+          <div class="sidebar-wallet-avatar" id="sidebarAvatar">?</div>
+          <div class="sidebar-wallet-info">
+            <div class="sidebar-wallet-addr" id="sidebarAddr">—</div>
+            <div class="sidebar-wallet-label">Tersambung</div>
+          </div>
+          <i class="fa-solid fa-copy" style="color:var(--text-muted); font-size:0.75rem;"></i>
+        </div>
+      </div>
+    </aside>
+
+    <!-- Main -->
+    <div class="main-content">
+
+      <!-- Topbar -->
+      <header class="topbar">
+        <div class="topbar-left">
+          <button class="sidebar-toggle" id="sidebarToggle" aria-label="Toggle sidebar">
+            <i class="fa-solid fa-bars"></i>
+          </button>
+          <h1 class="topbar-title">Dashboard</h1>
+        </div>
+        <div class="topbar-right">
+
+          <!-- Tombol Kembali ke Beranda -->
+          <a href="index.html" class="topbar-nav-btn back-btn" title="Kembali ke Beranda">
+            <i class="fa-solid fa-arrow-left"></i>
+            <span class="btn-text">Kembali</span>
+          </a>
+
+          <div class="topbar-divider"></div>
+
+          <!-- Tombol Menu Wallet -->
+          <a href="wallet.html" class="topbar-nav-btn" title="Wallet Detail">
+            <i class="fa-solid fa-wallet"></i>
+            <span class="btn-text">Wallet</span>
+          </a>
+
+          <!-- Tombol Menu Pengaturan -->
+          <a href="settings.html" class="topbar-nav-btn" title="Pengaturan">
+            <i class="fa-solid fa-gear"></i>
+            <span class="btn-text">Pengaturan</span>
+          </a>
+
+          <div class="topbar-divider"></div>
+
+          <button class="topbar-btn" aria-label="Notifikasi">
+            <i class="fa-solid fa-bell"></i>
+            <span class="notif-dot"></span>
+          </button>
+          <button class="topbar-btn" id="refreshBtn" aria-label="Refresh data" title="Refresh data">
+            <i class="fa-solid fa-arrows-rotate"></i>
+          </button>
+          <button class="btn-logout" id="logoutBtn">
+            <i class="fa-solid fa-right-from-bracket"></i>
+            <span>Keluar</span>
+          </button>
+        </div>
+      </header>
+
+      <!-- Page Content -->
+      <main class="page-content" id="pageContent">
+        <!-- Diisi oleh JavaScript -->
+      </main>
+
+    </div>
+  </div>
+
+  <!-- Load data.js terlebih dahulu -->
+  <script src="js/data.js"></script>
+
+  <script>
+    /* ========================================
+       UTILITAS
+    ======================================== */
+    function showToast(message, type = 'info', duration = 3000) {
+      const container = document.getElementById('toastContainer');
+      const toast = document.createElement('div');
+      toast.className = `toast ${type}`;
+      const icons = {
+        success: 'fa-solid fa-circle-check',
+        error: 'fa-solid fa-circle-xmark',
+        info: 'fa-solid fa-circle-info'
+      };
+      toast.innerHTML = `<i class="${icons[type] || icons.info}"></i><span>${message}</span>`;
+      container.appendChild(toast);
+      requestAnimationFrame(() => requestAnimationFrame(() => toast.classList.add('show')));
+      setTimeout(() => {
+        toast.classList.remove('show');
+        setTimeout(() => toast.remove(), 300);
+      }, duration);
+    }
+
+    /* ========================================
+       AUTH GUARD
+    ======================================== */
+    const walletAddress = localStorage.getItem('whs_wallet');
+    const guardScreen = document.getElementById('guardScreen');
+    const dashboardLayout = document.getElementById('dashboardLayout');
+
+    if (!walletAddress) {
+      guardScreen.classList.add('active');
+    } else {
+      dashboardLayout.style.display = 'flex';
+      initDashboard(walletAddress);
+    }
+
+    /* ========================================
+       SIDEBAR LOGIC
+    ======================================== */
+    const sidebar = document.getElementById('sidebar');
+    const sidebarOverlay = document.getElementById('sidebarOverlay');
+    const sidebarToggle = document.getElementById('sidebarToggle');
+
+    sidebarToggle.addEventListener('click', () => {
+      sidebar.classList.toggle('open');
+      sidebarOverlay.classList.toggle('active');
+    });
+
+    sidebarOverlay.addEventListener('click', () => {
+      sidebar.classList.remove('open');
+      sidebarOverlay.classList.remove('active');
+    });
+
+    // Copy wallet dari sidebar
+    document.getElementById('sidebarWallet').addEventListener('click', () => {
+      if (walletAddress) {
+        navigator.clipboard.writeText(walletAddress).then(() => {
+          showToast('Alamat wallet disalin', 'success', 2000);
+        }).catch(() => {
+          showToast('Gagal menyalin alamat', 'error');
+        });
+      }
+    });
+
+    /* ========================================
+       LOGOUT
+    ======================================== */
+    document.getElementById('logoutBtn').addEventListener('click', () => {
+      localStorage.removeItem('whs_wallet');
+      localStorage.removeItem('whs_login_time');
+      sessionStorage.removeItem('currentWallet');
+      showToast('Berhasil keluar', 'info', 2000);
+      setTimeout(() => { window.location.href = 'login.html'; }, 600);
+    });
+
+    /* ========================================
+       REFRESH
+    ======================================== */
+    document.getElementById('refreshBtn').addEventListener('click', () => {
+      if (walletAddress) {
+        const icon = document.querySelector('#refreshBtn i');
+        icon.style.animation = 'spin 0.6s linear';
+        setTimeout(() => { icon.style.animation = ''; }, 600);
+        initDashboard(walletAddress);
+        showToast('Data diperbarui', 'success', 2000);
+      }
+    });
+
+    // Tambahkan keyframe spin jika belum ada
+    if (!document.getElementById('dynamicKeyframes')) {
+      const style = document.createElement('style');
+      style.id = 'dynamicKeyframes';
+      style.textContent = `@keyframes spin { to { transform: rotate(360deg); } }`;
+      document.head.appendChild(style);
+    }
+
+    /* ========================================
+       INIT DASHBOARD
+    ======================================== */
+    function initDashboard(address) {
+      // Update sidebar info
+      const addrShort = shortAddress(address);
+      document.getElementById('sidebarAddr').textContent = address;
+      document.getElementById('sidebarAvatar').textContent = address.slice(2, 4).toUpperCase();
+
+      // Generate data
+      const data = calculateCreditScore(address);
+
+      // Simpan ke sessionStorage untuk halaman lain
+      sessionStorage.setItem('walletData', JSON.stringify(data));
+
+      // Update badge transaksi
+      const txBadge = document.getElementById('txBadge');
+      if (data.transactions.total > 0) {
+        txBadge.style.display = 'inline';
+        txBadge.textContent = data.transactions.total > 99 ? '99+' : data.transactions.total;
+      }
+
+      // Render page content
+      renderPage(data);
+    }
+
+    /* ========================================
+       RENDER PAGE
+    ======================================== */
+    function renderPage(data) {
+      const pageContent = document.getElementById('pageContent');
+
+      // Format umur wallet
+      let ageText;
+      if (data.walletAgeDays >= 365) {
+        const y = Math.floor(data.walletAgeDays / 365);
+        const m = Math.floor((data.walletAgeDays % 365) / 30);
+        ageText = y > 0 ? `${y} tahun${m > 0 ? ' ' + m + ' bulan' : ''}` : `${m} bulan`;
+      } else if (data.walletAgeDays >= 30) {
+        ageText = `${Math.floor(data.walletAgeDays / 30)} bulan`;
+      } else {
+        ageText = `${data.walletAgeDays} hari`;
+      }
+
+      // Persentil vs network avg
+      const vsNetwork = data.score - data.networkAvg;
+      const vsText = vsNetwork >= 0 ? `+${vsNetwork}` : `${vsNetwork}`;
+      const vsClass = vsNetwork >= 0 ? 'up' : 'down';
+      const vsIcon = vsNetwork >= 0 ? 'fa-arrow-up' : 'fa-arrow-down';
+
+      // Score change
+      const changeClass = data.scoreChange >= 0 ? 'up' : 'down';
+      const changeIcon = data.scoreChange >= 0 ? 'fa-arrow-up' : 'fa-arrow-down';
+      const changeText = data.scoreChange >= 0 ? `+${data.scoreChange}` : `${data.scoreChange}`;
+
+      // Ambil 5 transaksi terbaru
+      const recentTx = data.transactions.list.slice(0, 5);
+
+      pageContent.innerHTML = `
+        <!-- Wallet Header -->
+        <div class="wallet-header">
+          <div class="wallet-header-left">
+            <div class="wallet-avatar-lg">${data.walletAddress.slice(2, 4).toUpperCase()}</div>
+            <div class="wallet-header-info">
+              <h2>${data.walletAddress}</h2>
+              <div class="wallet-header-meta">
+                <span><i class="fa-regular fa-clock"></i> Umur ${ageText}</span>
+                <span><i class="fa-solid fa-gas-pump"></i> ${formatETH(data.transactions.totalGasETH)} gas spent</span>
+                <span><i class="fa-brands fa-ethereum"></i> ${formatETH(data.estimatedBalance)}</span>
+              </div>
+            </div>
+            <button class="copy-btn" onclick="copyAddress('${data.walletAddress}')">
+              <i class="fa-regular fa-copy"></i> Salin
+            </button>
+          </div>
+          <div class="wallet-header-right">
+            <span class="sim-badge">
+              <i class="fa-solid fa-flask"></i> Data Simulasi
+            </span>
+            <span class="status-badge" style="color:${data.statusColor}; background:${data.statusBg};">
+              <i class="fa-solid ${data.statusIcon}"></i>
+              ${data.status}
+            </span>
+          </div>
+        </div>
+
+        <!-- 4 Stat Cards -->
+        <div class="stats-grid">
+          <!-- Credit Score -->
+          <div class="stat-card accent">
+            <div class="stat-card-header">
+              <span class="stat-card-label">Credit Score</span>
+              <div class="stat-card-icon"><i class="fa-solid fa-shield-halved"></i></div>
+            </div>
+            <div class="stat-card-value" id="animScore">0</div>
+            <span class="stat-card-change ${changeClass}">
+              <i class="fa-solid ${changeIcon}"></i> ${changeText} dari bulan lalu
+            </span>
+            <div class="stat-card-sub">Top ${data.percentile}% dari semua wallet</div>
+          </div>
+
+          <!-- Total Transaksi -->
+          <div class="stat-card green">
+            <div class="stat-card-header">
+              <span class="stat-card-label">Total Transaksi</span>
+              <div class="stat-card-icon"><i class="fa-solid fa-arrow-right-arrow-left"></i></div>
+            </div>
+            <div class="stat-card-value" id="animTx">0</div>
+            <span class="stat-card-change up">
+              <i class="fa-solid fa-arrow-up"></i> ${data.transactions.recentWeek} minggu ini
+            </span>
+            <div class="stat-card-sub">${formatNumber(data.transactions.success)} berhasil, ${data.transactions.failed} gagal</div>
+          </div>
+
+          <!-- Success Rate -->
+          <div class="stat-card amber">
+            <div class="stat-card-header">
+              <span class="stat-card-label">Success Rate</span>
+              <div class="stat-card-icon"><i class="fa-solid fa-circle-check"></i></div>
+            </div>
+            <div class="stat-card-value" id="animRate">0%</div>
+            <span class="stat-card-change ${data.transactions.successRate >= 95 ? 'up' : 'down'}">
+              <i class="fa-solid ${data.transactions.successRate >= 95 ? 'fa-arrow-up' : 'fa-arrow-down'}"></i>
+              ${data.transactions.successRate >= 95 ? 'Di atas rata-rata' : 'Di bawah rata-rata'}
+            </span>
+            <div class="stat-card-sub">Network avg: ~94%</div>
+          </div>
+
+          <!-- Risk Flags -->
+          <div class="stat-card ${data.riskFlags.length === 0 ? 'green' : 'red'}">
+            <div class="stat-card-header">
+              <span class="stat-card-label">Risk Flags</span>
+              <div class="stat-card-icon"><i class="fa-solid ${data.riskFlags.length === 0 ? 'fa-shield-check' : 'fa-triangle-exclamation'}"></i></div>
+            </div>
+            <div class="stat-card-value">${data.riskFlags.length}</div>
+            <span class="stat-card-change ${data.riskFlags.length === 0 ? 'up' : 'down'}">
+              <i class="fa-solid ${data.riskFlags.length === 0 ? 'fa-check' : 'fa-exclamation'}"></i>
+              ${data.riskFlags.length === 0 ? 'Tidak ada risiko' : 'Perlu perhatian'}
+            </span>
+            <div class="stat-card-sub">${data.riskFlags.filter(f => f.severity === 'critical').length} critical, ${data.riskFlags.filter(f => f.severity === 'high').length} high</div>
+          </div>
+        </div>
+
+        <!-- Bottom Grid -->
+        <div class="bottom-grid">
+          <!-- Score Breakdown -->
+          <div class="card">
+            <div class="card-header">
+              <h3 class="card-title">Breakdown Skor</h3>
+              <a href="wallet.html" class="card-action">Detail <i class="fa-solid fa-arrow-right"></i></a>
+            </div>
+            <div class="card-body">
+              <div class="breakdown-list">
+                ${renderBreakdownItem(data.breakdown.successRate, 'teal', data.transactions.successRate + '%')}
+                ${renderBreakdownItem(data.breakdown.volume, 'green', formatNumber(data.breakdown.volume.value) + ' tx')}
+                ${renderBreakdownItem(data.breakdown.age, 'amber', ageText)}
+                ${renderBreakdownItemRisk(data.breakdown.risk)}
+              </div>
+
+              <!-- Risk flags mini -->
+              <div class="risk-flags-mini">
+                <div class="risk-flags-mini-title">
+                  <i class="fa-solid fa-flag"></i> Risk Flags Terdeteksi
+                </div>
+                ${data.riskFlags.length === 0
+                  ? `<div class="no-flags"><i class="fa-solid fa-circle-check"></i> Tidak ada risk flag terdeteksi</div>`
+                  : data.riskFlags.map(f => `
+                    <div class="risk-flag-item">
+                      <i class="fa-solid fa-circle-exclamation"></i>
+                      <span>${f.label}
+                        <span class="risk-flag-severity ${f.severity}">${f.severity}</span>
+                      </span>
+                    </div>
+                  `).join('')
+                }
+              </div>
+            </div>
+          </div>
+
+          <!-- Recent Transactions -->
+          <div class="card">
+            <div class="card-header">
+              <h3 class="card-title">Transaksi Terbaru</h3>
+              <a href="history.html" class="card-action">Lihat semua <i class="fa-solid fa-arrow-right"></i></a>
+            </div>
+            <div class="card-body" style="padding: 24px 24px 12px;">
+              ${recentTx.length > 0 ? `
+                <table class="tx-table">
+                  <thead>
+                    <tr>
+                      <th>Tipe</th>
+                      <th>Jumlah</th>
+                      <th>Waktu</th>
+                      <th>Status</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    ${recentTx.map(tx => renderTxRow(tx, data.walletAddress)).join('')}
+                  </tbody>
+                </table>
+              ` : `
+                <div class="empty-state">
+                  <i class="fa-solid fa-inbox"></i>
+                  <p>Belum ada transaksi</p>
+                </div>
+              `}
+            </div>
+          </div>
+        </div>
+      `;
+
+      // Trigger animasi angka dan bar
+      requestAnimationFrame(() => {
+        animateCounter('animScore', 0, data.score, 1200);
+        animateCounter('animTx', 0, data.transactions.total, 1000);
+        animateCounter('animRate', 0, data.transactions.successRate, 1000, '%', 1);
+
+        // Animasi breakdown bars
+        setTimeout(() => {
+          document.querySelectorAll('.breakdown-bar-fill').forEach(bar => {
+            bar.style.width = bar.getAttribute('data-width') + '%';
+          });
+        }, 200);
+      });
+    }
+
+    /* ========================================
+       HELPER: Render breakdown item
+    ======================================== */
+    function renderBreakdownItem(item, colorClass, displayValue) {
+      const pct = Math.round((item.score / item.max) * 100);
+      return `
+        <div class="breakdown-item">
+          <div class="breakdown-item-label">
+            <span class="breakdown-label-text">${item.label}</span>
+            <span class="breakdown-label-value">${item.score}/${item.max} <span style="color:var(--text-muted); font-weight:400; font-size:0.78rem;">(${displayValue})</span></span>
+          </div>
+          <div class="breakdown-bar">
+            <div class="breakdown-bar-fill ${colorClass}" data-width="${pct}"></div>
+          </div>
+        </div>
+      `;
+    }
+
+    function renderBreakdownItemRisk(item) {
+      const pct = Math.round((item.score / item.max) * 100);
+      const colorClass = pct >= 70 ? 'green' : pct >= 40 ? 'amber' : 'red';
+      const displayValue = item.penalty > 0 ? `-${item.penalty} poin penalty` : 'Tidak ada penalty';
+      return `
+        <div class="breakdown-item">
+          <div class="breakdown-item-label">
+            <span class="breakdown-label-text">${item.label}</span>
+            <span class="breakdown-label-value">${item.score}/${item.max} <span style="color:var(--text-muted); font-weight:400; font-size:0.78rem;">(${displayValue})</span></span>
+          </div>
+          <div class="breakdown-bar">
+            <div class="breakdown-bar-fill ${colorClass}" data-width="${pct}"></div>
+          </div>
+        </div>
+      `;
+    }
+
+    /* ========================================
+       HELPER: Render tx row
+    ======================================== */
+    function renderTxRow(tx, walletAddr) {
+      const isOutgoing = ['send', 'approve', 'stake', 'bridge', 'burn'].includes(tx.type);
+      const amountClass = isOutgoing ? 'negative' : 'positive';
+      const amountPrefix = isOutgoing ? '-' : '+';
+      const counterparty = isOutgoing ? tx.to : tx.from;
+
+      const typeIcons = {
+        send: 'fa-arrow-up-right', receive: 'fa-arrow-down-left',
+        swap: 'fa-repeat', approve: 'fa-check-double',
+        stake: 'fa-lock', unstake: 'fa-lock-open',
+        bridge: 'fa-bridge', mint: 'fa-plus', burn: 'fa-fire'
+      };
+
+      return `
+        <tr>
+          <td>
+            <span class="tx-type-badge ${tx.type}">
+              <i class="fa-solid ${typeIcons[tx.type] || 'fa-circle'}"></i>
+              ${tx.type}
+            </span>
+          </td>
+          <td>
+            <span class="tx-amount ${amountClass}">${amountPrefix}${tx.amount} ${tx.token}</span>
+            <div class="tx-addr" style="margin-top:2px;">${shortAddress(counterparty)}</div>
+          </td>
+          <td><span class="tx-time">${formatTimestamp(tx.timestamp)}</span></td>
+          <td>
+            <span class="tx-status ${tx.status}">
+              <i class="fa-solid ${tx.status === 'success' ? 'fa-circle-check' : 'fa-circle-xmark'}"></i>
+              ${tx.status === 'success' ? 'Berhasil' : 'Gagal'}
+            </span>
+          </td>
+        </tr>
+      `;
+    }
+
+    /* ========================================
+       ANIMASI COUNTER
+    ======================================== */
+    function animateCounter(elementId, start, end, duration, suffix = '', decimals = 0) {
+      const el = document.getElementById(elementId);
+      if (!el) return;
+
+      const startTime = performance.now();
+
+      function update(now) {
+        const elapsed = now - startTime;
+        const progress = Math.min(elapsed / duration, 1);
+        // Ease-out cubic
+        const eased = 1 - Math.pow(1 - progress, 3);
+        const current = start + (end - start) * eased;
+
+        if (decimals > 0) {
+          el.textContent = current.toFixed(decimals) + suffix;
         } else {
-          showToast('Alamat wallet tidak valid', 'error', 2500);
+          el.textContent = Math.round(current) + suffix;
         }
+
+        if (progress < 1) {
+          requestAnimationFrame(update);
+        }
+      }
+
+      requestAnimationFrame(update);
+    }
+
+    /* ========================================
+       COPY ADDRESS
+    ======================================== */
+    function copyAddress(addr) {
+      navigator.clipboard.writeText(addr).then(() => {
+        showToast('Alamat wallet disalin ke clipboard', 'success', 2000);
+      }).catch(() => {
+        // Fallback
+        const ta = document.createElement('textarea');
+        ta.value = addr;
+        document.body.appendChild(ta);
+        ta.select();
+        document.execCommand('copy');
+        document.body.removeChild(ta);
+        showToast('Alamat wallet disalin', 'success', 2000);
       });
-
-      input.addEventListener('keydown', function(e) {
-        if (e.key === 'Enter') analyzeBtn.click();
-      });
-
-      /* CTA button scroll ke input */
-      if (ctaBtn) {
-        ctaBtn.addEventListener('click', function() {
-          input.scrollIntoView({ behavior: 'smooth', block: 'center' });
-          setTimeout(function() { input.focus(); }, 500);
-        });
-      }
-
-      /* Demo wallet buttons */
-      var demoBtns = document.querySelectorAll('.demo-wallet-btn');
-      for (var d = 0; d < demoBtns.length; d++) {
-        demoBtns[d].addEventListener('click', function() {
-          var wallet = this.getAttribute('data-wallet');
-          input.value = wallet;
-          validate();
-          input.scrollIntoView({ behavior: 'smooth', block: 'center' });
-          setTimeout(function() { input.focus(); }, 300);
-        });
-      }
-    })();
-
-    /* ========================================
-       MARQUEE
-    ======================================== */
-    (function() {
-      var track = document.getElementById('marqueeTrack');
-      var items = [
-        { value: '1.2M+', label: 'Wallet Dianalisis' },
-        { value: '850K+', label: 'Transaksi Diproses' },
-        { value: '99.2%', label: 'Uptime Platform' },
-        { value: '4.8/5', label: 'Rating Pengguna' },
-        { value: '150+', label: 'Risk Pattern' },
-        { value: '0.3s', label: 'Rata-rata Respons' },
-        { value: '256-bit', label: 'Enkripsi Data' },
-        { value: '24/7', label: 'Monitoring On-Chain' }
-      ];
-
-      var html = '';
-      /* Duplikasi 2x untuk infinite scroll */
-      for (var r = 0; r < 2; r++) {
-        for (var i = 0; i < items.length; i++) {
-          html += '<div class="marquee-item">'
-            + '<span class="marquee-value">' + items[i].value + '</span>'
-            + '<span class="marquee-label">' + items[i].label + '</span>'
-            + '</div>';
-          if (i < items.length - 1 || r === 0) {
-            html += '<div class="marquee-divider"></div>';
-          }
-        }
-      }
-      track.innerHTML = html;
-    })();
-
-    /* ========================================
-       SCROLL REVEAL
-    ======================================== */
-    (function() {
-      var reveals = document.querySelectorAll('.reveal');
-      if (!reveals.length) return;
-
-      var observer = new IntersectionObserver(function(entries) {
-        for (var i = 0; i < entries.length; i++) {
-          if (entries[i].isIntersecting) {
-            entries[i].target.classList.add('visible');
-            observer.unobserve(entries[i].target);
-          }
-        }
-      }, { threshold: 0.12, rootMargin: '0px 0px -40px 0px' });
-
-      for (var r = 0; r < reveals.length; r++) {
-        observer.observe(reveals[r]);
-      }
-    })();
-
-    /* ========================================
-       GAUGE ANIMATION (on scroll)
-    ======================================== */
-    (function() {
-      var gauge = document.getElementById('gaugeFill');
-      if (!gauge) return;
-
-      var animated = false;
-      var observer = new IntersectionObserver(function(entries) {
-        if (entries[0].isIntersecting && !animated) {
-          animated = true;
-          gauge.classList.add('animated');
-          observer.unobserve(entries[0].target);
-        }
-      }, { threshold: 0.3 });
-
-      observer.observe(document.getElementById('scoreGauge'));
-    })();
+    }
   </script>
 
 </body>
