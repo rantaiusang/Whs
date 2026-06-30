@@ -30,11 +30,8 @@
     // ==========================================
     // 1. CONFIG & BACKEND URL
     // ==========================================
-    const SUPABASE_URL = "https://valpwlebldnkedrznaym.supabase.co";
-    const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZhbHB3bGVibGRua2VkcnpuYXltIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODI3Mzk3ODUsImV4cCI6MjA5ODMxNTc4NX0.G3BDRqiRBmcFwtBRtdiJI3CkptRrya9bxiVozcQZCSc";
-    
-    // 👇 INI URL BACKEND KAMU DI SUPABASE
-    const URL_BACKEND = SUPABASE_URL + "/functions/v1/verify-pi-payment";
+    // URL DIARAHKAN KE FOLDER API VERCEL YANG BARU KITA BUAT
+    const URL_BACKEND = "/api/pi-payment";
 
     // ==========================================
     // 2. PI SDK INIT
@@ -65,10 +62,10 @@
     }
 
     // ==========================================
-    // 4. FUNGSI KIRIM KE SUPABASE (BACKEND)
+    // 4. FUNGSI KIRIM KE BACKEND VERCEL
     // ==========================================
     async function kirimKeBackend(action, paymentId, txid = null) {
-      dbg("🔄 Kirim ke backend: " + action + "...");
+      dbg("🔄 Kirim ke Vercel API: " + action + "...");
       
       const bodyData = { action: action, paymentId: paymentId };
       if (txid) bodyData.txid = txid;
@@ -77,8 +74,7 @@
         const response = await fetch(URL_BACKEND, {
           method: "POST",
           headers: { 
-            "Content-Type": "application/json",
-            "Authorization": "Bearer " + SUPABASE_ANON_KEY
+            "Content-Type": "application/json"
           },
           body: JSON.stringify(bodyData)
         });
@@ -125,14 +121,10 @@
           metadata: { user: username }
         }, {
 
-          // ==========================================
-          // 👇 INI DIA! SAMBUNGAN KE BACKEND PERTAMA
-          // ==========================================
           onReadyForServerApproval: async function(paymentId) {
             dbg("📡 Pi minta approval ke server...");
             statusEl.innerText = "Menghubungi server...";
             
-            // KIRIM KE SUPABASE UNTUK DI-APPROVE
             const hasil = await kirimKeBackend("approve", paymentId);
             
             if (hasil && hasil.status === "approved") {
@@ -144,14 +136,10 @@
             }
           },
 
-          // ==========================================
-          // 👇 INI DIA! SAMBUNGAN KE BACKEND KEDUA
-          // ==========================================
           onReadyForServerCompletion: async function(paymentId, txid) {
             dbg("📡 Pi minta completion ke server...");
             statusEl.innerText = "Finalisasi pembayaran...";
             
-            // KIRIM KE SUPABASE UNTUK DI-COMPLETE & SIMPAN DB
             const hasil = await kirimKeBackend("complete", paymentId, txid);
             
             if (hasil && hasil.status === "completed") {
