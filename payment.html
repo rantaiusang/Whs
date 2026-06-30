@@ -3,68 +3,140 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>WHS Debug</title>
+  <title>WHS Payment</title>
+
+  <!-- PI SDK -->
+  <script src="https://sdk.minepi.com/pi-sdk.js"></script>
 
   <style>
-    body { font-family: monospace; padding: 20px; font-size: 14px; }
-    .box { background: #222; color: #0f0; padding: 15px; margin: 10px 0; border-radius: 8px; white-space: pre-wrap; word-wrap: break-word; }
+    body { font-family: sans-serif; padding: 20px; }
+    button { padding: 15px 30px; font-size: 18px; cursor: pointer; margin: 10px 5px; border: none; border-radius: 10px; }
+    .btn-pay { background: #6B3FA0; color: white; }
+    .btn-pay:disabled { background: #ccc; cursor: not-allowed; }
+    #status { margin-top: 20px; font-size: 16px; font-weight: bold; }
+    .debug { background: #f0f0f0; padding: 10px; margin-top: 15px; font-family: monospace; font-size: 12px; white-space: pre-wrap; }
   </style>
 </head>
 <body>
 
-  <h2>🔧 Deep Debug Mode</h2>
-  <div id="log" class="box">Memulai pengecekan...\n</div>
+  <h2>💳 WHS Payment</h2>
+  
+  <button class="btn-pay" id="payBtn" onclick="pay()">💰 Bayar 1 Pi</button>
+  
+  <p id="status">Menyiapkan...</p>
+  <div id="debug" class="debug" style="display:none;"></div>
 
-  <!-- 1. LOAD SDK -->
-  <script src="https://sdk.minepi.com/pi-sdk.js" 
-          onload="document.getElementById('log').innerText += '✅ pi-sdk.js SUKSES DI-LOAD\n'" 
-          onerror="document.getElementById('log').innerText += '❌ pi-sdk.js GAGAL DI-LOAD!\n'"></script>
-
-  <!-- 2. LOAD CONFIG -->
-  <script src="config.js"></script>
-
-  <!-- 3. DEBUG SCRIPT -->
   <script>
-    const logEl = document.getElementById('log');
+    // ===========================
+    // 1. CONFIG (LANGSUNG DI SINI)
+    // ===========================
+    const SUPABASE_URL = "https://valpwlebldnkedrznaym.supabase.co";
+    const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZhbHB3bGVibGRua2VkcnpuYXltIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODI3Mzk3ODUsImV4cCI6MjA5ODMxNTc4NX0.G3BDRqiRBmcFwtBRtdiJI3CkptRrya9bxiVozcQZCSc";
+    const ENDPOINT_PAYMENT = `${SUPABASE_URL}/functions/v1/verify-pi-payment`;
+
+    // ===========================
+    // 2. PI INIT (LANGSUNG DI SINI)
+    // ===========================
+    let piReady = false;
     
-    function log(msg) {
-      logEl.innerText += msg + "\n";
+    function initPiSDK() {
+      if (typeof Pi !== 'undefined') {
+        Pi.init({ version: "2.0", sandbox: true });
+        piReady = true;
+        console.log("✅ Pi SDK Ready!");
+        document.getElementById('status').innerText = "Siap membayar";
+        document.getElementById('payBtn').disabled = false;
+      } else {
+        console.log("⏳ Menunggu SDK...");
+        setTimeout(initPiSDK, 100);
+      }
+    }
+    
+    // Mulai init
+    initPiSDK();
+
+    // ===========================
+    // 3. DEBUG HELPER
+    // ===========================
+    function dbg(msg) {
+      const el = document.getElementById('debug');
+      el.style.display = 'block';
+      el.innerText += msg + '\n';
       console.log(msg);
     }
 
-    // Tunggu halaman siap total
-    window.addEventListener('load', function() {
-      log("=================================");
-      log("HALAMAN SUDAH 100% LOADED");
-      log("=================================");
-      
-      log("Cek window.Pi: " + typeof window.Pi);
-      log("Cek __PI_READY__: " + window.__PI_READY__);
-      
-      // Jika Pi ada, cek isinya apa saja
-      if (typeof window.Pi !== 'undefined') {
-        log("Isi Pi: " + Object.keys(window.Pi).join(", "));
-      } else {
-        log("⚠️ PERINGATAN: Object Pi TIDAK ADA!");
-        log("Cek navigator.userAgent: " + navigator.userAgent);
+    // ===========================
+    // 4. PAYMENT FUNCTION
+    // ===========================
+    async function pay() {
+      if (!piReady) {
+        alert("SDK belum siap!");
+        return;
       }
 
-      // Tombol manual testing
-      const btn = document.createElement('button');
-      btn.innerText = "COBA PI.INIT() MANUAL";
-      btn.style.marginTop = "20px";
-      btn.style.padding = "15px";
-      btn.onclick = function() {
-        try {
-          log("Memanggil Pi.init()...");
-          Pi.init({ version: "2.0", sandbox: true });
-          log("✅ Pi.init() SUKSES!");
-        } catch(e) {
-          log("❌ Pi.init() ERROR: " + e.message);
-        }
-      };
-      document.body.appendChild(btn);
-    });
+      const statusEl = document.getElementById('status');
+      const debugEl = document.getElementById('debug');
+      debugEl.innerText = '';
+      
+      try {
+        dbg("🔄 Authentikasi...");
+        statusEl.innerText = "Login...";
+
+        // AUTH DENGAN SCOPE PAYMENTS
+        const auth = await Pi.authenticate(['username', 'payments']);
+        const username = auth.user?.username || "unknown";
+        dbg("✅ Login sukses: " + username);
+
+        statusEl.innerText = "Membuka dialog...";
+
+        // CREATE PAYMENT
+        dbg("🔄 Create payment...");
+        
+        await Pi.createPayment({
+          amount: "1.00",
+          memo: "WHS Test Payment",
+          metadata: { user: username }
+        }, {
+
+          onReadyForServerApproval: function(paymentId) {
+            dbg("✅ APPROVAL: " + paymentId);
+            statusEl.innerText = "Menunggu approval server...";
+            
+            // TODO: Kirim ke Supabase untuk di-approve
+            // fetch(ENDPOINT_PAYMENT, { method: 'POST', body: JSON.stringify({ action: 'approve', paymentId }) })
+          },
+
+          onReadyForServerCompletion: function(paymentId, txid) {
+            dbg("✅ COMPLETE: " + txid);
+            statusEl.innerText = "Pembayaran BERHASIL! ✔";
+            
+            // TODO: Kirim ke Supabase untuk di-complete
+            // fetch(ENDPOINT_PAYMENT, { method: 'POST', body: JSON.stringify({ action: 'complete', paymentId, txid }) })
+          },
+
+          onCancel: function(paymentId) {
+            dbg("❌ CANCEL: " + paymentId);
+            statusEl.innerText = "Dibatalkan";
+          },
+
+          onError: function(error) {
+            let msg = error?.message || JSON.stringify(error);
+            dbg("❌ ERROR: " + msg);
+            statusEl.innerText = "Error!";
+            alert("PAYMENT ERROR:\n\n" + msg);
+          }
+
+        });
+
+        dbg("✅ Flow dimulai...");
+
+      } catch (err) {
+        let msg = err?.message || JSON.stringify(err);
+        dbg("❌ CATCH: " + msg);
+        statusEl.innerText = "Gagal!";
+        alert("ERROR:\n\n" + msg);
+      }
+    }
   </script>
 
 </body>
