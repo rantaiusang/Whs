@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>WHS Payment</title>
+
+  <!-- Pi SDK -->
+  <script src="https://sdk.minepi.com/pi-sdk.js"></script>
+
+  <!-- Config kamu -->
+  <script src="pi-config.js"></script>
+
+  <script>
+    Pi.init({
+      version: "2.0",
+      sandbox: window.APP_CONFIG.IS_SANDBOX
+    });
+
+    const PAYMENT_ENDPOINT = window.APP_CONFIG.ENDPOINTS.PAYMENT;
+    const SUPABASE_KEY = window.APP_CONFIG.SUPABASE_ANON_KEY;
+  </script>
+</head>
+
+<body>
+
+  <h2>💳 WHS Payment Test</h2>
+
+  <button onclick="pay()">Bayar 1 Pi</button>
+
+  <p id="status">Ready</p>
+
+  <script>
+    async function pay() {
+
+      document.getElementById("status").innerText = "Login Pi...";
+
+      try {
+        const auth = await Pi.authenticate(['username']);
+
+        document.getElementById("status").innerText = "Create payment...";
+
+        Pi.createPayment({
+          amount: 1,
+          memo: "WHS Credit Score Payment",
+          metadata: {
+            user: auth.user.username,
+            app: "WHS"
+          }
+        }, {
+
+          onReadyForServerApproval: async function(paymentId) {
+            console.log("Approval:", paymentId);
+
+            await fetch(PAYMENT_ENDPOINT, {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+                "Authorization": `Bearer ${SUPABASE_KEY}`
+              },
+              body: JSON.stringify({
+                paymentId,
+                action: "approve",
+                app: "WHS"
+              })
+            });
+          },
+
+          onReadyForServerCompletion: async function(paymentId, txid) {
+            console.log("Completed:", paymentId, txid);
+
+            document.getElementById("status").innerText = "Payment sukses ✔";
+
+            await fetch(PAYMENT_ENDPOINT, {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+                "Authorization": `Bearer ${SUPABASE_KEY}`
+              },
+              body: JSON.stringify({
+                paymentId,
+                txid,
+                action: "complete",
+                app: "WHS"
+              })
+            });
+          },
+
+          onCancel: function() {
+            document.getElementById("status").innerText = "Dibatalkan";
+          },
+
+          onError: function(err) {
+            console.log(err);
+            document.getElementById("status").innerText = "Error";
+          }
+
+        });
+
+      } catch (e) {
+        console.log(e);
+        document.getElementById("status").innerText = "Login gagal";
+      }
+    }
+  </script>
+
+</body>
+</html>
