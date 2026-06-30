@@ -5,79 +5,124 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>WHS Payment Test</title>
 
-  <!-- SDK Pi Network -->
+  <!-- 1. PI SDK (WAJIB PERTAMA) -->
   <script src="https://sdk.minepi.com/pi-sdk.js"></script>
 
-  <script>
-    // Pastikan versi dan sandbox sesuai
-    Pi.init({ version: "2.0", sandbox: true });
-  </script>
+  <!-- 2. CONFIG (KEDUA) -->
+  <script src="config.js"></script>
+
+  <style>
+    body { font-family: sans-serif; padding: 20px; }
+    button { padding: 12px 24px; font-size: 16px; cursor: pointer; margin: 5px; }
+    #status { margin-top: 20px; font-weight: bold; color: #333; }
+    .debug-box { background: #f4f4f4; padding: 10px; margin-top: 10px; font-family: monospace; font-size: 12px; white-space: pre-wrap; word-wrap: break-word; }
+  </style>
 </head>
 <body>
 
   <h2>💳 WHS Payment Test</h2>
 
-  <button onclick="pay()">Bayar 1 Pi</button>
+  <div>
+    <button onclick="cekSDK()">🔍 Cek SDK</button>
+    <button onclick="pay()" style="background: #6B3FA0; color: white; border: none; border-radius: 8px;">
+      💰 Bayar 1 Pi
+    </button>
+  </div>
 
   <p id="status">Ready</p>
+  
+  <div id="debugBox" class="debug-box" style="display:none;"></div>
 
   <script>
+    // Helper untuk tampilkan debug di layar HP
+    function showDebug(msg) {
+      const box = document.getElementById('debugBox');
+      box.style.display = 'block';
+      box.innerText += msg + '\n';
+      console.log(msg);
+    }
+
+    // Fungsi cek SDK
+    function cekSDK() {
+      const data = {
+        'Pi SDK Ada': typeof Pi !== 'undefined',
+        'Config Ready': window.APP_CONFIG?.isPiReady(),
+        'Sandbox': window.APP_CONFIG?.IS_SANDBOX,
+        'URL': window.location.href
+      };
+      showDebug("=== CEK SDK ===\n" + JSON.stringify(data, null, 2));
+      alert(JSON.stringify(data, null, 2));
+    }
+
+    // Fungsi Payment Utama
     async function pay() {
+      const statusEl = document.getElementById('status');
+      const debugEl = document.getElementById('debugBox');
+      debugEl.style.display = 'block';
+      debugEl.innerText = ''; // Reset debug
+
       try {
-        console.log("=== START PAYMENT ===");
-        document.getElementById('status').innerText = "Mengautentikasi...";
+        showDebug("🔄 Mulai proses payment...");
+        statusEl.innerText = "Mengautentikasi...";
 
-        // 1. AUTHENTICATE (Gaya SDK 2.0 - Promise based + WAJIB ada 'payments')
-        const authResult = await Pi.authenticate(['username', 'payments']);
+        // 1. AUTHENTICATE (WAJIB: scope 'payments')
+        const auth = await Pi.authenticate(['username', 'payments']);
+        showDebug("✅ Auth sukses. User: " + (auth.user?.username || 'unknown'));
         
-        console.log("LOGIN SUCCESS:", authResult);
-        const username = authResult.user?.username || "unknown";
-        
-        document.getElementById('status').innerText = "Membuka dialog payment...";
+        const username = auth.user?.username || "unknown";
+        statusEl.innerText = "Membuka dialog payment...";
 
-        // 2. CREATE PAYMENT (amount WAJIB String)
-        const paymentResult = await Pi.createPayment({
+        // 2. CREATE PAYMENT
+        showDebug("🔄 Memanggil Pi.createPayment...");
+        
+        await Pi.createPayment({
           amount: "1.00", // WAJIB STRING
           memo: "WHS Test Payment",
-          metadata: {
-            user: username
-          }
+          metadata: { user: username }
         }, {
           
           onReadyForServerApproval: function(paymentId) {
-            console.log("APPROVAL ID:", paymentId);
-            document.getElementById('status').innerText = "Menunggu approval server...";
-            
-            // 👇 DI SINI TEMPAT KAMU KIRIM paymentId KE SUPABASE
-            // Contoh: kirimKeSupabase(paymentId);
+            showDebug("✅ onReadyForServerApproval: " + paymentId);
+            statusEl.innerText = "Menunggu approval...";
+            // TODO: Kirim paymentId ke Supabase ENDPOINTS.PAYMENT
           },
 
           onReadyForServerCompletion: function(paymentId, txid) {
-            console.log("COMPLETE ID:", paymentId, "TXID:", txid);
-            document.getElementById('status').innerText = "Payment BERHASIL ✔";
-            
-            // 👇 DI SINI TEMPAT KAMU UPDATE STATUS DI SUPABASE JADI 'COMPLETED'
-            // Contoh: updateSupabase(paymentId, txid);
+            showDebug("✅ onReadyForServerCompletion: " + paymentId + " | TXID: " + txid);
+            statusEl.innerText = "Payment BERHASIL ✔";
+            // TODO: Kirim txid ke Supabase untuk finalisasi
           },
 
           onCancel: function(paymentId) {
-            console.log("CANCEL:", paymentId);
-            document.getElementById('status').innerText = "Payment dibatalkan oleh user";
+            showDebug("❌ onCancel: " + paymentId);
+            statusEl.innerText = "Dibatalkan user.";
           },
 
-          onError: function(err) {
-            console.error("PAYMENT ERROR:", err);
-            document.getElementById('status').innerText = "Payment error: " + err.message;
+          onError: function(error) {
+            // 🔥 INI YANG PENTING!
+            let pesan = "Unknown error";
+            if (error && error.message) {
+              pesan = error.message;
+            } else if (typeof error === 'string') {
+              pesan = error;
+            } else {
+              pesan = JSON.stringify(error);
+            }
+            
+            showDebug("❌❌❌ PAYMENT onError: " + pesan);
+            statusEl.innerText = "Payment Error!";
+            alert("ERROR PAYMENT:\n\n" + pesan);
           }
 
         });
 
-        console.log("Payment flow initiated:", paymentResult);
+        showDebug("✅ createPayment dipanggil tanpa error blocking.");
 
       } catch (err) {
-        // Menangkap error dari Pi.authenticate
-        console.error("FATAL ERROR:", err);
-        document.getElementById('status').innerText = "Gagal: " + (err.message || err);
+        let pesan = err.message || JSON.stringify(err);
+        showDebug("❌❌❌ CATCH ERROR: " + pesan);
+        statusEl.innerText = "Gagal: " + pesan;
+        alert("FATAL ERROR:\n\n" + pesan);
       }
     }
   </script>
