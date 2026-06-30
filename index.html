@@ -72,12 +72,10 @@
     .nav-brand { display:flex; align-items:center; gap:8px; font-family:var(--font-display); font-weight:700; font-size:1.1rem; letter-spacing:-0.02em; }
     .nav-brand-icon { width:32px; height:32px; background:linear-gradient(135deg,var(--accent),#0d9488); border-radius:var(--radius-sm); display:flex; align-items:center; justify-content:center; font-size:0.85rem; color:var(--bg-primary); box-shadow:0 0 20px var(--accent-glow); flex-shrink:0; }
     .nav-links { display:flex; align-items:center; gap:4px; list-style:none; }
-    .nav-links a { padding:8px 14px; font-size:0.875rem; font-weight:500; color:var(--text-secondary); border-radius:var(--radius-full); transition:all var(--transition-fast); }
+    .nav-links a { padding:8px 14px; font-size:0.875rem; font-weight:500; color:var(--text-secondary); border-radius:var(--radius-full); transition:all var(--transition-fast); cursor:pointer; }
     .nav-links a:hover, .nav-links a.active { color:var(--text-primary); background:rgba(255,255,255,0.05); }
     .nav-actions { display:flex; align-items:center; gap:10px; }
-    .btn { display:inline-flex; align-items:center; justify-content:center; gap:8px; font-family:var(--font-body); font-weight:600; font-size:0.875rem; padding:10px 20px; border-radius:var(--radius-full); transition:all var(--transition-base); white-space:nowrap; }
-    .btn-ghost { color:var(--text-secondary); background:transparent; }
-    .btn-ghost:hover { color:var(--text-primary); background:rgba(255,255,255,0.05); }
+    .btn { display:inline-flex; align-items:center; justify-content:center; gap:8px; font-family:var(--font-body); font-weight:600; font-size:0.875rem; padding:10px 20px; border-radius:var(--radius-full); transition:all var(--transition-base); white-space:nowrap; cursor:pointer; }
     .btn-primary { color:var(--bg-primary); background:linear-gradient(135deg,var(--accent),#0d9488); box-shadow:0 0 20px var(--accent-glow),inset 0 1px 0 rgba(255,255,255,0.2); }
     .btn-primary:hover { transform:translateY(-1px); box-shadow:0 0 30px var(--accent-glow),0 4px 20px rgba(45,212,191,0.2),inset 0 1px 0 rgba(255,255,255,0.2); }
     .btn-primary:active { transform:translateY(0); }
@@ -89,6 +87,13 @@
     .nav-toggle.open span:nth-child(1) { transform:translateY(7px) rotate(45deg); background:var(--accent); }
     .nav-toggle.open span:nth-child(2) { opacity:0; transform:scaleX(0); }
     .nav-toggle.open span:nth-child(3) { transform:translateY(-7px) rotate(-45deg); background:var(--accent); }
+
+    /* User info di nav setelah login */
+    .nav-user-info { display:none; align-items:center; gap:8px; font-size:0.84rem; color:var(--text-secondary); }
+    .nav-user-info.show { display:flex; }
+    .nav-avatar { width:30px; height:30px; border-radius:50%; background:linear-gradient(135deg,var(--accent),#0d9488); display:flex; align-items:center; justify-content:center; font-size:0.7rem; font-weight:700; color:var(--bg-primary); flex-shrink:0; }
+    .btn-logout { font-size:0.78rem; padding:6px 14px; color:var(--text-muted); border-radius:var(--radius-full); }
+    .btn-logout:hover { color:var(--danger); background:rgba(239,68,68,0.08); }
 
     /* HERO */
     .hero { padding:140px 0 72px; text-align:center; position:relative; }
@@ -143,19 +148,18 @@
     .preview-features { list-style:none; margin-top:24px; display:flex; flex-direction:column; gap:14px; }
     .preview-features li { display:flex; align-items:flex-start; gap:10px; font-size:0.9rem; color:var(--text-secondary); line-height:1.5; }
     .preview-features li i { color:var(--accent); margin-top:4px; flex-shrink:0; font-size:0.8rem; }
-    
     .preview-visual { display:flex; justify-content:center; align-items:center; position:relative; }
     .abstract-shape { width:100%; max-width:360px; aspect-ratio:1; position:relative; }
     .shape-ring { position:absolute; border-radius:50%; border:1px solid var(--border-color); }
-    .shape-ring-1 { inset:0; border-color: rgba(45, 212, 191, 0.2); animation: spinSlow 30s linear infinite; border-style: dashed; }
-    .shape-ring-2 { inset:15%; border-color: rgba(245, 158, 11, 0.15); animation: spinSlow 20s linear infinite reverse; }
-    .shape-ring-3 { inset:30%; border-color: rgba(59, 130, 246, 0.15); animation: spinSlow 25s linear infinite; }
+    .shape-ring-1 { inset:0; border-color:rgba(45,212,191,0.2); animation:spinSlow 30s linear infinite; border-style:dashed; }
+    .shape-ring-2 { inset:15%; border-color:rgba(245,158,11,0.15); animation:spinSlow 20s linear infinite reverse; }
+    .shape-ring-3 { inset:30%; border-color:rgba(59,130,246,0.15); animation:spinSlow 25s linear infinite; }
     .shape-core { position:absolute; inset:38%; background:var(--bg-card); border:1px solid var(--border-color); border-radius:50%; display:flex; align-items:center; justify-content:center; box-shadow:var(--shadow-glow); }
     .shape-core i { font-size:1.8rem; color:var(--accent); }
     .shape-dot { position:absolute; width:7px; height:7px; background:var(--accent); border-radius:50%; box-shadow:0 0 12px var(--accent-glow); }
-    .shape-dot-1 { top:10%; left:50%; animation: floatGentle 4s ease-in-out infinite; }
-    .shape-dot-2 { bottom:15%; right:10%; background:var(--accent-secondary); box-shadow:0 0 12px var(--accent-secondary-dim); animation: floatGentle 5s ease-in-out infinite reverse; }
-    @keyframes spinSlow { to { transform: rotate(360deg); } }
+    .shape-dot-1 { top:10%; left:50%; animation:floatGentle 4s ease-in-out infinite; }
+    .shape-dot-2 { bottom:15%; right:10%; background:var(--accent-secondary); box-shadow:0 0 12px var(--accent-secondary-dim); animation:floatGentle 5s ease-in-out infinite reverse; }
+    @keyframes spinSlow { to{transform:rotate(360deg)} }
     @keyframes floatGentle { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-10px)} }
 
     /* CTA */
@@ -174,16 +178,16 @@
     .footer-desc { font-size:0.82rem; color:var(--text-muted); line-height:1.6; max-width:260px; }
     .footer-heading { font-family:var(--font-display); font-size:0.75rem; font-weight:600; text-transform:uppercase; letter-spacing:0.1em; color:var(--text-secondary); margin-bottom:14px; }
     .footer-links { list-style:none; display:flex; flex-direction:column; gap:8px; }
-    .footer-links a { font-size:0.82rem; color:var(--text-muted); transition:color var(--transition-fast); }
+    .footer-links a { font-size:0.82rem; color:var(--text-muted); transition:color var(--transition-fast); cursor:pointer; }
     .footer-links a:hover { color:var(--accent); }
     .footer-bottom { display:flex; justify-content:space-between; align-items:center; padding-top:20px; border-top:1px solid var(--border-subtle); font-size:0.78rem; color:var(--text-muted); }
     .footer-socials { display:flex; gap:14px; }
-    .footer-socials a { color:var(--text-muted); font-size:0.95rem; transition:color var(--transition-fast); }
+    .footer-socials a { color:var(--text-muted); font-size:0.95rem; transition:color var(--transition-fast); cursor:pointer; }
     .footer-socials a:hover { color:var(--accent); }
 
     /* TOAST */
     .toast-container { position:fixed; top:80px; right:16px; z-index:500; display:flex; flex-direction:column; gap:8px; }
-    .toast { display:flex; align-items:center; gap:10px; padding:12px 16px; background:var(--bg-secondary); border:1px solid var(--border-subtle); border-radius:var(--radius-md); box-shadow:0 8px 32px rgba(0,0,0,0.4); font-size:0.84rem; color:var(--text-primary); transform:translateX(120%); transition:transform var(--transition-base); max-width:320px; }
+    .toast { display:flex; align-items:center; gap:10px; padding:12px 16px; background:var(--bg-secondary); border:1px solid var(--border-subtle); border-radius:var(--radius-md); box-shadow:0 8px 32px rgba(0,0,0,0.4); font-size:0.84rem; color:var(--text-primary); transform:translateX(120%); transition:transform var(--transition-base); max-width:340px; }
     .toast.show { transform:translateX(0); }
     .toast i { font-size:1rem; flex-shrink:0; }
     .toast.success i { color:var(--success); }
@@ -208,7 +212,7 @@
     .mobile-menu.open .mobile-menu-nav li:nth-child(4) { transition:opacity 0.4s ease 0.3s, transform 0.4s cubic-bezier(0.4, 0, 0.2, 1) 0.3s; }
     .mobile-menu.open .mobile-menu-nav li:nth-child(5) { transition:opacity 0.4s ease 0.35s, transform 0.4s cubic-bezier(0.4, 0, 0.2, 1) 0.35s; }
     .mobile-menu.open .mobile-menu-nav li:nth-child(6) { transition:opacity 0.4s ease 0.4s, transform 0.4s cubic-bezier(0.4, 0, 0.2, 1) 0.4s; }
-    .mobile-menu-nav a { display:flex; align-items:center; gap:14px; padding:14px 16px; font-family:var(--font-display); font-size:1.15rem; font-weight:600; color:var(--text-secondary); border-radius:var(--radius-md); transition:all 0.25s ease; position:relative; overflow:hidden; }
+    .mobile-menu-nav a { display:flex; align-items:center; gap:14px; padding:14px 16px; font-family:var(--font-display); font-size:1.15rem; font-weight:600; color:var(--text-secondary); border-radius:var(--radius-md); transition:all 0.25s ease; position:relative; overflow:hidden; cursor:pointer; }
     .mobile-menu-nav a::before { content:''; position:absolute; left:0; top:50%; transform:translateY(-50%) scaleY(0); width:3px; height:60%; background:var(--accent); border-radius:0 3px 3px 0; transition:transform 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
     .mobile-menu-nav a::after { content:''; position:absolute; inset:0; background:linear-gradient(90deg, var(--accent-dim), transparent 60%); opacity:0; transition:opacity 0.25s ease; border-radius:var(--radius-md); pointer-events:none; }
     .mobile-menu-nav a:hover, .mobile-menu-nav a.active { color:var(--text-primary); }
@@ -228,7 +232,7 @@
     .mobile-menu.open .mobile-menu-footer { opacity:1; transform:translateY(0); }
     .mobile-menu-footer-text { font-size:0.75rem; color:var(--text-muted); text-align:center; }
     .mobile-menu-footer-socials { display:flex; justify-content:center; gap:16px; margin-top:14px; }
-    .mobile-menu-footer-socials a { width:38px; height:38px; border-radius:50%; display:flex; align-items:center; justify-content:center; color:var(--text-muted); font-size:0.9rem; border:1px solid var(--border-subtle); transition:all 0.25s ease; }
+    .mobile-menu-footer-socials a { width:38px; height:38px; border-radius:50%; display:flex; align-items:center; justify-content:center; color:var(--text-muted); font-size:0.9rem; border:1px solid var(--border-subtle); transition:all 0.25s ease; cursor:pointer; }
     .mobile-menu-footer-socials a:hover { color:var(--accent); border-color:var(--border-color); background:var(--accent-dim); transform:translateY(-2px); }
 
     /* RESPONSIVE */
@@ -249,14 +253,13 @@
       .nav-brand { font-size:1rem; }
       .nav-brand-icon { width:28px; height:28px; font-size:0.75rem; }
       .nav-links { display:none; }
+      .nav-user-info { display:none !important; }
       .nav-toggle { display:flex; }
-      .nav-actions .btn-ghost { display:none; }
       .mobile-menu { display:block; }
       .container { padding:0 16px; }
       .hero { padding:100px 0 48px; }
       .hero-badge { font-size:0.7rem; padding:5px 12px 5px 7px; margin-bottom:20px; }
       .hero-subtitle { margin-bottom:28px; }
-      .hero-actions .btn { width:100%; max-width:280px; }
       .features { padding:48px 0; }
       .section-header { margin-bottom:36px; }
       .section-label { font-size:0.7rem; }
@@ -282,7 +285,6 @@
       .cta-section { padding:48px 0; }
       .cta-card { padding:36px 20px; border-radius:var(--radius-lg); }
       .cta-desc { font-size:0.88rem; margin-bottom:24px; }
-      .cta-actions .btn { width:100%; max-width:320px; }
       .footer { padding:32px 0 24px; }
       .footer-grid { grid-template-columns:1fr 1fr; gap:24px; margin-bottom:24px; }
       .footer-bottom { flex-direction:column; gap:10px; text-align:center; }
@@ -317,7 +319,8 @@
   <div class="toast-container" id="toastContainer" aria-live="polite"></div>
 
   <div class="page-wrapper">
-    <!-- NAVIGATION -->
+
+    <!-- NAVIGATION — Tanpa tombol login -->
     <nav class="nav" id="mainNav" role="navigation" aria-label="Navigasi utama">
       <div class="nav-inner">
         <a href="index.html" class="nav-brand" aria-label="Wallet Health Score - Beranda">
@@ -326,12 +329,17 @@
         </a>
         <ul class="nav-links">
           <li><a href="index.html" class="active">Beranda</a></li>
-          <li><a href="dashboard.html">Dashboard</a></li>
-          <li><a href="analytics.html">Analitik</a></li>
-          <li><a href="history.html">Riwayat</a></li>
+          <li><a href="#" data-protected="dashboard">Dashboard</a></li>
+          <li><a href="#" data-protected="analytics">Analitik</a></li>
+          <li><a href="#" data-protected="history">Riwayat</a></li>
         </ul>
         <div class="nav-actions">
-          <a href="login.html" class="btn btn-ghost" id="loginBtnDesktop">Masuk</a>
+          <!-- Hanya muncul setelah login -->
+          <div class="nav-user-info" id="navUserInfo">
+            <div class="nav-avatar" id="navAvatar">U</div>
+            <span id="navUsername">User</span>
+            <button class="btn btn-logout" id="logoutBtnDesktop">Keluar</button>
+          </div>
           <button class="nav-toggle" id="navToggle" aria-label="Toggle menu" aria-expanded="false">
             <span></span><span></span><span></span>
           </button>
@@ -339,7 +347,7 @@
       </div>
     </nav>
 
-    <!-- HERO SECTION -->
+    <!-- HERO — 1 tombol login di sini -->
     <header class="hero">
       <div class="container">
         <div class="hero-badge">
@@ -355,13 +363,13 @@
         </p>
         <div class="hero-actions">
           <a href="login.html" class="btn btn-primary btn-lg">
-            Login
+            <i class="fa-solid fa-right-to-bracket"></i> Login dengan Pi Sekarang
           </a>
         </div>
       </div>
     </header>
 
-    <!-- FEATURES SECTION -->
+    <!-- FEATURES -->
     <section class="features" id="features" aria-labelledby="featuresTitle">
       <div class="container">
         <div class="section-header reveal">
@@ -397,7 +405,7 @@
       </div>
     </section>
 
-    <!-- VISUAL PREVIEW (Abstrak) -->
+    <!-- VISUAL PREVIEW — Tanpa tombol login -->
     <section class="visual-preview" id="visual-preview" aria-labelledby="previewTitle">
       <div class="container">
         <div class="preview-grid">
@@ -411,9 +419,6 @@
               <li><i class="fa-solid fa-check"></i><span>Rekomendasi konkret untuk meningkatkan skor wallet</span></li>
               <li><i class="fa-solid fa-check"></i><span>Riwayat perubahan skor dari waktu ke waktu</span></li>
             </ul>
-            <div style="margin-top: 28px;">
-              <a href="login.html" class="btn btn-primary">Akses Dashboard <i class="fa-solid fa-arrow-right"></i></a>
-            </div>
           </div>
           <div class="preview-visual reveal">
             <div class="abstract-shape">
@@ -431,7 +436,7 @@
       </div>
     </section>
 
-    <!-- CTA SECTION -->
+    <!-- CTA — 1 tombol login di sini -->
     <section class="cta-section" aria-labelledby="ctaTitle">
       <div class="container">
         <div class="cta-card reveal">
@@ -439,7 +444,7 @@
           <p class="cta-desc">Login dengan akun Pi Network Anda untuk mulai menganalisis Wallet Health Score dan tingkatkan kepercayaan on-chain Anda.</p>
           <div class="cta-actions">
             <a href="login.html" class="btn btn-primary btn-lg">
-              <i class="fa-brands fa-pi"></i> Login dengan Pi Sekarang
+              <span style="font-weight:800;font-size:1.1rem;">π</span> Login dengan Pi Sekarang
             </a>
           </div>
         </div>
@@ -495,52 +500,150 @@
   </div>
 
   <script>
-    document.addEventListener('DOMContentLoaded', () => {
-      const navToggle = document.getElementById('navToggle');
-      const mainNav = document.getElementById('mainNav');
-      const body = document.body;
+    document.addEventListener('DOMContentLoaded', function() {
 
-      // Buat mobile menu
-      const mobileMenu = document.createElement('div');
+      /* ==========================================
+         SESSION (localStorage)
+         ========================================== */
+      var SESSION_KEY = 'wallelscore_session';
+
+      function getSession() {
+        try { return JSON.parse(localStorage.getItem(SESSION_KEY)); } catch(e) { return null; }
+      }
+
+      function isLoggedIn() {
+        return getSession() !== null;
+      }
+
+      /* ==========================================
+         TOAST
+         ========================================== */
+      var toastContainer = document.getElementById('toastContainer');
+
+      function showToast(message, type) {
+        var icons = { success:'fa-circle-check', error:'fa-circle-xmark', info:'fa-circle-info' };
+        var toast = document.createElement('div');
+        toast.className = 'toast ' + type;
+        toast.innerHTML = '<i class="fa-solid ' + icons[type] + '"></i><span>' + message + '</span>';
+        toastContainer.appendChild(toast);
+        requestAnimationFrame(function() {
+          requestAnimationFrame(function() { toast.classList.add('show'); });
+        });
+        setTimeout(function() {
+          toast.classList.remove('show');
+          setTimeout(function() { toast.remove(); }, 300);
+        }, 3500);
+      }
+
+      /* ==========================================
+         HALAMAN YANG WAJIB LOGIN
+         Tangkap semua klik pada [data-protected]
+         ========================================== */
+      document.addEventListener('click', function(e) {
+        var link = e.target.closest('[data-protected]');
+        if (link) {
+          e.preventDefault();
+          var page = link.getAttribute('data-protected');
+          if (isLoggedIn()) {
+            window.location.href = page + '.html';
+          } else {
+            showToast('Silakan login terlebih dahulu untuk mengakses ' + page, 'error');
+            setTimeout(function() { window.location.href = 'login.html'; }, 800);
+          }
+        }
+      });
+
+      /* ==========================================
+         NAV STATE: tampilkan info user setelah login
+         ========================================== */
+      var navUserInfo = document.getElementById('navUserInfo');
+      var navAvatar = document.getElementById('navAvatar');
+      var navUsername = document.getElementById('navUsername');
+      var logoutBtnDesktop = document.getElementById('logoutBtnDesktop');
+
+      function updateNavState() {
+        var session = getSession();
+        if (session) {
+          navUserInfo.classList.add('show');
+          navAvatar.textContent = session.username.charAt(0).toUpperCase();
+          navUsername.textContent = session.username;
+        } else {
+          navUserInfo.classList.remove('show');
+        }
+        updateMobileMenuState();
+      }
+
+      logoutBtnDesktop.addEventListener('click', function() {
+        localStorage.removeItem(SESSION_KEY);
+        updateNavState();
+        showToast('Anda telah keluar dari akun', 'info');
+      });
+
+      /* ==========================================
+         MOBILE MENU
+         ========================================== */
+      var navToggle = document.getElementById('navToggle');
+      var mainNav = document.getElementById('mainNav');
+
+      var mobileMenu = document.createElement('div');
       mobileMenu.className = 'mobile-menu';
       mobileMenu.id = 'mobileMenu';
-      mobileMenu.innerHTML = `
-        <div class="mobile-menu-backdrop" id="menuBackdrop"></div>
-        <div class="mobile-menu-panel">
-          <ul class="mobile-menu-nav">
-            <li><a href="index.html" class="active"><i class="fa-solid fa-house nav-icon"></i><span class="nav-text">Beranda</span><i class="fa-solid fa-arrow-right nav-arrow"></i></a></li>
-            <li><a href="dashboard.html"><i class="fa-solid fa-table-columns nav-icon"></i><span class="nav-text">Dashboard</span><i class="fa-solid fa-arrow-right nav-arrow"></i></a></li>
-            <li><a href="wallet.html"><i class="fa-solid fa-wallet nav-icon"></i><span class="nav-text">Wallet</span><i class="fa-solid fa-arrow-right nav-arrow"></i></a></li>
-            <li><a href="analytics.html"><i class="fa-solid fa-chart-line nav-icon"></i><span class="nav-text">Analitik</span><i class="fa-solid fa-arrow-right nav-arrow"></i></a></li>
-            <li><a href="history.html"><i class="fa-solid fa-clock-rotate-left nav-icon"></i><span class="nav-text">Riwayat</span><i class="fa-solid fa-arrow-right nav-arrow"></i></a></li>
-            <li><a href="settings.html"><i class="fa-solid fa-gear nav-icon"></i><span class="nav-text">Pengaturan</span><i class="fa-solid fa-arrow-right nav-arrow"></i></a></li>
-          </ul>
-          <div class="mobile-menu-divider"></div>
-          <div class="mobile-menu-actions">
-            <a href="login.html" class="btn btn-outline">Masuk</a>
-            <a href="login.html" class="btn btn-primary"><i class="fa-brands fa-pi"></i> Login dengan Pi</a>
-          </div>
-          <div class="mobile-menu-footer">
-            <div class="mobile-menu-footer-socials">
-              <a href="#" aria-label="Twitter"><i class="fa-brands fa-x-twitter"></i></a>
-              <a href="#" aria-label="Discord"><i class="fa-brands fa-discord"></i></a>
-              <a href="#" aria-label="GitHub"><i class="fa-brands fa-github"></i></a>
-              <a href="#" aria-label="Telegram"><i class="fa-brands fa-telegram"></i></a>
-            </div>
-            <p class="mobile-menu-footer-text" style="margin-top:16px;">&copy; 2025 WalletScore. All rights reserved.</p>
-          </div>
-        </div>
-      `;
+      mobileMenu.innerHTML =
+        '<div class="mobile-menu-backdrop" id="menuBackdrop"></div>' +
+        '<div class="mobile-menu-panel">' +
+          '<ul class="mobile-menu-nav">' +
+            '<li><a href="index.html"><i class="fa-solid fa-house nav-icon"></i><span class="nav-text">Beranda</span><i class="fa-solid fa-arrow-right nav-arrow"></i></a></li>' +
+            '<li><a href="#" data-protected="dashboard"><i class="fa-solid fa-table-columns nav-icon"></i><span class="nav-text">Dashboard</span><i class="fa-solid fa-arrow-right nav-arrow"></i></a></li>' +
+            '<li><a href="#" data-protected="wallet"><i class="fa-solid fa-wallet nav-icon"></i><span class="nav-text">Wallet</span><i class="fa-solid fa-arrow-right nav-arrow"></i></a></li>' +
+            '<li><a href="#" data-protected="analytics"><i class="fa-solid fa-chart-line nav-icon"></i><span class="nav-text">Analitik</span><i class="fa-solid fa-arrow-right nav-arrow"></i></a></li>' +
+            '<li><a href="#" data-protected="history"><i class="fa-solid fa-clock-rotate-left nav-icon"></i><span class="nav-text">Riwayat</span><i class="fa-solid fa-arrow-right nav-arrow"></i></a></li>' +
+            '<li><a href="#" data-protected="settings"><i class="fa-solid fa-gear nav-icon"></i><span class="nav-text">Pengaturan</span><i class="fa-solid fa-arrow-right nav-arrow"></i></a></li>' +
+          '</ul>' +
+          '<div class="mobile-menu-divider"></div>' +
+          '<div class="mobile-menu-actions" id="mobileMenuActions"></div>' +
+          '<div class="mobile-menu-footer">' +
+            '<div class="mobile-menu-footer-socials">' +
+              '<a href="#" aria-label="Twitter"><i class="fa-brands fa-x-twitter"></i></a>' +
+              '<a href="#" aria-label="Discord"><i class="fa-brands fa-discord"></i></a>' +
+              '<a href="#" aria-label="GitHub"><i class="fa-brands fa-github"></i></a>' +
+              '<a href="#" aria-label="Telegram"><i class="fa-brands fa-telegram"></i></a>' +
+            '</div>' +
+            '<p class="mobile-menu-footer-text" style="margin-top:16px;">&copy; 2025 WalletScore. All rights reserved.</p>' +
+          '</div>' +
+        '</div>';
       document.body.appendChild(mobileMenu);
 
-      const menuBackdrop = document.getElementById('menuBackdrop');
+      var menuBackdrop = document.getElementById('menuBackdrop');
+
+      function updateMobileMenuState() {
+        var mobileActions = document.getElementById('mobileMenuActions');
+        var session = getSession();
+        if (session) {
+          mobileActions.innerHTML =
+            '<button class="btn btn-outline" id="mobileLogoutBtn" type="button">' +
+              '<i class="fa-solid fa-right-from-bracket"></i> Keluar (' + session.username + ')' +
+            '</button>';
+          document.getElementById('mobileLogoutBtn').addEventListener('click', function() {
+            localStorage.removeItem(SESSION_KEY);
+            updateNavState();
+            closeMobileMenu();
+            showToast('Anda telah keluar dari akun', 'info');
+          });
+        } else {
+          mobileActions.innerHTML =
+            '<a href="login.html" class="btn btn-primary">' +
+              '<i class="fa-solid fa-right-to-bracket"></i> Login dengan Pi' +
+            '</a>';
+        }
+      }
 
       function openMobileMenu() {
         navToggle.classList.add('open');
         navToggle.setAttribute('aria-expanded', 'true');
         mobileMenu.classList.add('open');
         mainNav.classList.add('menu-active');
-        body.style.overflow = 'hidden';
+        document.body.style.overflow = 'hidden';
+        updateMobileMenuState();
       }
 
       function closeMobileMenu() {
@@ -548,42 +651,43 @@
         navToggle.setAttribute('aria-expanded', 'false');
         mobileMenu.classList.remove('open');
         mainNav.classList.remove('menu-active');
-        body.style.overflow = '';
+        document.body.style.overflow = '';
       }
 
-      navToggle.addEventListener('click', () => {
-        if (mobileMenu.classList.contains('open')) {
-          closeMobileMenu();
-        } else {
-          openMobileMenu();
-        }
+      navToggle.addEventListener('click', function() {
+        if (mobileMenu.classList.contains('open')) closeMobileMenu();
+        else openMobileMenu();
       });
 
       menuBackdrop.addEventListener('click', closeMobileMenu);
 
-      document.addEventListener('keydown', (e) => {
-        if (e.key === 'Escape' && mobileMenu.classList.contains('open')) {
-          closeMobileMenu();
-        }
+      document.addEventListener('keydown', function(e) {
+        if (e.key === 'Escape' && mobileMenu.classList.contains('open')) closeMobileMenu();
       });
 
-      mobileMenu.querySelectorAll('.mobile-menu-nav a').forEach(link => {
-        link.addEventListener('click', closeMobileMenu);
-      });
-
-      // Nav scroll effect
-      window.addEventListener('scroll', () => {
+      /* ==========================================
+         NAV SCROLL EFFECT
+         ========================================== */
+      window.addEventListener('scroll', function() {
         if (window.scrollY > 50) mainNav.classList.add('scrolled');
         else mainNav.classList.remove('scrolled');
       });
 
-      // Reveal on scroll
-      const revealObserver = new IntersectionObserver((entries) => {
-        entries.forEach(entry => {
+      /* ==========================================
+         REVEAL ON SCROLL
+         ========================================== */
+      var revealObserver = new IntersectionObserver(function(entries) {
+        entries.forEach(function(entry) {
           if (entry.isIntersecting) entry.target.classList.add('visible');
         });
       }, { threshold: 0.1 });
-      document.querySelectorAll('.reveal').forEach(el => revealObserver.observe(el));
+      document.querySelectorAll('.reveal').forEach(function(el) { revealObserver.observe(el); });
+
+      /* ==========================================
+         INIT
+         ========================================== */
+      updateNavState();
+
     });
   </script>
 </body>
