@@ -478,8 +478,10 @@
         <ul class="nav-links">
           <li><a href="index.html" class="active">Beranda</a></li>
           <li><a href="dashboard.html">Dashboard</a></li>
+          <li><a href="wallet.html">Wallet</a></li>
           <li><a href="analytics.html">Analitik</a></li>
           <li><a href="history.html">Riwayat</a></li>
+          <li><a href="settings.html">Pengaturan</a></li>
         </ul>
         <div class="nav-actions">
           <a href="login.html" class="btn btn-ghost">Masuk</a>
@@ -626,44 +628,43 @@
       <div class="container">
         <div class="footer-grid">
           <div>
-            <div class="footer-brand"><i class="fa-solid fa-shield-halved" style="color:var(--accent);"></i> WalletScore</div>
-            <p class="footer-desc">Sistem credit scoring on-chain untuk era Web3. Simulasi data — bukan analisis blockchain sesungguhnya.</p>
+            <div class="footer-brand">
+              <div class="nav-brand-icon" style="width:28px;height:28px;font-size:0.8rem;"><i class="fa-solid fa-shield-halved"></i></div>
+              WalletScore
+            </div>
+            <p class="footer-desc">Sistem credit scoring on-chain berbasis analisis transaksi untuk mengukur reputasi wallet Ethereum.</p>
           </div>
           <div>
-            <h4 class="footer-heading">Produk</h4>
+            <h4 class="footer-heading">Menu</h4>
             <ul class="footer-links">
-              <li><a href="index.html">Credit Score</a></li>
+              <li><a href="index.html">Beranda</a></li>
+              <li><a href="dashboard.html">Dashboard</a></li>
+              <li><a href="wallet.html">Wallet</a></li>
               <li><a href="analytics.html">Analitik</a></li>
-              <li><a href="history.html">Riwayat</a></li>
-              <li><a href="wallet.html">Wallet Detail</a></li>
             </ul>
           </div>
           <div>
-            <h4 class="footer-heading">Sumber Daya</h4>
+            <h4 class="footer-heading">Lainnya</h4>
             <ul class="footer-links">
-              <li><a href="#">Dokumentasi</a></li>
-              <li><a href="#">Metodologi Skor</a></li>
-              <li><a href="#">API Reference</a></li>
-              <li><a href="#">Changelog</a></li>
-            </ul>
-          </div>
-          <div>
-            <h4 class="footer-heading">Perusahaan</h4>
-            <ul class="footer-links">
-              <li><a href="#">Tentang</a></li>
-              <li><a href="#">Blog</a></li>
-              <li><a href="#">Kontak</a></li>
+              <li><a href="history.html">Riwayat Transaksi</a></li>
               <li><a href="settings.html">Pengaturan</a></li>
+              <li><a href="login.html">Masuk</a></li>
+            </ul>
+          </div>
+          <div>
+            <h4 class="footer-heading">Sumber</h4>
+            <ul class="footer-links">
+              <li><a href="https://etherscan.io" target="_blank" rel="noopener">Etherscan</a></li>
+              <li><a href="https://ethereum.org" target="_blank" rel="noopener">Ethereum</a></li>
             </ul>
           </div>
         </div>
         <div class="footer-bottom">
-          <span>2025 WalletScore. Simulasi — bukan produk finansial.</span>
+          <span>WalletScore v1.0.0-beta — Data simulasi, bukan produk finansial</span>
           <div class="footer-socials">
-            <a href="#" aria-label="Twitter"><i class="fa-brands fa-x-twitter"></i></a>
             <a href="#" aria-label="GitHub"><i class="fa-brands fa-github"></i></a>
+            <a href="#" aria-label="Twitter"><i class="fa-brands fa-x-twitter"></i></a>
             <a href="#" aria-label="Discord"><i class="fa-brands fa-discord"></i></a>
-            <a href="#" aria-label="Telegram"><i class="fa-brands fa-telegram"></i></a>
           </div>
         </div>
       </div>
@@ -671,396 +672,321 @@
 
   </div>
 
-  <!-- === SHARED CORE JS (Copy ke semua file) === -->
+  <script src="js/data.js"></script>
   <script>
     /* ========================================
-       SHARED STATE MANAGEMENT (localStorage)
-       Ini adalah inti penghubung semua halaman.
+       NAV SCROLL EFFECT
     ======================================== */
-    const AppState = {
-      KEYS: {
-        USER: 'ws_user',
-        HISTORY: 'ws_history',
-        CURRENT_WALLET: 'ws_current_wallet',
-        SETTINGS: 'ws_settings',
-        DEMO_DONE: 'ws_demo_initialized'
-      },
+    (function() {
+      var nav = document.getElementById('mainNav');
+      var lastScroll = 0;
+      window.addEventListener('scroll', function() {
+        var y = window.scrollY;
+        if (y > 40) { nav.classList.add('scrolled'); }
+        else { nav.classList.remove('scrolled'); }
+        lastScroll = y;
+      }, { passive: true });
+    })();
 
-      // Cek apakah user sudah login
-      isLoggedIn() {
-        return !!localStorage.getItem(this.KEYS.USER);
-      },
+    /* ========================================
+       MOBILE NAV TOGGLE
+    ======================================== */
+    (function() {
+      var toggle = document.getElementById('navToggle');
+      var navLinks = document.querySelector('.nav-links');
+      var isOpen = false;
 
-      // Ambil data user
-      getUser() {
-        try { return JSON.parse(localStorage.getItem(this.KEYS.USER)); }
-        catch { return null; }
-      },
+      toggle.addEventListener('click', function() {
+        isOpen = !isOpen;
+        toggle.setAttribute('aria-expanded', isOpen);
 
-      // Set data user (login)
-      setUser(user) {
-        localStorage.setItem(this.KEYS.USER, JSON.stringify(user));
-      },
-
-      // Logout
-      logout() {
-        localStorage.removeItem(this.KEYS.USER);
-      },
-
-      // Ambil semua riwayat analisis
-      getHistory() {
-        try { return JSON.parse(localStorage.getItem(this.KEYS.HISTORY)) || []; }
-        catch { return []; }
-      },
-
-      // Tambah riwayat analisis baru
-      addHistory(walletData) {
-        const history = this.getHistory();
-        // Cek duplikat berdasarkan address
-        const existIdx = history.findIndex(h => h.address.toLowerCase() === walletData.address.toLowerCase());
-        if (existIdx > -1) {
-          history[existIdx] = { ...walletData, analyzedAt: new Date().toISOString() };
+        if (isOpen) {
+          navLinks.style.display = 'flex';
+          navLinks.style.flexDirection = 'column';
+          navLinks.style.position = 'absolute';
+          navLinks.style.top = '72px';
+          navLinks.style.left = '0';
+          navLinks.style.right = '0';
+          navLinks.style.background = 'rgba(6,10,19,0.95)';
+          navLinks.style.backdropFilter = 'blur(20px)';
+          navLinks.style.padding = '16px 24px';
+          navLinks.style.borderBottom = '1px solid var(--border-subtle)';
+          navLinks.style.gap = '4px';
+          navLinks.style.borderRadius = '0 0 var(--radius-lg) var(--radius-lg)';
+          navLinks.style.animation = 'fadeInUp 0.25s ease-out';
         } else {
-          history.unshift({ ...walletData, analyzedAt: new Date().toISOString() });
+          navLinks.style.display = '';
+          navLinks.style.flexDirection = '';
+          navLinks.style.position = '';
+          navLinks.style.top = '';
+          navLinks.style.left = '';
+          navLinks.style.right = '';
+          navLinks.style.background = '';
+          navLinks.style.backdropFilter = '';
+          navLinks.style.padding = '';
+          navLinks.style.borderBottom = '';
+          navLinks.style.gap = '';
+          navLinks.style.borderRadius = '';
+          navLinks.style.animation = '';
         }
-        // Simpan max 50 entri
-        if (history.length > 50) history.length = 50;
-        localStorage.setItem(this.KEYS.HISTORY, JSON.stringify(history));
-      },
 
-      // Hapus satu riwayat
-      removeHistory(address) {
-        const history = this.getHistory().filter(h => h.address.toLowerCase() !== address.toLowerCase());
-        localStorage.setItem(this.KEYS.HISTORY, JSON.stringify(history));
-      },
+        /* Animate hamburger */
+        var spans = toggle.querySelectorAll('span');
+        if (isOpen) {
+          spans[0].style.transform = 'rotate(45deg) translate(5px, 5px)';
+          spans[1].style.opacity = '0';
+          spans[2].style.transform = 'rotate(-45deg) translate(5px, -5px)';
+        } else {
+          spans[0].style.transform = '';
+          spans[1].style.opacity = '';
+          spans[2].style.transform = '';
+        }
+      });
 
-      // Hapus semua riwayat
-      clearHistory() {
-        localStorage.removeItem(this.KEYS.HISTORY);
-      },
+      /* Tutup saat klik link */
+      navLinks.addEventListener('click', function(e) {
+        if (e.target.tagName === 'A' && isOpen) {
+          toggle.click();
+        }
+      });
+    })();
 
-      // Set wallet yang sedang dilihat
-      setCurrentWallet(walletData) {
-        localStorage.setItem(this.KEYS.CURRENT_WALLET, JSON.stringify(walletData));
-      },
+    /* ========================================
+       TOAST
+    ======================================== */
+    function showToast(msg, type, dur) {
+      type = type || 'info';
+      dur = dur || 3000;
+      var c = document.getElementById('toastContainer');
+      var t = document.createElement('div');
+      t.className = 'toast ' + type;
+      var ic = { success: 'fa-circle-check', error: 'fa-circle-xmark', info: 'fa-circle-info' };
+      t.innerHTML = '<i class="fa-solid ' + (ic[type] || ic.info) + '"></i><span>' + msg + '</span>';
+      c.appendChild(t);
+      requestAnimationFrame(function() {
+        requestAnimationFrame(function() { t.classList.add('show'); });
+      });
+      setTimeout(function() {
+        t.classList.remove('show');
+        setTimeout(function() { t.remove(); }, 300);
+      }, dur);
+    }
 
-      // Ambil wallet yang sedang dilihat
-      getCurrentWallet() {
-        try { return JSON.parse(localStorage.getItem(this.KEYS.CURRENT_WALLET)); }
-        catch { return null; }
-      },
+    /* ========================================
+       WALLET INPUT VALIDATION & ANALYSIS
+    ======================================== */
+    (function() {
+      var input = document.getElementById('walletInput');
+      var hint = document.getElementById('inputHint');
+      var analyzeBtn = document.getElementById('analyzeBtn');
+      var ctaBtn = document.getElementById('ctaAnalyzeBtn');
 
-      // Ambil settings
-      getSettings() {
-        try { return JSON.parse(localStorage.getItem(this.KEYS.SETTINGS)) || { theme: 'dark', language: 'id', notifications: true, autoSave: true }; }
-        catch { return { theme: 'dark', language: 'id', notifications: true, autoSave: true }; }
-      },
+      function isValidAddress(addr) {
+        return /^0x[0-9a-fA-F]{40}$/.test(addr);
+      }
 
-      // Simpan settings
-      saveSettings(settings) {
-        localStorage.setItem(this.KEYS.SETTINGS, JSON.stringify(settings));
-      },
+      function validate() {
+        var val = input.value.trim();
+        if (!val) {
+          hint.textContent = '';
+          hint.className = 'input-hint';
+          return false;
+        }
+        if (!val.startsWith('0x')) {
+          hint.textContent = 'Alamat harus dimulai dengan 0x';
+          hint.className = 'input-hint error';
+          return false;
+        }
+        if (val.length < 42) {
+          hint.textContent = 'Alamat terlalu pendek — butuh 42 karakter';
+          hint.className = 'input-hint error';
+          return false;
+        }
+        if (val.length > 42) {
+          hint.textContent = 'Alamat terlalu panjang — maksimal 42 karakter';
+          hint.className = 'input-hint error';
+          return false;
+        }
+        if (!isValidAddress(val)) {
+          hint.textContent = 'Format alamat tidak valid — gunakan karakter hex (0-9, a-f)';
+          hint.className = 'input-hint error';
+          return false;
+        }
+        hint.textContent = 'Alamat valid — siap dianalisis';
+        hint.className = 'input-hint success';
+        return true;
+      }
 
-      // Inisialisasi data demo jika pertama kali
-      initDemoData() {
-        if (localStorage.getItem(this.KEYS.DEMO_DONE)) return;
-        const demoWallets = [
-          this.generateWalletData('0x742d35Cc6634C0532925a3b844Bc9e7595f2bD18'),
-          this.generateWalletData('0xAb5801a7D398351b8bE11C439e05C5B3259aeC9B'),
-          this.generateWalletData('0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045'),
+      input.addEventListener('input', validate);
+
+      function startAnalysis(addr) {
+        if (!addr || !isValidAddress(addr)) return;
+
+        var overlay = document.getElementById('loadingOverlay');
+        var steps = [
+          document.getElementById('step1'),
+          document.getElementById('step2'),
+          document.getElementById('step3'),
+          document.getElementById('step4')
         ];
-        demoWallets.forEach(w => this.addHistory(w));
-        localStorage.setItem(this.KEYS.DEMO_DONE, 'true');
-      },
 
-      // === DATA GENERATOR (Simulasi) ===
-      generateWalletData(address) {
-        // Hash sederhana dari address untuk konsistensi
-        let hash = 0;
-        for (let i = 0; i < address.length; i++) {
-          hash = ((hash << 5) - hash) + address.charCodeAt(i);
-          hash |= 0;
+        /* Reset steps */
+        for (var i = 0; i < steps.length; i++) {
+          steps[i].className = 'loading-step';
+          steps[i].querySelector('i').className = 'fa-solid fa-circle';
         }
-        const seed = Math.abs(hash);
+        steps[0].className = 'loading-step active';
+        steps[0].querySelector('i').className = 'fa-solid fa-circle-notch fa-spin';
 
-        // Generate skor berdasarkan seed
-        const txScore = 50 + (seed % 451); // 50-500
-        const ageScore = 30 + ((seed >> 4) % 471); // 30-500
-        const riskPenalty = (seed % 7 === 0) ? 50 + (seed % 100) : (seed % 11 === 0) ? 20 + (seed % 60) : 0;
-        const consistencyScore = 40 + ((seed >> 8) % 461); // 40-500
+        overlay.classList.add('active');
 
-        const totalScore = Math.max(0, Math.min(1000,
-          Math.round(txScore * 0.35 + ageScore * 0.25 + consistencyScore * 0.2 + (500 - riskPenalty) * 0.2)
-        ));
+        /* Simulasi loading steps */
+        setTimeout(function() {
+          steps[0].className = 'loading-step done';
+          steps[0].querySelector('i').className = 'fa-solid fa-circle-check';
+          steps[1].className = 'loading-step active';
+          steps[1].querySelector('i').className = 'fa-solid fa-circle-notch fa-spin';
+        }, 800);
 
-        const totalTx = 10 + (seed % 2000);
-        const successRate = 85 + (seed % 16); // 85-100%
-        const walletAgeDays = 30 + (seed % 1500);
-        const firstTxDate = new Date(Date.now() - walletAgeDays * 86400000);
+        setTimeout(function() {
+          steps[1].className = 'loading-step done';
+          steps[1].querySelector('i').className = 'fa-solid fa-circle-check';
+          steps[2].className = 'loading-step active';
+          steps[2].querySelector('i').className = 'fa-solid fa-circle-notch fa-spin';
+        }, 1600);
 
-        // Risk flags
-        const riskFlags = [];
-        if (seed % 7 === 0) riskFlags.push({ type: 'high', text: 'Interaksi dengan kontrak terblacklist (Tornado Cash)' });
-        if (seed % 11 === 0) riskFlags.push({ type: 'medium', text: 'Pola transaksi mencurigakan: frekuensi tinggi dalam waktu singkat' });
-        if (seed % 13 === 0) riskFlags.push({ type: 'low', text: 'Pernah berinteraksi dengan address berisiko' });
-        if (seed % 17 === 0) riskFlags.push({ type: 'medium', text: 'Large transfer ke address baru tanpa riwayat' });
+        setTimeout(function() {
+          steps[2].className = 'loading-step done';
+          steps[2].querySelector('i').className = 'fa-solid fa-circle-check';
+          steps[3].className = 'loading-step active';
+          steps[3].querySelector('i').className = 'fa-solid fa-circle-notch fa-spin';
+        }, 2200);
 
-        // Status
-        let status = 'Excellent';
-        if (totalScore < 300) status = 'Dangerous';
-        else if (totalScore < 550) status = 'Risky';
-        else if (totalScore < 750) status = 'Good';
+        setTimeout(function() {
+          steps[3].className = 'loading-step done';
+          steps[3].querySelector('i').className = 'fa-solid fa-circle-check';
 
-        // Breakdown
-        const breakdown = {
-          transactions: { score: Math.min(100, Math.round(txScore / 5)), label: 'Transaksi' },
-          age: { score: Math.min(100, Math.round(ageScore / 5)), label: 'Umur Wallet' },
-          consistency: { score: Math.min(100, Math.round(consistencyScore / 5)), label: 'Konsistensi' },
-          risk: { score: Math.min(100, Math.round((500 - riskPenalty) / 5)), label: 'Risk Profile' }
-        };
+          /* Simpan wallet dan redirect ke dashboard */
+          localStorage.setItem('whs_wallet', addr);
+          localStorage.setItem('whs_login_time', new Date().toISOString());
+          sessionStorage.removeItem('walletData');
 
-        // Tren skor (simulasi 7 hari terakhir)
-        const scoreTrend = [];
-        for (let i = 6; i >= 0; i--) {
-          scoreTrend.push({
-            date: new Date(Date.now() - i * 86400000).toISOString().split('T')[0],
-            score: Math.max(0, Math.min(1000, totalScore + (Math.floor(Math.random() * 60) - 30)))
-          });
+          setTimeout(function() {
+            window.location.href = 'dashboard.html';
+          }, 400);
+        }, 2800);
+      }
+
+      analyzeBtn.addEventListener('click', function() {
+        var val = input.value.trim();
+        if (validate()) {
+          startAnalysis(val);
+        } else if (!val) {
+          hint.textContent = 'Masukkan alamat wallet terlebih dahulu';
+          hint.className = 'input-hint error';
+          input.focus();
+        } else {
+          showToast('Alamat wallet tidak valid', 'error', 2500);
         }
+      });
 
-        return {
-          address,
-          score: totalScore,
-          status,
-          breakdown,
-          riskFlags,
-          scoreTrend,
-          metadata: {
-            totalTransactions: totalTx,
-            successRate,
-            walletAgeDays,
-            firstTransaction: firstTxDate.toISOString().split('T')[0],
-            lastTransaction: new Date(Date.now() - (seed % 5) * 86400000).toISOString().split('T')[0],
-            avgGasUsed: 21000 + (seed % 150000),
-            uniqueContracts: 3 + (seed % 50),
-            network: 'Ethereum Mainnet'
-          },
-          analyzedAt: new Date().toISOString()
-        };
-      }
-    };
+      input.addEventListener('keydown', function(e) {
+        if (e.key === 'Enter') analyzeBtn.click();
+      });
 
-    // Inisialisasi demo data saat pertama kali
-    AppState.initDemoData();
-
-    /* ========================================
-       SHARED: Toast Notification
-    ======================================== */
-    function showToast(message, type = 'info', duration = 3500) {
-      const container = document.getElementById('toastContainer');
-      if (!container) return;
-      const toast = document.createElement('div');
-      toast.className = `toast ${type}`;
-      const iconMap = { success: 'fa-solid fa-circle-check', error: 'fa-solid fa-circle-xmark', info: 'fa-solid fa-circle-info' };
-      toast.innerHTML = `<i class="${iconMap[type] || iconMap.info}"></i><span>${message}</span>`;
-      container.appendChild(toast);
-      requestAnimationFrame(() => requestAnimationFrame(() => toast.classList.add('show')));
-      setTimeout(() => { toast.classList.remove('show'); setTimeout(() => toast.remove(), 300); }, duration);
-    }
-
-    /* ========================================
-       SHARED: Scroll Reveal
-    ======================================== */
-    function initScrollReveal() {
-      const observer = new IntersectionObserver((entries) => {
-        entries.forEach(e => { if (e.isIntersecting) { e.target.classList.add('visible'); observer.unobserve(e.target); } });
-      }, { threshold: 0.1, rootMargin: '0px 0px -40px 0px' });
-      document.querySelectorAll('.reveal').forEach(el => observer.observe(el));
-    }
-
-    /* ========================================
-       SHARED: Format Helpers
-    ======================================== */
-    function shortenAddr(addr) {
-      if (!addr || addr.length < 10) return addr || '';
-      return addr.slice(0, 6) + '...' + addr.slice(-4);
-    }
-    function formatDate(isoStr) {
-      if (!isoStr) return '-';
-      const d = new Date(isoStr);
-      return d.toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' });
-    }
-    function formatDateTime(isoStr) {
-      if (!isoStr) return '-';
-      const d = new Date(isoStr);
-      return d.toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' });
-    }
-    function statusClass(status) {
-      return status.toLowerCase();
-    }
-  </script>
-
-  <!-- === PAGE-SPECIFIC JS: index.html === -->
-  <script>
-    /* === NAV SCROLL === */
-    const nav = document.getElementById('mainNav');
-    window.addEventListener('scroll', () => {
-      nav.classList.toggle('scrolled', window.scrollY > 40);
-    }, { passive: true });
-
-    /* === MOBILE NAV TOGGLE === */
-    document.getElementById('navToggle').addEventListener('click', function() {
-      const links = document.querySelector('.nav-links');
-      const expanded = this.getAttribute('aria-expanded') === 'true';
-      if (!expanded) {
-        links.style.display = 'flex';
-        links.style.position = 'absolute';
-        links.style.top = '72px';
-        links.style.left = '0';
-        links.style.right = '0';
-        links.style.background = 'rgba(6,10,19,0.95)';
-        links.style.backdropFilter = 'blur(20px)';
-        links.style.flexDirection = 'column';
-        links.style.padding = '16px';
-        links.style.borderBottom = '1px solid var(--border-subtle)';
-        this.setAttribute('aria-expanded', 'true');
-        this.children[0].style.transform = 'rotate(45deg) translate(5px, 5px)';
-        this.children[1].style.opacity = '0';
-        this.children[2].style.transform = 'rotate(-45deg) translate(5px, -5px)';
-      } else {
-        links.style.display = '';
-        links.style.position = '';
-        links.style.top = '';
-        links.style.left = '';
-        links.style.right = '';
-        links.style.background = '';
-        links.style.backdropFilter = '';
-        links.style.flexDirection = '';
-        links.style.padding = '';
-        links.style.borderBottom = '';
-        this.setAttribute('aria-expanded', 'false');
-        this.children[0].style.transform = '';
-        this.children[1].style.opacity = '';
-        this.children[2].style.transform = '';
-      }
-    });
-
-    /* === MARQUEE === */
-    (function initMarquee() {
-      const stats = [
-        { value: '12,847', label: 'Wallet Dianalisis' },
-        { value: '98.7%', label: 'Uptime' },
-        { value: '2.3 detik', label: 'Rata-rata Analisis' },
-        { value: '6 Dimensi', label: 'Penilaian' },
-        { value: '0 ETH', label: 'Biaya Penggunaan' },
-        { value: '24/7', label: 'Available' },
-      ];
-      const track = document.getElementById('marqueeTrack');
-      let html = '';
-      // Duplikat 3x untuk seamless loop
-      for (let r = 0; r < 3; r++) {
-        stats.forEach((s, i) => {
-          html += `<div class="marquee-item"><span class="marquee-value">${s.value}</span><span class="marquee-label">${s.label}</span>${i < stats.length - 1 ? '<div class="marquee-divider"></div>' : ''}</div>`;
+      /* CTA button scroll ke input */
+      if (ctaBtn) {
+        ctaBtn.addEventListener('click', function() {
+          input.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          setTimeout(function() { input.focus(); }, 500);
         });
+      }
+
+      /* Demo wallet buttons */
+      var demoBtns = document.querySelectorAll('.demo-wallet-btn');
+      for (var d = 0; d < demoBtns.length; d++) {
+        demoBtns[d].addEventListener('click', function() {
+          var wallet = this.getAttribute('data-wallet');
+          input.value = wallet;
+          validate();
+          input.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          setTimeout(function() { input.focus(); }, 300);
+        });
+      }
+    })();
+
+    /* ========================================
+       MARQUEE
+    ======================================== */
+    (function() {
+      var track = document.getElementById('marqueeTrack');
+      var items = [
+        { value: '1.2M+', label: 'Wallet Dianalisis' },
+        { value: '850K+', label: 'Transaksi Diproses' },
+        { value: '99.2%', label: 'Uptime Platform' },
+        { value: '4.8/5', label: 'Rating Pengguna' },
+        { value: '150+', label: 'Risk Pattern' },
+        { value: '0.3s', label: 'Rata-rata Respons' },
+        { value: '256-bit', label: 'Enkripsi Data' },
+        { value: '24/7', label: 'Monitoring On-Chain' }
+      ];
+
+      var html = '';
+      /* Duplikasi 2x untuk infinite scroll */
+      for (var r = 0; r < 2; r++) {
+        for (var i = 0; i < items.length; i++) {
+          html += '<div class="marquee-item">'
+            + '<span class="marquee-value">' + items[i].value + '</span>'
+            + '<span class="marquee-label">' + items[i].label + '</span>'
+            + '</div>';
+          if (i < items.length - 1 || r === 0) {
+            html += '<div class="marquee-divider"></div>';
+          }
+        }
       }
       track.innerHTML = html;
     })();
 
-    /* === GAUGE ANIMATION === */
-    const gaugeFill = document.getElementById('gaugeFill');
-    const gaugeObserver = new IntersectionObserver((entries) => {
-      entries.forEach(e => {
-        if (e.isIntersecting) { gaugeFill.classList.add('animated'); gaugeObserver.unobserve(e.target); }
-      });
-    }, { threshold: 0.3 });
-    gaugeObserver.observe(document.getElementById('scoreGauge'));
+    /* ========================================
+       SCROLL REVEAL
+    ======================================== */
+    (function() {
+      var reveals = document.querySelectorAll('.reveal');
+      if (!reveals.length) return;
 
-    /* === WALLET INPUT & ANALISIS === */
-    const walletInput = document.getElementById('walletInput');
-    const analyzeBtn = document.getElementById('analyzeBtn');
-    const inputHint = document.getElementById('inputHint');
-    const loadingOverlay = document.getElementById('loadingOverlay');
+      var observer = new IntersectionObserver(function(entries) {
+        for (var i = 0; i < entries.length; i++) {
+          if (entries[i].isIntersecting) {
+            entries[i].target.classList.add('visible');
+            observer.unobserve(entries[i].target);
+          }
+        }
+      }, { threshold: 0.12, rootMargin: '0px 0px -40px 0px' });
 
-    function validateAddress(addr) {
-      if (!addr || addr.trim().length === 0) return { valid: false, msg: '' };
-      if (!addr.startsWith('0x')) return { valid: false, msg: 'Alamat harus dimulai dengan 0x' };
-      if (addr.length !== 42) return { valid: false, msg: `Panjang alamat harus 42 karakter (saat ini: ${addr.length})` };
-      if (!/^[0-9a-fA-Fx]+$/.test(addr)) return { valid: false, msg: 'Alamat mengandung karakter tidak valid' };
-      return { valid: true, msg: 'Alamat valid' };
-    }
-
-    walletInput.addEventListener('input', () => {
-      const v = validateAddress(walletInput.value.trim());
-      inputHint.textContent = v.msg;
-      inputHint.className = 'input-hint' + (v.msg ? (v.valid ? ' success' : ' error') : '');
-    });
-
-    // Demo wallet buttons
-    document.querySelectorAll('.demo-wallet-btn').forEach(btn => {
-      btn.addEventListener('click', () => {
-        walletInput.value = btn.dataset.wallet;
-        walletInput.dispatchEvent(new Event('input'));
-        startAnalysis();
-      });
-    });
-
-    analyzeBtn.addEventListener('click', startAnalysis);
-    document.getElementById('ctaAnalyzeBtn').addEventListener('click', () => {
-      walletInput.scrollIntoView({ behavior: 'smooth', block: 'center' });
-      setTimeout(() => walletInput.focus(), 500);
-    });
-    walletInput.addEventListener('keydown', (e) => { if (e.key === 'Enter') startAnalysis(); });
-
-    function startAnalysis() {
-      const addr = walletInput.value.trim();
-      const validation = validateAddress(addr);
-      if (!validation.valid) {
-        inputHint.textContent = validation.msg;
-        inputHint.className = 'input-hint error';
-        if (!addr) inputHint.textContent = 'Silakan masukkan alamat wallet terlebih dahulu';
-        return;
+      for (var r = 0; r < reveals.length; r++) {
+        observer.observe(reveals[r]);
       }
+    })();
 
-      // Tampilkan loading
-      loadingOverlay.classList.add('active');
-      const steps = ['step1','step2','step3','step4'];
-      let currentStep = 0;
+    /* ========================================
+       GAUGE ANIMATION (on scroll)
+    ======================================== */
+    (function() {
+      var gauge = document.getElementById('gaugeFill');
+      if (!gauge) return;
 
-      const stepInterval = setInterval(() => {
-        if (currentStep > 0) {
-          document.getElementById(steps[currentStep - 1]).className = 'loading-step done';
-          document.getElementById(steps[currentStep - 1]).querySelector('i').className = 'fa-solid fa-circle-check';
+      var animated = false;
+      var observer = new IntersectionObserver(function(entries) {
+        if (entries[0].isIntersecting && !animated) {
+          animated = true;
+          gauge.classList.add('animated');
+          observer.unobserve(entries[0].target);
         }
-        if (currentStep < steps.length) {
-          document.getElementById(steps[currentStep]).className = 'loading-step active';
-          document.getElementById(steps[currentStep]).querySelector('i').className = 'fa-solid fa-circle-notch fa-spin';
-          currentStep++;
-        }
-      }, 500);
+      }, { threshold: 0.3 });
 
-      // Simulasi proses 2.5 detik
-      setTimeout(() => {
-        clearInterval(stepInterval);
-        // Tandai semua step selesai
-        steps.forEach(s => {
-          document.getElementById(s).className = 'loading-step done';
-          document.getElementById(s).querySelector('i').className = 'fa-solid fa-circle-check';
-        });
-
-        // Generate data & simpan ke state
-        const walletData = AppState.generateWalletData(addr);
-        AppState.setCurrentWallet(walletData);
-        AppState.addHistory(walletData);
-
-        // Redirect ke dashboard
-        setTimeout(() => {
-          window.location.href = 'dashboard.html';
-        }, 400);
-      }, 2500);
-    }
-
-    /* === SCROLL REVEAL === */
-    initScrollReveal();
+      observer.observe(document.getElementById('scoreGauge'));
+    })();
   </script>
+
 </body>
 </html>
