@@ -285,6 +285,21 @@
   </style>
 </head>
 <body>
+  
+  <!-- 
+    ==========================================
+    DEFENSIVE KILL SWITCH (PENYELESAI BUG OVERLAY TRANSPARAN)
+    Script inline ini berjalan SEBELUM CSS/HTML lain diproses oleh browser.
+    Ini menjamin elemen loading TIDAK PERNAH bisa menutupi halaman saat load awal.
+    ==========================================
+  -->
+  <script>
+    (function() {
+      var ol = document.getElementById('loadingOverlay');
+      if(ol) { ol.style.display = 'none'; }
+    })();
+  </script>
+
   <!-- Background Atmosphere -->
   <div class="bg-atmosphere" aria-hidden="true">
     <div class="orb orb-1"></div>
@@ -381,7 +396,7 @@
           Masukkan alamat wallet dan dapatkan skor reputasi instan.
         </p>
 
-        <!-- Wallet Input (DIPERBAIKI: HTML YANG TERPOTONG) -->
+        <!-- Wallet Input -->
         <div class="wallet-input-section">
           <div class="wallet-input-card" id="inputCard">
             <div class="wallet-input-icon"><i class="fa-solid fa-wallet"></i></div>
@@ -538,12 +553,12 @@
   </div>
 
   <!-- ==========================================
-       JAVASCRIPT INTI (PENYELESAI BUG)
+       JAVASCRIPT INTI (LOGIKA TANPA MENGUBAH TAMPILAN)
   ========================================== -->
   <script>
     document.addEventListener('DOMContentLoaded', () => {
       
-      // 1. LOGIKA MOBILE MENU (MEMPERBAIKI MENU YANG TIDAK MERESPON)
+      // 1. LOGIKA MOBILE MENU
       const navToggle = document.getElementById('navToggle');
       const mobileMenu = document.getElementById('mobileMenu');
       const menuBackdrop = document.getElementById('menuBackdrop');
@@ -554,16 +569,15 @@
         mobileMenu.classList.add('open');
         mobileMenu.setAttribute('aria-hidden', 'false');
         navToggle.setAttribute('aria-expanded', 'true');
-        body.style.overflow = 'hidden'; // Mencegah scroll di belakang
+        body.style.overflow = 'hidden';
       }
 
-      // Fungsi global agar bisa dipanggil dari onclick di HTML
       window.closeMobileMenu = function() {
         navToggle.classList.remove('open');
         mobileMenu.classList.remove('open');
         mobileMenu.setAttribute('aria-hidden', 'true');
         navToggle.setAttribute('aria-expanded', 'false');
-        body.style.overflow = ''; // Kembalikan scroll
+        body.style.overflow = '';
       };
 
       navToggle.addEventListener('click', () => {
@@ -574,10 +588,8 @@
         }
       });
 
-      // Tutup menu jika klik backdrop
       menuBackdrop.addEventListener('click', window.closeMobileMenu);
 
-      // Tutup menu jika tekan ESC
       document.addEventListener('keydown', (e) => {
         if (e.key === 'Escape' && mobileMenu.classList.contains('open')) {
           window.closeMobileMenu();
@@ -585,22 +597,20 @@
       });
 
 
-      // 2. LOGIKA LOGIN / MULAI GRATIS (MEMPERBAIKI TOMBOL YANG TIDAK MERESPON)
+      // 2. LOGIKA LOGIN / MULAI GRATIS
       const handleLoginClick = (e) => {
         e.preventDefault();
-        window.closeMobileMenu(); // Tutup menu jika terbuka
+        window.closeMobileMenu();
         showToast('info', 'Fitur login akan segera tersedia. Saat ini Anda berada di mode Demo.');
       };
 
       const handleStartClick = (e) => {
         e.preventDefault();
         window.closeMobileMenu();
-        // Scroll halus ke input wallet
         document.getElementById('walletInput').focus();
         window.scrollTo({ top: 0, behavior: 'smooth' });
       };
 
-      // Pasang event listener ke semua tombol login/start (Desktop & Mobile)
       document.getElementById('loginBtnDesktop').addEventListener('click', handleLoginClick);
       document.getElementById('startBtnDesktop').addEventListener('click', handleStartClick);
       document.getElementById('loginBtnMobile').addEventListener('click', handleLoginClick);
@@ -612,10 +622,10 @@
       const walletInput = document.getElementById('walletInput');
       const analyzeBtn = document.getElementById('analyzeBtn');
       const inputHint = document.getElementById('inputHint');
+      // Ambil referensi overlay
       const loadingOverlay = document.getElementById('loadingOverlay');
       const demoWalletBtns = document.querySelectorAll('.demo-wallet-btn');
 
-      // Isi input saat klik demo wallet
       demoWalletBtns.forEach(btn => {
         btn.addEventListener('click', () => {
           walletInput.value = btn.dataset.wallet;
@@ -625,7 +635,6 @@
         });
       });
 
-      // Validasi dan mulai analisis
       const startAnalysis = () => {
         const val = walletInput.value.trim();
         if (!val) {
@@ -639,8 +648,6 @@
           inputHint.className = 'input-hint error';
           return;
         }
-
-        // Jalankan animasi loading
         runLoadingSimulation();
       };
 
@@ -652,7 +659,15 @@
 
       // 4. SIMULASI LOADING ANIMASI
       const runLoadingSimulation = () => {
-        loadingOverlay.classList.add('active');
+        // [PERBAIKAN] Kembalikan display ke flex SEBELUM menambahkan class active
+        // Karena kita bunuh display-nya di atas tadi pakai Kill Switch
+        loadingOverlay.style.display = 'flex'; 
+        
+        // Beri jeda mikro agar browser mengubah display, baru jalankan animasi opacity
+        setTimeout(() => {
+          loadingOverlay.classList.add('active');
+        }, 10);
+
         const steps = [
           document.getElementById('step1'),
           document.getElementById('step2'),
@@ -660,8 +675,7 @@
           document.getElementById('step4')
         ];
 
-        // Reset steps
-        steps.forEach((step, i) => {
+        steps.forEach((step) => {
           step.className = 'loading-step';
           step.querySelector('i').className = 'fa-solid fa-circle';
         });
@@ -684,6 +698,11 @@
             clearInterval(interval);
             setTimeout(() => {
               loadingOverlay.classList.remove('active');
+              // [PERBAIKAN] Sembunyikan kembali setelah animasi fade out selesai
+              setTimeout(() => {
+                loadingOverlay.style.display = 'none';
+              }, 300);
+              
               showToast('success', 'Analisis selesai! Skor wallet: 85/100 (Excellent).');
             }, 500);
           }
@@ -728,14 +747,12 @@
         toast.innerHTML = `<i class="fa-solid ${iconClass}"></i><span>${message}</span>`;
         container.appendChild(toast);
 
-        // Trigger reflow untuk animasi
         requestAnimationFrame(() => {
           requestAnimationFrame(() => {
             toast.classList.add('show');
           });
         });
 
-        // Hapus toast setelah 4 detik
         setTimeout(() => {
           toast.classList.remove('show');
           setTimeout(() => toast.remove(), 300);
