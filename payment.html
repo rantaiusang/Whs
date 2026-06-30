@@ -5,13 +5,14 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>WHS Payment Test</title>
 
+  <!-- SDK Pi Network -->
   <script src="https://sdk.minepi.com/pi-sdk.js"></script>
 
   <script>
+    // Pastikan versi dan sandbox sesuai
     Pi.init({ version: "2.0", sandbox: true });
   </script>
 </head>
-
 <body>
 
   <h2>💳 WHS Payment Test</h2>
@@ -23,61 +24,60 @@
   <script>
     async function pay() {
       try {
-
         console.log("=== START PAYMENT ===");
+        document.getElementById('status').innerText = "Mengautentikasi...";
 
-        document.getElementById("status").innerText = "Login Pi...";
+        // 1. AUTHENTICATE (Gaya SDK 2.0 - Promise based + WAJIB ada 'payments')
+        const authResult = await Pi.authenticate(['username', 'payments']);
+        
+        console.log("LOGIN SUCCESS:", authResult);
+        const username = authResult.user?.username || "unknown";
+        
+        document.getElementById('status').innerText = "Membuka dialog payment...";
 
-        // 1. LOGIN PI
-        const auth = await Pi.authenticate(['username']);
-
-        console.log("LOGIN SUCCESS:", auth);
-
-        const username = auth?.user?.username || "unknown";
-
-        document.getElementById("status").innerText = "Buat Payment...";
-
-        // 2. CREATE PAYMENT
-        Pi.createPayment({
-          amount: 1,
+        // 2. CREATE PAYMENT (amount WAJIB String)
+        const paymentResult = await Pi.createPayment({
+          amount: "1.00", // WAJIB STRING
           memo: "WHS Test Payment",
           metadata: {
             user: username
           }
         }, {
-
+          
           onReadyForServerApproval: function(paymentId) {
-            console.log("APPROVAL:", paymentId);
-            document.getElementById("status").innerText = "Menunggu approval...";
+            console.log("APPROVAL ID:", paymentId);
+            document.getElementById('status').innerText = "Menunggu approval server...";
+            
+            // 👇 DI SINI TEMPAT KAMU KIRIM paymentId KE SUPABASE
+            // Contoh: kirimKeSupabase(paymentId);
           },
 
           onReadyForServerCompletion: function(paymentId, txid) {
-            console.log("COMPLETE:", paymentId, txid);
-            document.getElementById("status").innerText = "Payment BERHASIL ✔";
+            console.log("COMPLETE ID:", paymentId, "TXID:", txid);
+            document.getElementById('status').innerText = "Payment BERHASIL ✔";
+            
+            // 👇 DI SINI TEMPAT KAMU UPDATE STATUS DI SUPABASE JADI 'COMPLETED'
+            // Contoh: updateSupabase(paymentId, txid);
           },
 
           onCancel: function(paymentId) {
             console.log("CANCEL:", paymentId);
-            document.getElementById("status").innerText = "Payment dibatalkan";
+            document.getElementById('status').innerText = "Payment dibatalkan oleh user";
           },
 
           onError: function(err) {
-            console.log("PAYMENT ERROR:", err);
-            alert("PAYMENT ERROR:\n" + JSON.stringify(err, null, 2));
-            document.getElementById("status").innerText = "Payment error";
+            console.error("PAYMENT ERROR:", err);
+            document.getElementById('status').innerText = "Payment error: " + err.message;
           }
 
         });
 
+        console.log("Payment flow initiated:", paymentResult);
+
       } catch (err) {
-
-        // 🔥 INI ERROR LOGIN / SDK
-        console.log("LOGIN/SDK ERROR:", err);
-        alert("LOGIN ERROR:\n" + JSON.stringify(err, null, 2));
-
-        document.getElementById("status").innerText =
-          "Login gagal / SDK error (lihat popup)";
-
+        // Menangkap error dari Pi.authenticate
+        console.error("FATAL ERROR:", err);
+        document.getElementById('status').innerText = "Gagal: " + (err.message || err);
       }
     }
   </script>
