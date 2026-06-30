@@ -2,8 +2,9 @@
 <html lang="id">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0" />
   <title>Pengaturan — Wallet Health Score</title>
+  <meta name="robots" content="noindex, nofollow" />
 
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -15,8 +16,6 @@
       --bg-primary: #060a13;
       --bg-secondary: #0c1222;
       --bg-card: rgba(14, 22, 42, 0.65);
-      --bg-card-hover: rgba(20, 32, 58, 0.75);
-      --bg-sidebar: rgba(8, 14, 28, 0.92);
       --bg-input: rgba(6, 10, 19, 0.6);
       --bg-danger-zone: rgba(239, 68, 68, 0.04);
       --border-color: rgba(45, 212, 191, 0.12);
@@ -51,8 +50,7 @@
       --shadow-card: 0 4px 24px rgba(0, 0, 0, 0.3);
       --shadow-glow: 0 0 40px rgba(45, 212, 191, 0.06);
 
-      --sidebar-width: 260px;
-      --topbar-height: 64px;
+      --topbar-height: 56px;
 
       --transition-fast: 150ms cubic-bezier(0.4, 0, 0.2, 1);
       --transition-base: 250ms cubic-bezier(0.4, 0, 0.2, 1);
@@ -67,144 +65,140 @@
     a { color: inherit; text-decoration: none; transition: color var(--transition-fast); }
     button { font-family: var(--font-body); cursor: pointer; border: none; outline: none; background: none; }
 
+    /* Background */
     .bg-atmosphere {
       position: fixed; top: 0; left: 0; width: 100%; height: 100%;
       pointer-events: none; z-index: 0; overflow: hidden;
     }
     .bg-atmosphere .orb {
-      position: absolute; border-radius: 50%; filter: blur(120px); opacity: 0.2;
-      animation: orbFloat 25s ease-in-out infinite;
+      position: absolute; border-radius: 50%; filter: blur(100px); opacity: 0.18;
+      animation: orbFloat 25s ease-in-out infinite; will-change: transform;
     }
     .bg-atmosphere .orb-1 {
-      width: 500px; height: 500px;
-      background: radial-gradient(circle, rgba(45, 212, 191, 0.1) 0%, transparent 70%);
-      top: -10%; left: -5%;
+      width: 320px; height: 320px;
+      background: radial-gradient(circle, rgba(45, 212, 191, 0.12) 0%, transparent 70%);
+      top: -8%; left: -5%;
     }
     .bg-atmosphere .orb-2 {
-      width: 400px; height: 400px;
+      width: 260px; height: 260px;
       background: radial-gradient(circle, rgba(245, 158, 11, 0.06) 0%, transparent 70%);
-      bottom: -10%; right: -5%; animation-delay: -10s; animation-duration: 28s;
+      bottom: -8%; right: -5%; animation-delay: -10s; animation-duration: 28s;
     }
     @keyframes orbFloat {
       0%, 100% { transform: translate(0, 0) scale(1); }
-      33% { transform: translate(20px, -30px) scale(1.03); }
-      66% { transform: translate(-15px, 15px) scale(0.97); }
-    }
-    .bg-noise {
-      position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-      pointer-events: none; z-index: 0; opacity: 0.02;
-      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
-      background-size: 256px 256px;
+      33% { transform: translate(15px, -20px) scale(1.03); }
+      66% { transform: translate(-10px, 10px) scale(0.97); }
     }
 
-    .dashboard-layout { position: relative; z-index: 1; display: flex; min-height: 100vh; }
-
-    /* Sidebar */
-    .sidebar {
-      width: var(--sidebar-width); background: var(--bg-sidebar);
-      border-right: 1px solid var(--border-subtle);
-      backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
-      display: flex; flex-direction: column;
-      position: fixed; top: 0; left: 0; bottom: 0;
-      z-index: 50; transition: transform var(--transition-base);
-    }
-    .sidebar-brand {
-      padding: 20px 24px; display: flex; align-items: center; gap: 10px;
-      border-bottom: 1px solid var(--border-subtle);
-      font-family: var(--font-display); font-weight: 700; font-size: 1.1rem;
-    }
-    .sidebar-brand-icon {
-      width: 32px; height: 32px;
-      background: linear-gradient(135deg, var(--accent), #0d9488);
-      border-radius: var(--radius-sm);
-      display: flex; align-items: center; justify-content: center;
-      font-size: 0.85rem; color: var(--bg-primary);
-      box-shadow: 0 0 14px var(--accent-glow);
-    }
-    .sidebar-nav {
-      flex: 1; padding: 16px 12px;
-      display: flex; flex-direction: column; gap: 4px; overflow-y: auto;
-    }
-    .nav-section-label {
-      font-size: 0.68rem; font-weight: 600; text-transform: uppercase;
-      letter-spacing: 0.1em; color: var(--text-muted); padding: 16px 12px 8px;
-    }
-    .nav-item {
-      display: flex; align-items: center; gap: 12px;
-      padding: 11px 14px; border-radius: var(--radius-md);
-      font-size: 0.9rem; font-weight: 500; color: var(--text-secondary);
-      transition: all var(--transition-fast); position: relative;
-    }
-    .nav-item i { width: 20px; text-align: center; font-size: 0.9rem; }
-    .nav-item:hover { color: var(--text-primary); background: rgba(255,255,255,0.04); }
-    .nav-item.active { color: var(--accent); background: var(--accent-dim); }
-    .nav-item.active::before {
-      content: ''; position: absolute; left: 0; top: 50%; transform: translateY(-50%);
-      width: 3px; height: 20px; background: var(--accent); border-radius: 0 3px 3px 0;
-    }
-    .sidebar-footer { padding: 16px; border-top: 1px solid var(--border-subtle); }
-    .sidebar-wallet {
-      display: flex; align-items: center; gap: 10px; padding: 10px 12px;
-      background: rgba(255,255,255,0.02); border: 1px solid var(--border-subtle);
-      border-radius: var(--radius-md); cursor: pointer; transition: all var(--transition-fast);
-    }
-    .sidebar-wallet:hover { border-color: var(--border-color); background: rgba(255,255,255,0.04); }
-    .sidebar-wallet-avatar {
-      width: 32px; height: 32px; border-radius: 50%;
-      background: linear-gradient(135deg, var(--accent-dim), rgba(45,212,191,0.25));
-      display: flex; align-items: center; justify-content: center;
-      font-size: 0.75rem; color: var(--accent);
-      font-family: var(--font-display); font-weight: 700; flex-shrink: 0;
-    }
-    .sidebar-wallet-info { flex: 1; min-width: 0; }
-    .sidebar-wallet-addr {
-      font-family: 'Space Grotesk', monospace; font-size: 0.8rem; font-weight: 500;
-      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
-    }
-    .sidebar-wallet-label { font-size: 0.7rem; color: var(--text-muted); }
-
-    /* Main */
-    .main-content {
-      flex: 1; margin-left: var(--sidebar-width);
-      display: flex; flex-direction: column; min-height: 100vh;
-    }
+    /* ===== Topbar — Konsisten dengan halaman Riwayat ===== */
     .topbar {
-      height: var(--topbar-height); padding: 0 32px;
+      height: var(--topbar-height); padding: 0 16px;
       display: flex; align-items: center; justify-content: space-between;
       border-bottom: 1px solid var(--border-subtle);
-      background: rgba(6,10,19,0.6); backdrop-filter: blur(12px);
-      -webkit-backdrop-filter: blur(12px);
+      background: rgba(6, 10, 19, 0.85); backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
       position: sticky; top: 0; z-index: 40;
     }
-    .topbar-left { display: flex; align-items: center; gap: 16px; }
-    .sidebar-toggle {
-      display: none; width: 36px; height: 36px; border-radius: var(--radius-sm);
-      align-items: center; justify-content: center; color: var(--text-secondary);
-      font-size: 1.1rem; transition: all var(--transition-fast);
+    .topbar-left {
+      display: flex; align-items: center; gap: 12px; min-width: 0; flex: 1;
     }
-    .sidebar-toggle:hover { color: var(--text-primary); background: rgba(255,255,255,0.05); }
-    .topbar-breadcrumb { display: flex; align-items: center; gap: 8px; font-size: 0.85rem; }
-    .topbar-breadcrumb a { color: var(--text-muted); }
-    .topbar-breadcrumb a:hover { color: var(--accent); }
-    .topbar-breadcrumb .sep { color: var(--text-muted); opacity: 0.4; }
-    .topbar-breadcrumb .current { color: var(--text-primary); font-weight: 500; }
-    .topbar-right { display: flex; align-items: center; gap: 12px; }
+    .back-btn {
+      display: inline-flex; align-items: center; gap: 6px;
+      padding: 8px 14px; font-size: 0.82rem; font-weight: 600;
+      color: var(--accent); border: 1px solid var(--border-color);
+      border-radius: var(--radius-full); transition: all var(--transition-fast);
+      white-space: nowrap; flex-shrink: 0; background: var(--accent-dim);
+    }
+    .back-btn:hover {
+      background: rgba(45, 212, 191, 0.18); border-color: var(--border-color-hover);
+      box-shadow: 0 0 16px var(--accent-glow);
+    }
+    .back-btn:active { transform: scale(0.97); }
+    .back-btn i { font-size: 0.8rem; }
+    .topbar-title {
+      font-family: var(--font-display); font-size: 1rem; font-weight: 600;
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0;
+    }
+    .topbar-right {
+      display: flex; align-items: center; gap: 4px; flex-shrink: 0;
+    }
+    .topbar-btn {
+      width: 36px; height: 36px; border-radius: var(--radius-sm);
+      display: flex; align-items: center; justify-content: center;
+      color: var(--text-muted); font-size: 0.9rem; transition: all var(--transition-fast);
+    }
+    .topbar-btn:hover { color: var(--text-primary); background: rgba(255,255,255,0.05); }
     .btn-logout {
-      display: inline-flex; align-items: center; gap: 8px;
-      padding: 8px 16px; font-size: 0.82rem; font-weight: 500;
+      display: inline-flex; align-items: center; gap: 4px;
+      padding: 6px 10px; font-size: 0.78rem; font-weight: 500;
       color: var(--text-muted); border-radius: var(--radius-full); transition: all var(--transition-fast);
+      white-space: nowrap;
     }
     .btn-logout:hover { color: var(--danger); background: rgba(239,68,68,0.08); }
+    .btn-logout .logout-text { display: none; }
 
-    /* Page Content */
-    .page-content { flex: 1; padding: 32px; max-width: 780px; }
+    /* ===== Main Wrapper ===== */
+    #mainWrapper {
+      display: none; flex-direction: column; min-height: 100vh; position: relative; z-index: 1;
+    }
 
-    /* ---- Settings Section ---- */
-    .settings-section { margin-bottom: 32px; }
+    /* ===== Page Content ===== */
+    .page-content { flex: 1; padding: 20px 16px 32px; }
+
+    /* ===== Wallet Card (profil singkat di atas) ===== */
+    .wallet-card {
+      background: var(--bg-card); border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-lg); padding: 20px; margin-bottom: 24px;
+      display: flex; align-items: center; gap: 16px;
+      transition: border-color var(--transition-fast);
+    }
+    .wallet-card:hover { border-color: var(--border-color); }
+    .wallet-avatar {
+      width: 48px; height: 48px; border-radius: 50%;
+      background: linear-gradient(135deg, var(--accent), #0d9488);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 1.1rem; color: var(--bg-primary);
+      font-family: var(--font-display); font-weight: 700; flex-shrink: 0;
+      box-shadow: 0 0 20px var(--accent-glow);
+    }
+    .wallet-info { flex: 1; min-width: 0; }
+    .wallet-addr {
+      font-family: 'Space Grotesk', monospace; font-size: 0.88rem; font-weight: 500;
+      color: var(--text-accent); cursor: pointer; display: inline-flex; align-items: center; gap: 6px;
+      transition: gap var(--transition-fast);
+    }
+    .wallet-addr:hover { gap: 8px; }
+    .wallet-addr i { font-size: 0.7rem; opacity: 0.7; }
+    .wallet-meta {
+      font-size: 0.75rem; color: var(--text-muted); margin-top: 3px;
+      display: flex; align-items: center; gap: 8px;
+    }
+    .wallet-meta .dot {
+      width: 6px; height: 6px; border-radius: 50%; background: var(--success);
+      display: inline-block; animation: dotPulse 2s ease-in-out infinite;
+    }
+    @keyframes dotPulse {
+      0%, 100% { opacity: 1; } 50% { opacity: 0.4; }
+    }
+    .wallet-score-badge {
+      text-align: center; flex-shrink: 0;
+    }
+    .wallet-score-num {
+      font-family: var(--font-display); font-size: 1.6rem; font-weight: 700;
+      line-height: 1;
+    }
+    .wallet-score-label {
+      font-size: 0.65rem; font-weight: 600; text-transform: uppercase;
+      letter-spacing: 0.05em; margin-top: 4px; padding: 2px 8px;
+      border-radius: var(--radius-full); display: inline-block;
+    }
+
+    /* ===== Settings Section ===== */
+    .settings-section { margin-bottom: 24px; }
     .settings-section-title {
-      font-family: var(--font-display); font-size: 0.75rem; font-weight: 600;
+      font-family: var(--font-display); font-size: 0.72rem; font-weight: 600;
       text-transform: uppercase; letter-spacing: 0.1em;
-      color: var(--text-muted); margin-bottom: 14px;
+      color: var(--text-muted); margin-bottom: 10px;
       display: flex; align-items: center; gap: 10px;
     }
     .settings-section-title::after {
@@ -219,17 +213,17 @@
 
     .settings-row {
       display: flex; align-items: center; justify-content: space-between;
-      padding: 20px 24px; gap: 20px;
+      padding: 16px; gap: 14px;
       transition: background var(--transition-fast);
     }
-    .settings-row:not(:last-child) { border-bottom: 1px solid var(--border-subtle); }
-    .settings-row:hover { background: rgba(255,255,255,0.015); }
+    .settings-row:not(:last-child) { border-bottom: 1px solid rgba(255,255,255,0.025); }
+    .settings-row:active { background: rgba(255,255,255,0.015); }
 
-    .settings-row-left { display: flex; align-items: center; gap: 16px; flex: 1; min-width: 0; }
+    .settings-row-left { display: flex; align-items: center; gap: 12px; flex: 1; min-width: 0; }
     .settings-row-icon {
-      width: 40px; height: 40px; border-radius: var(--radius-sm);
+      width: 36px; height: 36px; border-radius: var(--radius-sm);
       display: flex; align-items: center; justify-content: center;
-      font-size: 0.9rem; flex-shrink: 0;
+      font-size: 0.82rem; flex-shrink: 0;
     }
     .settings-row-icon.teal { background: var(--accent-dim); color: var(--accent); }
     .settings-row-icon.amber { background: var(--accent-secondary-dim); color: var(--accent-secondary); }
@@ -239,69 +233,82 @@
 
     .settings-row-text { flex: 1; min-width: 0; }
     .settings-row-label {
-      font-size: 0.92rem; font-weight: 500; color: var(--text-primary);
+      font-size: 0.88rem; font-weight: 500; color: var(--text-primary);
     }
     .settings-row-desc {
-      font-size: 0.8rem; color: var(--text-muted); margin-top: 2px; line-height: 1.45;
+      font-size: 0.75rem; color: var(--text-muted); margin-top: 1px; line-height: 1.4;
     }
 
-    .settings-row-right { flex-shrink: 0; display: flex; align-items: center; gap: 10px; }
+    .settings-row-right { flex-shrink: 0; display: flex; align-items: center; gap: 8px; }
 
-    /* Wallet display in settings */
-    .wallet-display {
-      font-family: 'Space Grotesk', monospace; font-size: 0.85rem;
+    /* Wallet display chip */
+    .wallet-chip {
+      font-family: 'Space Grotesk', monospace; font-size: 0.75rem;
       color: var(--accent); background: var(--accent-dim);
-      padding: 6px 14px; border-radius: var(--radius-full);
-      display: inline-flex; align-items: center; gap: 8px;
+      padding: 5px 12px; border-radius: var(--radius-full);
+      display: inline-flex; align-items: center; gap: 6px;
       cursor: pointer; transition: all var(--transition-fast);
-      max-width: 320px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+      max-width: 220px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
     }
-    .wallet-display:hover { background: rgba(45,212,191,0.2); }
-    .wallet-display i { font-size: 0.75rem; flex-shrink: 0; }
+    .wallet-chip:hover { background: rgba(45,212,191,0.2); }
+    .wallet-chip i { font-size: 0.65rem; flex-shrink: 0; }
 
-    /* Profile display */
-    .profile-display {
-      display: flex; align-items: center; gap: 12px;
+    /* Score display */
+    .score-inline {
+      display: flex; align-items: center; gap: 8px;
     }
-    .profile-avatar {
-      width: 40px; height: 40px; border-radius: 50%;
-      background: linear-gradient(135deg, var(--accent), #0d9488);
-      display: flex; align-items: center; justify-content: center;
-      font-size: 1rem; color: var(--bg-primary);
-      font-family: var(--font-display); font-weight: 700;
+    .score-num {
+      font-family: var(--font-display); font-size: 1.2rem; font-weight: 700; line-height: 1;
     }
-    .profile-info { line-height: 1.3; }
-    .profile-name { font-size: 0.9rem; font-weight: 600; }
-    .profile-since { font-size: 0.75rem; color: var(--text-muted); }
+    .score-badge {
+      font-size: 0.72rem; font-weight: 600; padding: 3px 10px;
+      border-radius: var(--radius-full); display: inline-flex; align-items: center; gap: 4px;
+    }
+    .score-badge i { font-size: 0.6rem; }
 
-    /* ---- Toggle Switch ---- */
+    /* ===== Toggle Switch ===== */
     .toggle {
-      position: relative; width: 48px; height: 26px;
+      position: relative; width: 44px; height: 24px;
       background: rgba(255,255,255,0.08); border-radius: var(--radius-full);
       transition: background var(--transition-base); cursor: pointer;
       flex-shrink: 0;
     }
     .toggle::after {
       content: ''; position: absolute;
-      top: 3px; left: 3px; width: 20px; height: 20px;
+      top: 3px; left: 3px; width: 18px; height: 18px;
       background: var(--text-muted); border-radius: 50%;
       transition: all var(--transition-base);
       box-shadow: 0 1px 3px rgba(0,0,0,0.3);
     }
     .toggle.active { background: var(--accent); }
     .toggle.active::after {
-      transform: translateX(22px);
+      transform: translateX(20px);
       background: var(--bg-primary);
     }
     .toggle-label {
-      font-size: 0.78rem; color: var(--text-muted); min-width: 32px; text-align: right;
+      font-size: 0.72rem; color: var(--text-muted); min-width: 28px; text-align: right;
     }
 
-    /* ---- Buttons ---- */
+    /* ===== Select ===== */
+    .settings-select {
+      padding: 7px 30px 7px 12px;
+      background: var(--bg-input); border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-full); color: var(--text-primary);
+      font-family: var(--font-body); font-size: 0.8rem;
+      appearance: none; -webkit-appearance: none;
+      cursor: pointer; transition: all var(--transition-fast);
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%2394a3b8' stroke-width='2'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
+      background-repeat: no-repeat;
+      background-position: right 10px center;
+    }
+    .settings-select:focus { outline: none; border-color: var(--border-color-hover); box-shadow: 0 0 0 3px rgba(45,212,191,0.08); }
+    .settings-select option { background: var(--bg-secondary); color: var(--text-primary); }
+
+    /* ===== Buttons ===== */
     .btn-settings {
-      display: inline-flex; align-items: center; gap: 8px;
-      padding: 9px 18px; border-radius: var(--radius-full);
-      font-size: 0.82rem; font-weight: 500;
+      display: inline-flex; align-items: center; gap: 6px;
+      padding: 8px 16px; border-radius: var(--radius-full);
+      font-size: 0.78rem; font-weight: 500;
       transition: all var(--transition-fast);
     }
     .btn-settings.ghost {
@@ -331,71 +338,57 @@
       50% { box-shadow: 0 0 0 6px rgba(239, 68, 68, 0); }
     }
 
-    /* ---- Select Dropdown ---- */
-    .settings-select {
-      padding: 8px 32px 8px 14px;
-      background: var(--bg-input); border: 1px solid var(--border-subtle);
-      border-radius: var(--radius-full); color: var(--text-primary);
-      font-family: var(--font-body); font-size: 0.82rem;
-      appearance: none; -webkit-appearance: none;
-      cursor: pointer; transition: all var(--transition-fast);
-      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%2394a3b8' stroke-width='2'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
-      background-repeat: no-repeat;
-      background-position: right 12px center;
-    }
-    .settings-select:hover { border-color: var(--border-color); }
-    .settings-select:focus { outline: none; border-color: var(--border-color-hover); box-shadow: 0 0 0 3px rgba(45,212,191,0.08); }
-    .settings-select option { background: var(--bg-secondary); color: var(--text-primary); }
-
-    /* ---- Danger Zone ---- */
+    /* ===== Danger Zone ===== */
     .danger-zone {
       border: 1px solid var(--border-danger);
       background: var(--bg-danger-zone);
     }
-    .danger-zone .settings-row:hover {
-      background: rgba(239, 68, 68, 0.03);
-    }
+    .danger-zone .settings-row:active { background: rgba(239, 68, 68, 0.03); }
 
-    /* ---- Version Info ---- */
+    /* ===== Version Footer ===== */
     .version-info {
-      text-align: center; padding: 24px;
-      font-size: 0.78rem; color: var(--text-muted);
+      text-align: center; padding: 20px;
+      font-size: 0.75rem; color: var(--text-muted);
     }
     .version-info span { color: var(--text-secondary); font-weight: 500; }
 
-    /* Guard */
+    /* ===== Guard ===== */
     .guard-screen {
       display: none; position: fixed; inset: 0; z-index: 500;
       background: var(--bg-primary); flex-direction: column; align-items: center;
       justify-content: center; gap: 20px; text-align: center; padding: 24px;
     }
     .guard-screen.active { display: flex; }
-    .guard-screen i { font-size: 2.5rem; color: var(--text-muted); opacity: 0.4; }
-    .guard-screen h2 { font-family: var(--font-display); font-size: 1.4rem; font-weight: 600; }
-    .guard-screen p { font-size: 0.95rem; color: var(--text-muted); max-width: 360px; }
+    .guard-screen i { font-size: 2.2rem; color: var(--text-muted); opacity: 0.4; }
+    .guard-screen h2 { font-family: var(--font-display); font-size: 1.3rem; font-weight: 600; }
+    .guard-screen p { font-size: 0.9rem; color: var(--text-muted); max-width: 320px; line-height: 1.5; }
     .btn-primary {
       display: inline-flex; align-items: center; justify-content: center; gap: 8px;
-      font-family: var(--font-body); font-weight: 600; font-size: 0.9rem;
+      font-family: var(--font-body); font-weight: 600; font-size: 0.88rem;
       padding: 12px 28px; border-radius: var(--radius-full); transition: all var(--transition-base);
       color: var(--bg-primary); background: linear-gradient(135deg, var(--accent), #0d9488);
       box-shadow: 0 0 20px var(--accent-glow);
     }
-    .btn-primary:hover { transform: translateY(-1px); box-shadow: 0 0 30px var(--accent-glow), 0 4px 16px rgba(45,212,191,0.2); }
+    .btn-primary:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 0 30px var(--accent-glow), 0 4px 16px rgba(45,212,191,0.2);
+    }
 
-    .sidebar-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.6); z-index: 45; opacity: 0; transition: opacity var(--transition-base); }
-    .sidebar-overlay.active { opacity: 1; }
-
-    /* Toast */
-    .toast-container { position: fixed; top: 80px; right: 24px; z-index: 200; display: flex; flex-direction: column; gap: 8px; }
+    /* ===== Toast ===== */
+    .toast-container {
+      position: fixed; top: 68px; left: 16px; right: 16px;
+      z-index: 200; display: flex; flex-direction: column; gap: 8px; pointer-events: none;
+    }
     .toast {
-      display: flex; align-items: center; gap: 12px; padding: 14px 20px;
+      display: flex; align-items: center; gap: 10px; padding: 12px 16px;
       background: var(--bg-secondary); border: 1px solid var(--border-subtle);
       border-radius: var(--radius-md); box-shadow: 0 8px 32px rgba(0,0,0,0.5);
-      font-size: 0.88rem; color: var(--text-primary); transform: translateX(120%);
-      transition: transform var(--transition-base); max-width: 380px;
+      font-size: 0.82rem; color: var(--text-primary);
+      transform: translateY(-20px); opacity: 0;
+      transition: all var(--transition-base); pointer-events: auto;
     }
-    .toast.show { transform: translateX(0); }
-    .toast i { font-size: 1.1rem; flex-shrink: 0; }
+    .toast.show { transform: translateY(0); opacity: 1; }
+    .toast i { font-size: 1rem; flex-shrink: 0; }
     .toast.success { border-left: 3px solid var(--success); }
     .toast.success i { color: var(--success); }
     .toast.error { border-left: 3px solid var(--danger); }
@@ -403,7 +396,7 @@
     .toast.info { border-left: 3px solid var(--info); }
     .toast.info i { color: var(--info); }
 
-    /* Modal */
+    /* ===== Modal ===== */
     .modal-overlay {
       position: fixed; inset: 0; z-index: 300;
       background: rgba(0,0,0,0.7); backdrop-filter: blur(6px);
@@ -415,26 +408,26 @@
     .modal-overlay.active { opacity: 1; pointer-events: all; }
     .modal {
       background: var(--bg-secondary); border: 1px solid var(--border-subtle);
-      border-radius: var(--radius-xl); padding: 32px;
-      max-width: 420px; width: 100%; text-align: center;
+      border-radius: var(--radius-xl); padding: 28px;
+      max-width: 400px; width: 100%; text-align: center;
       transform: scale(0.95); transition: transform var(--transition-base);
       box-shadow: 0 24px 64px rgba(0,0,0,0.5);
     }
     .modal-overlay.active .modal { transform: scale(1); }
     .modal-icon {
-      width: 56px; height: 56px; border-radius: 50%;
+      width: 52px; height: 52px; border-radius: 50%;
       display: flex; align-items: center; justify-content: center;
-      margin: 0 auto 20px; font-size: 1.4rem;
+      margin: 0 auto 16px; font-size: 1.3rem;
     }
     .modal-icon.danger { background: rgba(239,68,68,0.12); color: var(--danger); }
     .modal-title {
-      font-family: var(--font-display); font-size: 1.15rem; font-weight: 700; margin-bottom: 8px;
+      font-family: var(--font-display); font-size: 1.1rem; font-weight: 700; margin-bottom: 8px;
     }
-    .modal-desc { font-size: 0.9rem; color: var(--text-secondary); line-height: 1.6; margin-bottom: 28px; }
-    .modal-actions { display: flex; gap: 12px; justify-content: center; }
+    .modal-desc { font-size: 0.85rem; color: var(--text-secondary); line-height: 1.6; margin-bottom: 24px; }
+    .modal-actions { display: flex; gap: 10px; justify-content: center; }
     .modal-btn {
-      padding: 11px 28px; border-radius: var(--radius-full);
-      font-size: 0.88rem; font-weight: 600; transition: all var(--transition-fast);
+      padding: 10px 24px; border-radius: var(--radius-full);
+      font-size: 0.85rem; font-weight: 600; transition: all var(--transition-fast);
     }
     .modal-btn.cancel {
       color: var(--text-secondary); border: 1px solid var(--border-subtle);
@@ -446,28 +439,51 @@
     }
     .modal-btn.confirm-danger:hover { background: #dc2626; }
 
-    /* Responsive */
-    @media (max-width: 768px) {
-      .sidebar { transform: translateX(-100%); }
-      .sidebar.open { transform: translateX(0); }
-      .sidebar-overlay { display: block; }
-      .main-content { margin-left: 0; }
-      .sidebar-toggle { display: flex; }
-      .page-content { padding: 20px 16px; }
-      .settings-row { padding: 16px 18px; flex-direction: column; align-items: flex-start; gap: 12px; }
-      .settings-row-right { width: 100%; justify-content: flex-end; }
-      .wallet-display { max-width: 100%; }
+    /* Spin keyframe untuk refresh */
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* ========================================
+       RESPONSIVE — Tablet
+    ======================================== */
+    @media (min-width: 640px) {
+      .page-content { padding: 24px 20px 40px; }
+      .topbar { padding: 0 24px; }
+      .topbar-title { font-size: 1.05rem; }
+      .btn-logout .logout-text { display: inline; }
+      .wallet-card { padding: 24px; gap: 20px; }
+      .settings-row { padding: 18px 20px; gap: 16px; }
+      .settings-row-icon { width: 40px; height: 40px; font-size: 0.9rem; }
+      .settings-row-label { font-size: 0.92rem; }
+      .settings-row-desc { font-size: 0.8rem; }
+      .wallet-chip { max-width: 300px; font-size: 0.8rem; }
     }
+
+    /* ========================================
+       RESPONSIVE — Desktop
+    ======================================== */
+    @media (min-width: 900px) {
+      .page-content {
+        padding: 28px 32px 48px;
+        max-width: 720px;
+        margin: 0 auto;
+      }
+      .settings-row { padding: 20px 24px; }
+      .wallet-chip { max-width: 360px; }
+    }
+
     @media (prefers-reduced-motion: reduce) {
-      *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; }
+      *, *::before, *::after {
+        animation-duration: 0.01ms !important;
+        transition-duration: 0.01ms !important;
+      }
     }
   </style>
 </head>
 <body>
 
   <div class="bg-atmosphere" aria-hidden="true"><div class="orb orb-1"></div><div class="orb orb-2"></div></div>
-  <div class="bg-noise" aria-hidden="true"></div>
 
+  <!-- Guard -->
   <div class="guard-screen" id="guardScreen">
     <i class="fa-solid fa-lock"></i>
     <h2>Belum Masuk</h2>
@@ -475,8 +491,8 @@
     <a href="login.html" class="btn-primary"><i class="fa-solid fa-arrow-right-to-bracket"></i> Masuk Sekarang</a>
   </div>
 
+  <!-- Toast -->
   <div class="toast-container" id="toastContainer" aria-live="polite"></div>
-  <div class="sidebar-overlay" id="sidebarOverlay"></div>
 
   <!-- Reset Modal -->
   <div class="modal-overlay" id="resetModal">
@@ -493,119 +509,128 @@
     </div>
   </div>
 
-  <div class="dashboard-layout" id="dashboardLayout" style="display:none;">
-    <aside class="sidebar" id="sidebar" role="navigation" aria-label="Sidebar navigasi">
-      <div class="sidebar-brand">
-        <div class="sidebar-brand-icon"><i class="fa-solid fa-shield-halved"></i></div>
-        <span>WalletScore</span>
-      </div>
-      <nav class="sidebar-nav">
-        <div class="nav-section-label">Menu Utama</div>
-        <a href="dashboard.html" class="nav-item"><i class="fa-solid fa-grid-2"></i> Dashboard</a>
-        <a href="wallet.html" class="nav-item"><i class="fa-solid fa-wallet"></i> Wallet Detail</a>
-        <a href="history.html" class="nav-item"><i class="fa-solid fa-clock-rotate-left"></i> Riwayat</a>
-        <a href="analytics.html" class="nav-item"><i class="fa-solid fa-chart-mixed"></i> Analitik</a>
-        <div class="nav-section-label">Lainnya</div>
-        <a href="settings.html" class="nav-item active"><i class="fa-solid fa-gear"></i> Pengaturan</a>
-        <a href="index.html" class="nav-item"><i class="fa-solid fa-house"></i> Beranda</a>
-      </nav>
-      <div class="sidebar-footer">
-        <div class="sidebar-wallet" id="sidebarWallet" title="Klik untuk salin">
-          <div class="sidebar-wallet-avatar" id="sidebarAvatar">?</div>
-          <div class="sidebar-wallet-info">
-            <div class="sidebar-wallet-addr" id="sidebarAddr">—</div>
-            <div class="sidebar-wallet-label">Tersambung</div>
-          </div>
-          <i class="fa-solid fa-copy" style="color:var(--text-muted); font-size:0.75rem;"></i>
-        </div>
-      </div>
-    </aside>
+  <!-- Main -->
+  <div id="mainWrapper">
 
-    <div class="main-content">
-      <header class="topbar">
-        <div class="topbar-left">
-          <button class="sidebar-toggle" id="sidebarToggle" aria-label="Toggle sidebar"><i class="fa-solid fa-bars"></i></button>
-          <div class="topbar-breadcrumb">
-            <a href="dashboard.html">Dashboard</a>
-            <span class="sep"><i class="fa-solid fa-chevron-right" style="font-size:0.6rem;"></i></span>
-            <span class="current">Pengaturan</span>
-          </div>
-        </div>
-        <div class="topbar-right">
-          <button class="btn-logout" id="logoutBtn"><i class="fa-solid fa-right-from-bracket"></i><span>Keluar</span></button>
-        </div>
-      </header>
+    <header class="topbar">
+      <div class="topbar-left">
+        <a href="index.html" class="back-btn" aria-label="Kembali ke beranda">
+          <i class="fa-solid fa-arrow-left"></i>
+          <span>Kembali</span>
+        </a>
+        <h1 class="topbar-title">Pengaturan</h1>
+      </div>
+      <div class="topbar-right">
+        <button class="topbar-btn" id="refreshBtn" aria-label="Refresh" title="Refresh">
+          <i class="fa-solid fa-arrows-rotate"></i>
+        </button>
+        <button class="btn-logout" id="logoutBtn">
+          <i class="fa-solid fa-right-from-bracket"></i>
+          <span class="logout-text">Keluar</span>
+        </button>
+      </div>
+    </header>
 
-      <main class="page-content" id="pageContent"></main>
-    </div>
+    <main class="page-content" id="pageContent"></main>
+
   </div>
 
   <script src="js/data.js"></script>
   <script>
-    /* Utilitas */
-    function showToast(msg, type = 'info', dur = 3000) {
-      const c = document.getElementById('toastContainer');
-      const t = document.createElement('div');
-      t.className = `toast ${type}`;
-      const ic = { success: 'fa-circle-check', error: 'fa-circle-xmark', info: 'fa-circle-info' };
-      t.innerHTML = `<i class="fa-solid ${ic[type]||ic.info}"></i><span>${msg}</span>`;
+    /* ========================================
+       Utilitas
+    ======================================== */
+    function showToast(msg, type, dur) {
+      type = type || 'info';
+      dur = dur || 3000;
+      var c = document.getElementById('toastContainer');
+      var t = document.createElement('div');
+      t.className = 'toast ' + type;
+      var ic = { success: 'fa-circle-check', error: 'fa-circle-xmark', info: 'fa-circle-info' };
+      t.innerHTML = '<i class="fa-solid ' + (ic[type] || ic.info) + '"></i><span>' + msg + '</span>';
       c.appendChild(t);
-      requestAnimationFrame(() => requestAnimationFrame(() => t.classList.add('show')));
-      setTimeout(() => { t.classList.remove('show'); setTimeout(() => t.remove(), 300); }, dur);
+      requestAnimationFrame(function() {
+        requestAnimationFrame(function() { t.classList.add('show'); });
+      });
+      setTimeout(function() {
+        t.classList.remove('show');
+        setTimeout(function() { t.remove(); }, 300);
+      }, dur);
     }
 
-    /* Auth */
-    const walletAddress = localStorage.getItem('whs_wallet');
+    function escapeHtml(str) {
+      var d = document.createElement('div');
+      d.appendChild(document.createTextNode(str));
+      return d.innerHTML;
+    }
+
+    function shortAddress(addr) {
+      if (!addr || addr.length < 10) return addr || '—';
+      return addr.slice(0, 6) + '...' + addr.slice(-4);
+    }
+
+    /* ========================================
+       Auth Guard
+    ======================================== */
+    var walletAddress = localStorage.getItem('whs_wallet');
     if (!walletAddress) {
       document.getElementById('guardScreen').classList.add('active');
     } else {
-      document.getElementById('dashboardLayout').style.display = 'flex';
+      document.getElementById('mainWrapper').style.display = 'flex';
       init(walletAddress);
     }
 
-    /* Sidebar */
-    const sidebar = document.getElementById('sidebar');
-    const sidebarOverlay = document.getElementById('sidebarOverlay');
-    document.getElementById('sidebarToggle').addEventListener('click', () => {
-      sidebar.classList.toggle('open'); sidebarOverlay.classList.toggle('active');
-    });
-    sidebarOverlay.addEventListener('click', () => {
-      sidebar.classList.remove('open'); sidebarOverlay.classList.remove('active');
-    });
-    document.getElementById('sidebarWallet').addEventListener('click', () => {
-      if (walletAddress) navigator.clipboard.writeText(walletAddress).then(() => showToast('Alamat disalin', 'success', 2000));
-    });
-    document.getElementById('logoutBtn').addEventListener('click', () => {
-      localStorage.removeItem('whs_wallet'); localStorage.removeItem('whs_login_time');
+    /* ========================================
+       Logout
+    ======================================== */
+    document.getElementById('logoutBtn').addEventListener('click', function() {
+      localStorage.removeItem('whs_wallet');
+      localStorage.removeItem('whs_login_time');
       sessionStorage.removeItem('currentWallet');
+      sessionStorage.removeItem('walletData');
       showToast('Berhasil keluar', 'info', 2000);
-      setTimeout(() => { window.location.href = 'login.html'; }, 600);
+      setTimeout(function() { window.location.href = 'login.html'; }, 600);
     });
 
-    /* Modal */
-    const resetModal = document.getElementById('resetModal');
-    document.getElementById('resetCancel').addEventListener('click', () => {
+    /* ========================================
+       Refresh
+    ======================================== */
+    document.getElementById('refreshBtn').addEventListener('click', function() {
+      if (walletAddress) {
+        var icon = document.querySelector('#refreshBtn i');
+        icon.style.animation = 'spin 0.6s linear';
+        setTimeout(function() { icon.style.animation = ''; }, 600);
+        /* Hapus cache supaya dihitung ulang */
+        sessionStorage.removeItem('walletData');
+        init(walletAddress);
+        showToast('Data diperbarui', 'success', 2000);
+      }
+    });
+
+    /* ========================================
+       Modal
+    ======================================== */
+    var resetModal = document.getElementById('resetModal');
+    document.getElementById('resetCancel').addEventListener('click', function() {
       resetModal.classList.remove('active');
     });
-    resetModal.addEventListener('click', (e) => {
+    resetModal.addEventListener('click', function(e) {
       if (e.target === resetModal) resetModal.classList.remove('active');
     });
-    document.getElementById('resetConfirm').addEventListener('click', () => {
-      // Hapus semua data
+    document.getElementById('resetConfirm').addEventListener('click', function() {
       localStorage.clear();
       sessionStorage.clear();
       showToast('Semua data telah dihapus', 'success', 2500);
-      setTimeout(() => { window.location.href = 'login.html'; }, 800);
+      setTimeout(function() { window.location.href = 'login.html'; }, 800);
     });
 
-    /* Init */
+    /* ========================================
+       Init
+    ======================================== */
     function init(addr) {
-      document.getElementById('sidebarAddr').textContent = addr;
-      document.getElementById('sidebarAvatar').textContent = addr.slice(2, 4).toUpperCase();
-
-      let data = null;
+      var data = null;
       try {
-        const stored = sessionStorage.getItem('walletData');
+        var stored = sessionStorage.getItem('walletData');
         if (stored) data = JSON.parse(stored);
       } catch (e) {}
 
@@ -618,333 +643,395 @@
     }
 
     /* ========================================
-       RENDER
+       Render
     ======================================== */
     function render(addr, data) {
-      const pc = document.getElementById('pageContent');
+      var pc = document.getElementById('pageContent');
 
-      // Waktu login
-      const loginTime = localStorage.getItem('whs_login_time');
-      let loginTimeText = 'Baru saja';
+      /* Waktu login */
+      var loginTime = localStorage.getItem('whs_login_time');
+      var loginTimeText = 'Baru saja';
       if (loginTime) {
-        const diff = Date.now() - new Date(loginTime).getTime();
-        const mins = Math.floor(diff / 60000);
+        var diff = Date.now() - new Date(loginTime).getTime();
+        var mins = Math.floor(diff / 60000);
         if (mins < 1) loginTimeText = 'Baru saja';
-        else if (mins < 60) loginTimeText = `${mins} menit lalu`;
-        else if (mins < 1440) loginTimeText = `${Math.floor(mins / 60)} jam lalu`;
-        else loginTimeText = `${Math.floor(mins / 1440)} hari lalu`;
+        else if (mins < 60) loginTimeText = mins + ' menit lalu';
+        else if (mins < 1440) loginTimeText = Math.floor(mins / 60) + ' jam lalu';
+        else loginTimeText = Math.floor(mins / 1440) + ' hari lalu';
       }
 
-      // Umur wallet
-      let ageText;
+      /* Umur wallet */
+      var ageText;
       if (data.walletAgeDays >= 365) {
-        const y = Math.floor(data.walletAgeDays / 365);
-        const m = Math.floor((data.walletAgeDays % 365) / 30);
-        ageText = y > 0 ? `${y} tahun${m > 0 ? ' ' + m + ' bulan' : ''}` : `${m} bulan`;
+        var y = Math.floor(data.walletAgeDays / 365);
+        var m = Math.floor((data.walletAgeDays % 365) / 30);
+        ageText = y + ' tahun' + (m > 0 ? ' ' + m + ' bulan' : '');
       } else if (data.walletAgeDays >= 30) {
-        ageText = `${Math.floor(data.walletAgeDays / 30)} bulan`;
+        ageText = Math.floor(data.walletAgeDays / 30) + ' bulan';
       } else {
-        ageText = `${data.walletAgeDays} hari`;
+        ageText = data.walletAgeDays + ' hari';
       }
 
-      // Status preferensi dari localStorage
-      const compactMode = localStorage.getItem('whs_compact') === 'true';
-      const autoRefresh = localStorage.getItem('whs_auto_refresh') !== 'false'; // default true
-      const txPerPage = localStorage.getItem('whs_tx_per_page') || '20';
+      /* Preferensi */
+      var compactMode = localStorage.getItem('whs_compact') === 'true';
+      var autoRefresh = localStorage.getItem('whs_auto_refresh') !== 'false';
+      var txPerPage = localStorage.getItem('whs_tx_per_page') || '20';
 
-      pc.innerHTML = `
-        <!-- Akun -->
-        <div class="settings-section">
-          <div class="settings-section-title">Akun</div>
-          <div class="settings-card">
-            <div class="settings-row">
-              <div class="settings-row-left">
-                <div class="settings-row-icon teal"><i class="fa-solid fa-wallet"></i></div>
-                <div class="settings-row-text">
-                  <div class="settings-row-label">Wallet Tersambung</div>
-                  <div class="settings-row-desc">Alamat wallet yang sedang aktif digunakan</div>
-                </div>
-              </div>
-              <div class="settings-row-right">
-                <span class="wallet-display" onclick="copyAddr('${addr}')" title="Klik untuk salin">
-                  <i class="fa-solid fa-copy"></i>
-                  ${addr}
-                </span>
-              </div>
-            </div>
-            <div class="settings-row">
-              <div class="settings-row-left">
-                <div class="settings-row-icon green"><i class="fa-solid fa-user"></i></div>
-                <div class="settings-row-text">
-                  <div class="settings-row-label">Profil</div>
-                  <div class="settings-row-desc">Identitas on-chain berdasarkan alamat wallet</div>
-                </div>
-              </div>
-              <div class="settings-row-right">
-                <div class="profile-display">
-                  <div class="profile-avatar">${addr.slice(2, 4).toUpperCase()}</div>
-                  <div class="profile-info">
-                    <div class="profile-name">Wallet ${addr.slice(2, 6).toUpperCase()}</div>
-                    <div class="profile-since">Aktif sejak ${ageText} lalu</div>
-                  </div>
-                </div>
-              </div>
-            </div>
-            <div class="settings-row">
-              <div class="settings-row-left">
-                <div class="settings-row-icon blue"><i class="fa-solid fa-shield-halved"></i></div>
-                <div class="settings-row-text">
-                  <div class="settings-row-label">Status Skor</div>
-                  <div class="settings-row-desc">Credit score terakhir yang dihitung sistem</div>
-                </div>
-              </div>
-              <div class="settings-row-right">
-                <span style="font-family:var(--font-display); font-size:1.3rem; font-weight:700; color:${data.statusColor};">${data.score}</span>
-                <span style="font-size:0.82rem; font-weight:600; color:${data.statusColor}; background:${data.statusBg}; padding:4px 12px; border-radius:var(--radius-full);">
-                  <i class="fa-solid ${data.statusIcon}" style="font-size:0.7rem;"></i> ${data.status}
-                </span>
-              </div>
-            </div>
-            <div class="settings-row">
-              <div class="settings-row-left">
-                <div class="settings-row-icon amber"><i class="fa-solid fa-clock"></i></div>
-                <div class="settings-row-text">
-                  <div class="settings-row-label">Sesi Login</div>
-                  <div class="settings-row-desc">Waktu sejak Anda terakhir masuk ke dashboard</div>
-                </div>
-              </div>
-              <div class="settings-row-right">
-                <span style="font-size:0.85rem; color:var(--text-secondary);">${loginTimeText}</span>
-              </div>
-            </div>
-          </div>
-        </div>
+      var safeAddr = escapeHtml(addr);
 
-        <!-- Preferensi -->
-        <div class="settings-section">
-          <div class="settings-section-title">Preferensi</div>
-          <div class="settings-card">
-            <div class="settings-row">
-              <div class="settings-row-left">
-                <div class="settings-row-icon teal"><i class="fa-solid fa-compress"></i></div>
-                <div class="settings-row-text">
-                  <div class="settings-row-label">Mode Compact</div>
-                  <div class="settings-row-desc">Kecilkan jarak antar elemen untuk menampilkan lebih banyak data</div>
-                </div>
-              </div>
-              <div class="settings-row-right">
-                <span class="toggle-label" id="compactLabel">${compactMode ? 'Aktif' : 'Mati'}</span>
-                <div class="toggle ${compactMode ? 'active' : ''}" id="toggleCompact" role="switch" aria-checked="${compactMode}" aria-label="Mode compact" tabindex="0"></div>
-              </div>
-            </div>
-            <div class="settings-row">
-              <div class="settings-row-left">
-                <div class="settings-row-icon blue"><i class="fa-solid fa-arrows-rotate"></i></div>
-                <div class="settings-row-text">
-                  <div class="settings-row-label">Auto-Refresh Data</div>
-                  <div class="settings-row-desc">Secara otomatis memperbarui data saat kembali ke dashboard</div>
-                </div>
-              </div>
-              <div class="settings-row-right">
-                <span class="toggle-label" id="refreshLabel">${autoRefresh ? 'Aktif' : 'Mati'}</span>
-                <div class="toggle ${autoRefresh ? 'active' : ''}" id="toggleRefresh" role="switch" aria-checked="${autoRefresh}" aria-label="Auto-refresh" tabindex="0"></div>
-              </div>
-            </div>
-            <div class="settings-row">
-              <div class="settings-row-left">
-                <div class="settings-row-icon amber"><i class="fa-solid fa-list-ol"></i></div>
-                <div class="settings-row-text">
-                  <div class="settings-row-label">Transaksi Per Halaman</div>
-                  <div class="settings-row-desc">Jumlah transaksi yang ditampilkan di halaman riwayat</div>
-                </div>
-              </div>
-              <div class="settings-row-right">
-                <select class="settings-select" id="perPageSelect" aria-label="Transaksi per halaman">
-                  <option value="10" ${txPerPage === '10' ? 'selected' : ''}>10</option>
-                  <option value="20" ${txPerPage === '20' ? 'selected' : ''}>20</option>
-                  <option value="50" ${txPerPage === '50' ? 'selected' : ''}>50</option>
-                  <option value="100" ${txPerPage === '100' ? 'selected' : ''}>100</option>
-                </select>
-              </div>
-            </div>
-          </div>
-        </div>
+      var html = '';
 
-        <!-- Tentang -->
-        <div class="settings-section">
-          <div class="settings-section-title">Tentang</div>
-          <div class="settings-card">
-            <div class="settings-row">
-              <div class="settings-row-left">
-                <div class="settings-row-icon teal"><i class="fa-solid fa-info"></i></div>
-                <div class="settings-row-text">
-                  <div class="settings-row-label">Versi Aplikasi</div>
-                  <div class="settings-row-desc">Versi Wallet Health Score yang sedang berjalan</div>
-                </div>
-              </div>
-              <div class="settings-row-right">
-                <span style="font-family:var(--font-display); font-size:0.88rem; font-weight:600; color:var(--text-secondary);">v1.0.0-beta</span>
-              </div>
-            </div>
-            <div class="settings-row">
-              <div class="settings-row-left">
-                <div class="settings-row-icon blue"><i class="fa-solid fa-database"></i></div>
-                <div class="settings-row-text">
-                  <div class="settings-row-label">Sumber Data</div>
-                  <div class="settings-row-desc">Asal data yang digunakan untuk analisis</div>
-                </div>
-              </div>
-              <div class="settings-row-right">
-                <span style="font-size:0.82rem; color:var(--accent-secondary); background:var(--accent-secondary-dim); padding:4px 12px; border-radius:var(--radius-full); font-weight:500;">
-                  <i class="fa-solid fa-flask" style="font-size:0.7rem;"></i> Simulasi
-                </span>
-              </div>
-            </div>
-            <div class="settings-row">
-              <div class="settings-row-left">
-                <div class="settings-row-icon green"><i class="fa-solid fa-code"></i></div>
-                <div class="settings-row-text">
-                  <div class="settings-row-label">Stack Teknologi</div>
-                  <div class="settings-row-desc">Teknologi yang digunakan untuk membangun aplikasi</div>
-                </div>
-              </div>
-              <div class="settings-row-right">
-                <span style="font-size:0.82rem; color:var(--text-muted);">HTML + CSS + Vanilla JS</span>
-              </div>
-            </div>
-          </div>
-        </div>
+      /* ===== Wallet Card ===== */
+      html += '<div class="wallet-card">'
+        + '<div class="wallet-avatar">' + addr.slice(2, 4).toUpperCase() + '</div>'
+        + '<div class="wallet-info">'
+        +   '<div class="wallet-addr" onclick="copyAddr(\'' + safeAddr + '\')" title="Klik untuk salin">'
+        +     shortAddress(addr)
+        +     ' <i class="fa-solid fa-copy"></i>'
+        +   '</div>'
+        +   '<div class="wallet-meta">'
+        +     '<span class="dot"></span>'
+        +     '<span>Tersambung &middot; ' + ageText + ' lalu</span>'
+        +   '</div>'
+        + '</div>'
+        + '<div class="wallet-score-badge">'
+        +   '<div class="wallet-score-num" style="color:' + data.statusColor + ';">' + data.score + '</div>'
+        +   '<div class="wallet-score-label" style="color:' + data.statusColor + '; background:' + data.statusBg + ';">'
+        +     '<i class="fa-solid ' + data.statusIcon + '" style="font-size:0.55rem;"></i> ' + data.status
+        +   '</div>'
+        + '</div>'
+        + '</div>';
 
-        <!-- Danger Zone -->
-        <div class="settings-section">
-          <div class="settings-section-title" style="color:var(--danger);">
-            <i class="fa-solid fa-triangle-exclamation" style="font-size:0.7rem;"></i> Zona Berbahaya
-          </div>
-          <div class="settings-card danger-zone">
-            <div class="settings-row">
-              <div class="settings-row-left">
-                <div class="settings-row-icon red"><i class="fa-solid fa-right-from-bracket"></i></div>
-                <div class="settings-row-text">
-                  <div class="settings-row-label">Keluar dari Sesi</div>
-                  <div class="settings-row-desc">Hapus sesi login saat ini dan kembali ke halaman masuk</div>
-                </div>
-              </div>
-              <div class="settings-row-right">
-                <button class="btn-settings ghost" id="logoutBtn2">
-                  <i class="fa-solid fa-right-from-bracket"></i> Keluar
-                </button>
-              </div>
-            </div>
-            <div class="settings-row">
-              <div class="settings-row-left">
-                <div class="settings-row-icon red"><i class="fa-solid fa-trash-can"></i></div>
-                <div class="settings-row-text">
-                  <div class="settings-row-label">Reset Semua Data</div>
-                  <div class="settings-row-desc">Hapus semua data tersimpan termasuk sesi, preferensi, dan cache analisis</div>
-                </div>
-              </div>
-              <div class="settings-row-right">
-                <button class="btn-settings danger" id="resetBtn">
-                  <i class="fa-solid fa-trash-can"></i> Reset Data
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
+      /* ===== Akun ===== */
+      html += '<div class="settings-section">'
+        + '<div class="settings-section-title">Akun</div>'
+        + '<div class="settings-card">'
 
-        <!-- Version Footer -->
-        <div class="version-info">
-          <span>WalletScore</span> v1.0.0-beta &middot; Data simulasi &middot; Bukan produk finansial
-        </div>
-      `;
+        /* Wallet Tersambung */
+        + '<div class="settings-row">'
+        +   '<div class="settings-row-left">'
+        +     '<div class="settings-row-icon teal"><i class="fa-solid fa-wallet"></i></div>'
+        +     '<div class="settings-row-text">'
+        +       '<div class="settings-row-label">Wallet Tersambung</div>'
+        +       '<div class="settings-row-desc">Alamat wallet yang sedang aktif digunakan</div>'
+        +     '</div>'
+        +   '</div>'
+        +   '<div class="settings-row-right">'
+        +     '<span class="wallet-chip" onclick="copyAddr(\'' + safeAddr + '\')" title="Klik untuk salin">'
+        +       '<i class="fa-solid fa-copy"></i> ' + safeAddr
+        +     '</span>'
+        +   '</div>'
+        + '</div>'
 
-      // Bind events
+        /* Status Skor */
+        + '<div class="settings-row">'
+        +   '<div class="settings-row-left">'
+        +     '<div class="settings-row-icon blue"><i class="fa-solid fa-shield-halved"></i></div>'
+        +     '<div class="settings-row-text">'
+        +       '<div class="settings-row-label">Status Skor</div>'
+        +       '<div class="settings-row-desc">Credit score terakhir yang dihitung sistem</div>'
+        +     '</div>'
+        +   '</div>'
+        +   '<div class="settings-row-right">'
+        +     '<div class="score-inline">'
+        +       '<span class="score-num" style="color:' + data.statusColor + ';">' + data.score + '</span>'
+        +       '<span class="score-badge" style="color:' + data.statusColor + '; background:' + data.statusBg + ';">'
+        +         '<i class="fa-solid ' + data.statusIcon + '"></i> ' + data.status
+        +       '</span>'
+        +     '</div>'
+        +   '</div>'
+        + '</div>'
+
+        /* Sesi Login */
+        + '<div class="settings-row">'
+        +   '<div class="settings-row-left">'
+        +     '<div class="settings-row-icon amber"><i class="fa-solid fa-clock"></i></div>'
+        +     '<div class="settings-row-text">'
+        +       '<div class="settings-row-label">Sesi Login</div>'
+        +       '<div class="settings-row-desc">Waktu sejak Anda terakhir masuk ke dashboard</div>'
+        +     '</div>'
+        +   '</div>'
+        +   '<div class="settings-row-right">'
+        +     '<span style="font-size:0.82rem; color:var(--text-secondary);">' + loginTimeText + '</span>'
+        +   '</div>'
+        + '</div>'
+
+        + '</div></div>';
+
+      /* ===== Preferensi ===== */
+      html += '<div class="settings-section">'
+        + '<div class="settings-section-title">Preferensi</div>'
+        + '<div class="settings-card">'
+
+        /* Mode Compact */
+        + '<div class="settings-row">'
+        +   '<div class="settings-row-left">'
+        +     '<div class="settings-row-icon teal"><i class="fa-solid fa-compress"></i></div>'
+        +     '<div class="settings-row-text">'
+        +       '<div class="settings-row-label">Mode Compact</div>'
+        +       '<div class="settings-row-desc">Kecilkan jarak antar elemen untuk tampilan lebih padat</div>'
+        +     '</div>'
+        +   '</div>'
+        +   '<div class="settings-row-right">'
+        +     '<span class="toggle-label" id="compactLabel">' + (compactMode ? 'Aktif' : 'Mati') + '</span>'
+        +     '<div class="toggle ' + (compactMode ? 'active' : '') + '" id="toggleCompact" role="switch" aria-checked="' + compactMode + '" aria-label="Mode compact" tabindex="0"></div>'
+        +   '</div>'
+        + '</div>'
+
+        /* Auto-Refresh */
+        + '<div class="settings-row">'
+        +   '<div class="settings-row-left">'
+        +     '<div class="settings-row-icon blue"><i class="fa-solid fa-arrows-rotate"></i></div>'
+        +     '<div class="settings-row-text">'
+        +       '<div class="settings-row-label">Auto-Refresh Data</div>'
+        +       '<div class="settings-row-desc">Otomatis perbarui data saat kembali ke dashboard</div>'
+        +     '</div>'
+        +   '</div>'
+        +   '<div class="settings-row-right">'
+        +     '<span class="toggle-label" id="refreshLabel">' + (autoRefresh ? 'Aktif' : 'Mati') + '</span>'
+        +     '<div class="toggle ' + (autoRefresh ? 'active' : '') + '" id="toggleRefresh" role="switch" aria-checked="' + autoRefresh + '" aria-label="Auto-refresh" tabindex="0"></div>'
+        +   '</div>'
+        + '</div>'
+
+        /* Transaksi Per Halaman */
+        + '<div class="settings-row">'
+        +   '<div class="settings-row-left">'
+        +     '<div class="settings-row-icon amber"><i class="fa-solid fa-list-ol"></i></div>'
+        +     '<div class="settings-row-text">'
+        +       '<div class="settings-row-label">Transaksi Per Halaman</div>'
+        +       '<div class="settings-row-desc">Jumlah transaksi di halaman riwayat</div>'
+        +     '</div>'
+        +   '</div>'
+        +   '<div class="settings-row-right">'
+        +     '<select class="settings-select" id="perPageSelect" aria-label="Transaksi per halaman">'
+        +       '<option value="10"' + (txPerPage === '10' ? ' selected' : '') + '>10</option>'
+        +       '<option value="20"' + (txPerPage === '20' ? ' selected' : '') + '>20</option>'
+        +       '<option value="50"' + (txPerPage === '50' ? ' selected' : '') + '>50</option>'
+        +       '<option value="100"' + (txPerPage === '100' ? ' selected' : '') + '>100</option>'
+        +     '</select>'
+        +   '</div>'
+        + '</div>'
+
+        + '</div></div>';
+
+      /* ===== Tentang ===== */
+      html += '<div class="settings-section">'
+        + '<div class="settings-section-title">Tentang</div>'
+        + '<div class="settings-card">'
+
+        /* Versi */
+        + '<div class="settings-row">'
+        +   '<div class="settings-row-left">'
+        +     '<div class="settings-row-icon teal"><i class="fa-solid fa-info"></i></div>'
+        +     '<div class="settings-row-text">'
+        +       '<div class="settings-row-label">Versi Aplikasi</div>'
+        +       '<div class="settings-row-desc">Versi Wallet Health Score yang berjalan</div>'
+        +     '</div>'
+        +   '</div>'
+        +   '<div class="settings-row-right">'
+        +     '<span style="font-family:var(--font-display); font-size:0.85rem; font-weight:600; color:var(--text-secondary);">v1.0.0-beta</span>'
+        +   '</div>'
+        + '</div>'
+
+        /* Sumber Data */
+        + '<div class="settings-row">'
+        +   '<div class="settings-row-left">'
+        +     '<div class="settings-row-icon blue"><i class="fa-solid fa-database"></i></div>'
+        +     '<div class="settings-row-text">'
+        +       '<div class="settings-row-label">Sumber Data</div>'
+        +       '<div class="settings-row-desc">Asal data untuk analisis wallet</div>'
+        +     '</div>'
+        +   '</div>'
+        +   '<div class="settings-row-right">'
+        +     '<span style="font-size:0.78rem; color:var(--accent-secondary); background:var(--accent-secondary-dim); padding:4px 12px; border-radius:var(--radius-full); font-weight:500;">'
+        +       '<i class="fa-solid fa-flask" style="font-size:0.65rem;"></i> Simulasi'
+        +     '</span>'
+        +   '</div>'
+        + '</div>'
+
+        /* Stack */
+        + '<div class="settings-row">'
+        +   '<div class="settings-row-left">'
+        +     '<div class="settings-row-icon green"><i class="fa-solid fa-code"></i></div>'
+        +     '<div class="settings-row-text">'
+        +       '<div class="settings-row-label">Stack Teknologi</div>'
+        +       '<div class="settings-row-desc">Teknologi yang digunakan</div>'
+        +     '</div>'
+        +   '</div>'
+        +   '<div class="settings-row-right">'
+        +     '<span style="font-size:0.78rem; color:var(--text-muted);">HTML + CSS + JS</span>'
+        +   '</div>'
+        + '</div>'
+
+        + '</div></div>';
+
+      /* ===== Danger Zone ===== */
+      html += '<div class="settings-section">'
+        + '<div class="settings-section-title" style="color:var(--danger);">'
+        +   '<i class="fa-solid fa-triangle-exclamation" style="font-size:0.65rem;"></i> Zona Berbahaya'
+        + '</div>'
+        + '<div class="settings-card danger-zone">'
+
+        /* Keluar */
+        + '<div class="settings-row">'
+        +   '<div class="settings-row-left">'
+        +     '<div class="settings-row-icon red"><i class="fa-solid fa-right-from-bracket"></i></div>'
+        +     '<div class="settings-row-text">'
+        +       '<div class="settings-row-label">Keluar dari Sesi</div>'
+        +       '<div class="settings-row-desc">Hapus sesi login dan kembali ke halaman masuk</div>'
+        +     '</div>'
+        +   '</div>'
+        +   '<div class="settings-row-right">'
+        +     '<button class="btn-settings ghost" id="logoutBtn2">'
+        +       '<i class="fa-solid fa-right-from-bracket"></i> Keluar'
+        +     '</button>'
+        +   '</div>'
+        + '</div>'
+
+        /* Reset */
+        + '<div class="settings-row">'
+        +   '<div class="settings-row-left">'
+        +     '<div class="settings-row-icon red"><i class="fa-solid fa-trash-can"></i></div>'
+        +     '<div class="settings-row-text">'
+        +       '<div class="settings-row-label">Reset Semua Data</div>'
+        +       '<div class="settings-row-desc">Hapus semua data tersimpan termasuk sesi, preferensi, dan cache</div>'
+        +     '</div>'
+        +   '</div>'
+        +   '<div class="settings-row-right">'
+        +     '<button class="btn-settings danger" id="resetBtn">'
+        +       '<i class="fa-solid fa-trash-can"></i> Reset Data'
+        +     '</button>'
+        +   '</div>'
+        + '</div>'
+
+        + '</div></div>';
+
+      /* ===== Version Footer ===== */
+      html += '<div class="version-info">'
+        + '<span>WalletScore</span> v1.0.0-beta &middot; Data simulasi &middot; Bukan produk finansial'
+        + '</div>';
+
+      pc.innerHTML = html;
+
+      /* Bind events setelah render */
       bindSettingsEvents();
     }
 
     /* ========================================
-       SETTINGS EVENTS
+       Settings Events
     ======================================== */
     function bindSettingsEvents() {
-      // Toggle Compact
-      const toggleCompact = document.getElementById('toggleCompact');
-      const compactLabel = document.getElementById('compactLabel');
-      toggleCompact.addEventListener('click', () => {
-        const isActive = toggleCompact.classList.toggle('active');
-        toggleCompact.setAttribute('aria-checked', isActive);
-        compactLabel.textContent = isActive ? 'Aktif' : 'Mati';
-        localStorage.setItem('whs_compact', isActive);
-        showToast(isActive ? 'Mode compact diaktifkan' : 'Mode compact dinonaktifkan', 'info', 2000);
-      });
-      toggleCompact.addEventListener('keydown', (e) => {
-        if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggleCompact.click(); }
-      });
+      /* Toggle Compact */
+      var toggleCompact = document.getElementById('toggleCompact');
+      var compactLabel = document.getElementById('compactLabel');
+      if (toggleCompact) {
+        toggleCompact.addEventListener('click', function() {
+          var isActive = toggleCompact.classList.toggle('active');
+          toggleCompact.setAttribute('aria-checked', isActive);
+          compactLabel.textContent = isActive ? 'Aktif' : 'Mati';
+          localStorage.setItem('whs_compact', isActive);
+          showToast(isActive ? 'Mode compact diaktifkan' : 'Mode compact dinonaktifkan', 'info', 2000);
+        });
+        toggleCompact.addEventListener('keydown', function(e) {
+          if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggleCompact.click(); }
+        });
+      }
 
-      // Toggle Auto-Refresh
-      const toggleRefresh = document.getElementById('toggleRefresh');
-      const refreshLabel = document.getElementById('refreshLabel');
-      toggleRefresh.addEventListener('click', () => {
-        const isActive = toggleRefresh.classList.toggle('active');
-        toggleRefresh.setAttribute('aria-checked', isActive);
-        refreshLabel.textContent = isActive ? 'Aktif' : 'Mati';
-        localStorage.setItem('whs_auto_refresh', isActive);
-        showToast(isActive ? 'Auto-refresh diaktifkan' : 'Auto-refresh dinonaktifkan', 'info', 2000);
-      });
-      toggleRefresh.addEventListener('keydown', (e) => {
-        if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggleRefresh.click(); }
-      });
+      /* Toggle Auto-Refresh */
+      var toggleRefresh = document.getElementById('toggleRefresh');
+      var refreshLabel = document.getElementById('refreshLabel');
+      if (toggleRefresh) {
+        toggleRefresh.addEventListener('click', function() {
+          var isActive = toggleRefresh.classList.toggle('active');
+          toggleRefresh.setAttribute('aria-checked', isActive);
+          refreshLabel.textContent = isActive ? 'Aktif' : 'Mati';
+          localStorage.setItem('whs_auto_refresh', isActive);
+          showToast(isActive ? 'Auto-refresh diaktifkan' : 'Auto-refresh dinonaktifkan', 'info', 2000);
+        });
+        toggleRefresh.addEventListener('keydown', function(e) {
+          if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggleRefresh.click(); }
+        });
+      }
 
-      // Per Page Select
-      const perPageSelect = document.getElementById('perPageSelect');
-      perPageSelect.addEventListener('change', () => {
-        localStorage.setItem('whs_tx_per_page', perPageSelect.value);
-        showToast(`Transaksi per halaman: ${perPageSelect.value}`, 'success', 2000);
-      });
+      /* Per Page Select */
+      var perPageSelect = document.getElementById('perPageSelect');
+      if (perPageSelect) {
+        perPageSelect.addEventListener('change', function() {
+          localStorage.setItem('whs_tx_per_page', perPageSelect.value);
+          showToast('Transaksi per halaman: ' + perPageSelect.value, 'success', 2000);
+        });
+      }
 
-      // Logout (di danger zone)
-      document.getElementById('logoutBtn2').addEventListener('click', () => {
-        localStorage.removeItem('whs_wallet');
-        localStorage.removeItem('whs_login_time');
-        sessionStorage.removeItem('currentWallet');
-        showToast('Berhasil keluar', 'info', 2000);
-        setTimeout(() => { window.location.href = 'login.html'; }, 600);
-      });
+      /* Logout (danger zone) */
+      var logoutBtn2 = document.getElementById('logoutBtn2');
+      if (logoutBtn2) {
+        logoutBtn2.addEventListener('click', function() {
+          localStorage.removeItem('whs_wallet');
+          localStorage.removeItem('whs_login_time');
+          sessionStorage.removeItem('currentWallet');
+          sessionStorage.removeItem('walletData');
+          showToast('Berhasil keluar', 'info', 2000);
+          setTimeout(function() { window.location.href = 'login.html'; }, 600);
+        });
+      }
 
-      // Reset Data — dua klik konfirmasi
-      const resetBtn = document.getElementById('resetBtn');
-      let resetConfirming = false;
-      let resetTimer;
+      /* Reset Data — dua klik konfirmasi */
+      var resetBtn = document.getElementById('resetBtn');
+      if (resetBtn) {
+        var resetConfirming = false;
+        var resetTimer;
 
-      resetBtn.addEventListener('click', () => {
-        if (!resetConfirming) {
-          // Klik pertama: masuk mode konfirmasi
-          resetConfirming = true;
-          resetBtn.classList.add('confirming');
-          resetBtn.innerHTML = '<i class="fa-solid fa-exclamation"></i> Klik Lagi untuk Konfirmasi';
+        resetBtn.addEventListener('click', function() {
+          if (!resetConfirming) {
+            resetConfirming = true;
+            resetBtn.classList.add('confirming');
+            resetBtn.innerHTML = '<i class="fa-solid fa-exclamation"></i> Klik Lagi untuk Konfirmasi';
 
-          // Timeout 3 detik, kembali ke normal
-          resetTimer = setTimeout(() => {
+            resetTimer = setTimeout(function() {
+              resetConfirming = false;
+              resetBtn.classList.remove('confirming');
+              resetBtn.innerHTML = '<i class="fa-solid fa-trash-can"></i> Reset Data';
+            }, 3000);
+          } else {
+            clearTimeout(resetTimer);
             resetConfirming = false;
             resetBtn.classList.remove('confirming');
             resetBtn.innerHTML = '<i class="fa-solid fa-trash-can"></i> Reset Data';
-          }, 3000);
-        } else {
-          // Klik kedua: buka modal
-          clearTimeout(resetTimer);
-          resetConfirming = false;
-          resetBtn.classList.remove('confirming');
-          resetBtn.innerHTML = '<i class="fa-solid fa-trash-can"></i> Reset Data';
-          resetModal.classList.add('active');
-        }
-      });
+            resetModal.classList.add('active');
+          }
+        });
+      }
     }
 
-    /* Copy */
+    /* ========================================
+       Copy
+    ======================================== */
     function copyAddr(a) {
-      navigator.clipboard.writeText(a)
-        .then(() => showToast('Alamat disalin', 'success', 2000))
-        .catch(() => showToast('Gagal menyalin', 'error'));
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(a)
+          .then(function() { showToast('Alamat disalin', 'success', 2000); })
+          .catch(function() { fallbackCopy(a); });
+      } else {
+        fallbackCopy(a);
+      }
+    }
+
+    function fallbackCopy(a) {
+      var ta = document.createElement('textarea');
+      ta.value = a;
+      ta.style.position = 'fixed';
+      ta.style.left = '-9999px';
+      document.body.appendChild(ta);
+      ta.select();
+      try {
+        document.execCommand('copy');
+        showToast('Alamat disalin', 'success', 2000);
+      } catch(e) {
+        showToast('Gagal menyalin', 'error');
+      }
+      document.body.removeChild(ta);
     }
   </script>
+
 </body>
 </html>
