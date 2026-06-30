@@ -19,6 +19,9 @@
   <script src="pi-config.js"></script>
 
   <style>
+    /* ========================================
+       CSS VARIABLES
+    ======================================== */
     :root {
       --bg-primary: #060a13;
       --bg-secondary: #0c1222;
@@ -30,35 +33,45 @@
       --border-color-hover: rgba(45, 212, 191, 0.3);
       --border-subtle: rgba(255, 255, 255, 0.06);
       --border-focus: rgba(45, 212, 191, 0.4);
+
       --accent: #2dd4bf;
       --accent-dim: rgba(45, 212, 191, 0.12);
       --accent-glow: rgba(45, 212, 191, 0.2);
       --accent-secondary: #f59e0b;
       --accent-secondary-dim: rgba(245, 158, 11, 0.12);
+
       --text-primary: #f1f5f9;
       --text-secondary: #94a3b8;
       --text-muted: #475569;
       --text-accent: #2dd4bf;
+
       --success: #22c55e;
       --warning: #f59e0b;
       --danger: #ef4444;
       --info: #3b82f6;
+
       --radius-sm: 8px;
       --radius-md: 12px;
       --radius-lg: 16px;
       --radius-xl: 24px;
       --radius-full: 9999px;
+
       --font-display: 'Space Grotesk', sans-serif;
       --font-body: 'DM Sans', sans-serif;
+
       --shadow-card: 0 4px 32px rgba(0, 0, 0, 0.4), 0 1px 2px rgba(0, 0, 0, 0.2);
       --shadow-glow: 0 0 60px rgba(45, 212, 191, 0.06);
       --shadow-input-focus: 0 0 0 3px rgba(45, 212, 191, 0.1);
+
       --topbar-height: 56px;
       --transition-fast: 150ms cubic-bezier(0.4, 0, 0.2, 1);
       --transition-base: 250ms cubic-bezier(0.4, 0, 0.2, 1);
       --transition-slow: 400ms cubic-bezier(0.4, 0, 0.2, 1);
     }
 
+    /* ========================================
+       RESET & BASE
+    ======================================== */
     *, *::before, *::after {
       margin: 0; padding: 0; box-sizing: border-box;
     }
@@ -265,7 +278,7 @@
       animation: spinRing 1s linear infinite;
       transition: border-top-color 0.4s ease;
     }
-    .pi-spinner-ring.success { border-top-color: var(--success); animation: none; }
+    .pi-spinner-ring.success { border-top-color: var(--success); }
     .pi-spinner-ring.error { border-top-color: var(--danger); animation: none; }
     .pi-spinner-icon {
       position: absolute;
@@ -290,31 +303,6 @@
       font-size: 0.84rem; color: var(--text-secondary);
       line-height: 1.6; min-height: 42px;
       margin-bottom: 0;
-    }
-
-    /* ----------------------------------------
-       REDIRECT OVERLAY
-    ---------------------------------------- */
-    .redirect-overlay {
-      position: fixed; inset: 0; z-index: 100;
-      display: none; align-items: center; justify-content: center;
-      flex-direction: column; gap: 20px;
-      background: var(--bg-primary);
-    }
-    .redirect-overlay.visible { display: flex; animation: fadeInUp 0.4s ease-out; }
-    .redirect-spinner {
-      width: 48px; height: 48px;
-      border: 3px solid rgba(34, 197, 94, 0.15);
-      border-top-color: var(--success);
-      border-radius: 50%;
-      animation: spinRing 0.8s linear infinite;
-    }
-    .redirect-text {
-      font-family: var(--font-display);
-      font-size: 0.95rem; color: var(--success); font-weight: 600;
-    }
-    .redirect-sub {
-      font-size: 0.78rem; color: var(--text-muted); margin-top: -12px;
     }
 
     /* ----------------------------------------
@@ -562,13 +550,6 @@
     <div class="orb orb-3"></div>
   </div>
 
-  <!-- Redirect Overlay -->
-  <div class="redirect-overlay" id="redirectOverlay">
-    <div class="redirect-spinner"></div>
-    <div class="redirect-text">Mengalihkan ke Dashboard...</div>
-    <div class="redirect-sub">Mohon tunggu sebentar</div>
-  </div>
-
   <!-- Toast Container -->
   <div class="toast-container" id="toastContainer" aria-live="polite"></div>
 
@@ -762,47 +743,6 @@
     }
 
     /* ========================================
-       REDIRECT KE DASHBOARD
-    ======================================== */
-    var _redirecting = false;
-
-    function redirectToDashboard(username) {
-      if (_redirecting) return;
-      _redirecting = true;
-
-      logDebug('Redirect ke dashboard.html (user: ' + (username || 'sesi lama') + ')');
-
-      /* Tampilkan overlay agar user tidak klik apa-apa saat redirect */
-      var overlay = document.getElementById('redirectOverlay');
-      if (overlay) {
-        overlay.classList.add('visible');
-      }
-
-      /* Ganti location — gunakan replace agar tombol Back tidak kembali ke login */
-      window.location.replace('dashboard.html');
-
-      /* Fallback: jika replace gagal di beberapa environment (Pi Browser, dsb) */
-      setTimeout(function() {
-        if (!_redirecting) return;
-        window.location.href = 'dashboard.html';
-      }, 800);
-
-      /* Fallback ekstrem: jika setelah 3 detik masih di halaman ini */
-      setTimeout(function() {
-        if (document.hidden) return; /* sudah pindah halaman */
-        var overlay2 = document.getElementById('redirectOverlay');
-        if (overlay2) {
-          var sub = overlay2.querySelector('.redirect-sub');
-          if (sub) sub.textContent = 'Jika tidak otomatis, ketuk di sini...';
-          overlay2.style.cursor = 'pointer';
-          overlay2.addEventListener('click', function() {
-            window.location.href = 'dashboard.html';
-          });
-        }
-      }, 3000);
-    }
-
-    /* ========================================
        ELEMEN DOM
     ======================================== */
     var spinnerWrapper = document.getElementById('spinnerWrapper');
@@ -831,44 +771,28 @@
           if (user && user.username) {
             sessionBanner.classList.add('visible');
             sessionUser.textContent = '@' + user.username;
-            return user.username;
+            return true;
           }
         }
-      } catch (e) {
-        logDebug('Gagal baca sesi: ' + e.message, true);
-      }
-      return null;
+      } catch (e) {}
+      return false;
     }
 
-    /* ========================================
-       INISIALISASI SAAT LOAD
-    ======================================== */
-    window.addEventListener('load', function() {
-      var existingUser = checkExistingSession();
+    if (checkExistingSession()) {
+      statusTitle.textContent = 'Sesi ditemukan';
+      statusDesc.textContent = 'Mengalihkan ke dashboard...';
+      spinnerRing.classList.add('success');
+      spinnerIcon.classList.add('success');
+      setTimeout(function() {
+        window.location.href = 'dashboard.html';
+      }, 1000);
+    } else {
+      window.addEventListener('load', runPiLogin);
+    }
 
-      if (existingUser) {
-        /* Ada sesi lama — langsung redirect tanpa menjalankan login flow */
-        logDebug('Sesi ditemukan: @' + existingUser + ' — redirect langsung');
-        statusTitle.textContent = 'Sesi ditemukan';
-        statusDesc.textContent = 'Mengalihkan ke dashboard...';
-        spinnerRing.classList.add('success');
-        spinnerIcon.classList.add('success');
-        statusTitle.classList.add('success');
-        cardSubtitle.textContent = 'Login otomatis via sesi sebelumnya';
-        redirectToDashboard(existingUser);
-      } else {
-        /* Tidak ada sesi — jalankan flow login Pi */
-        runPiLogin();
-      }
-    });
-
-    /* ========================================
-       LOGOUT
-    ======================================== */
     logoutBtn.addEventListener('click', function() {
       clearPiAuth();
       sessionBanner.classList.remove('visible');
-      _redirecting = false;
       showToast('Sesi Pi dihapus', 'info', 2000);
       runPiLogin();
     });
@@ -878,7 +802,6 @@
     ======================================== */
     btnRetry.addEventListener('click', function() {
       clearPiAuth();
-      _redirecting = false;
       window.location.href = window.location.pathname + '?retry=true';
     });
 
@@ -890,14 +813,12 @@
        PROSES LOGIN PI NETWORK
     ======================================== */
     async function runPiLogin() {
-      /* Bersihkan param retry dari URL */
       if (urlParams.get('retry') === 'true') {
         logDebug('Deteksi retry=true — membersihkan sesi auth lama');
         clearPiAuth();
         window.history.replaceState({}, document.title, window.location.pathname);
       }
 
-      /* Reset UI ke state awal */
       spinnerWrapper.style.display = 'flex';
       spinnerRing.className = 'pi-spinner-ring';
       spinnerIcon.className = 'pi-spinner-icon';
@@ -962,22 +883,20 @@
           'Autentikasi timeout — Anda tidak menyetujui dalam waktu yang ditentukan. Coba lagi.'
         );
 
-        /* Validasi respons auth */
         if (!auth || !auth.user || !auth.user.username) {
           throw new Error('Respons autentikasi tidak valid: data user kosong.');
         }
+
         if (!auth.accessToken) {
           throw new Error('Autentikasi berhasil tetapi access token tidak diterima.');
         }
 
         logDebug('Auth berhasil! User: @' + auth.user.username);
 
-        /* Simpan sesi */
         localStorage.setItem('whs_pi_user', JSON.stringify(auth.user));
         localStorage.setItem('whs_pi_token', auth.accessToken);
         sessionStorage.setItem('whs_pi_user', JSON.stringify(auth.user));
 
-        /* Tampilkan sukses di UI */
         spinnerRing.classList.add('success');
         spinnerIcon.classList.add('success');
         statusTitle.classList.add('success');
@@ -987,15 +906,13 @@
 
         showToast('Login berhasil sebagai @' + auth.user.username, 'success', 2500);
 
-        /* Redirect ke dashboard setelah 1.2 detik agar user melihat pesan sukses */
         setTimeout(function() {
-          redirectToDashboard(auth.user.username);
-        }, 1200);
+          window.location.href = 'dashboard.html';
+        }, 1500);
 
       } catch (err) {
         logDebug(err.message, true);
 
-        /* Tampilkan error di UI */
         spinnerRing.classList.add('error');
         spinnerIcon.classList.add('error');
         statusTitle.classList.add('error');
