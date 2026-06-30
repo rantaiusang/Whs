@@ -1,6 +1,7 @@
 /* ========================================
    DATA.JS — Fake Blockchain Data Generator
    Sumber data simulasi untuk seluruh aplikasi
+   (Diperbarui: Support Deteksi Pi Network)
 ======================================== */
 
 /**
@@ -37,9 +38,21 @@ function randomAddress() {
 }
 
 /**
+ * Cek apakah alamat termasuk wallet Pi Network
+ * (Pi wallet biasanya tidak dimulai dengan 0x, atau jika menggunakan format hex bisa sangat panjang/berbeda)
+ */
+function isPiWallet(address) {
+  if (!address) return false;
+  // Jika login via Pi SDK, localstorage menyimpan tanda ini
+  if (localStorage.getItem('whs_auth_type') === 'pi_network') return true;
+  // Fallback pengecekan format (Pi address biasanya bukan 0x...)
+  return !address.startsWith('0x');
+}
+
+/**
  * Daftar nama token populer untuk simulasi
  */
-const TOKEN_LIST = [
+const TOKEN_LIST_ETH = [
   { symbol: 'ETH', name: 'Ethereum', decimals: 18 },
   { symbol: 'USDT', name: 'Tether', decimals: 6 },
   { symbol: 'USDC', name: 'USD Coin', decimals: 6 },
@@ -47,11 +60,12 @@ const TOKEN_LIST = [
   { symbol: 'WBTC', name: 'Wrapped Bitcoin', decimals: 8 },
   { symbol: 'LINK', name: 'Chainlink', decimals: 18 },
   { symbol: 'UNI', name: 'Uniswap', decimals: 18 },
-  { symbol: 'AAVE', name: 'Aave', decimals: 18 },
-  { symbol: 'CRV', name: 'Curve', decimals: 18 },
-  { symbol: 'MKR', name: 'Maker', decimals: 18 },
-  { symbol: 'COMP', name: 'Compound', decimals: 18 },
-  { symbol: 'SNX', name: 'Synthetix', decimals: 18 },
+];
+
+const TOKEN_LIST_PI = [
+  { symbol: 'Pi', name: 'Pi Network', decimals: 18 },
+  { symbol: 'USDT', name: 'Tether on Pi', decimals: 6 },
+  { symbol: 'PiBridge', name: 'Pi Bridge Token', decimals: 18 },
 ];
 
 /**
@@ -72,21 +86,26 @@ const TX_TYPES = ['send', 'receive', 'swap', 'approve', 'stake', 'unstake', 'bri
 /**
  * Menghasilkan satu transaksi palsu
  */
-function generateTransaction(walletAddress, index) {
+function generateTransaction(walletAddress, index, isPi) {
   const type = TX_TYPES[Math.floor(Math.random() * TX_TYPES.length)];
-  const token = TOKEN_LIST[Math.floor(Math.random() * TOKEN_LIST.length)];
-  const amount = randomFloat(0.001, 50, 4);
+  const tokenList = isPi ? TOKEN_LIST_PI : TOKEN_LIST_ETH;
+  const token = tokenList[Math.floor(Math.random() * tokenList.length)];
+  
+  // Jika Pi, jumlahnya lebih besar (karena valuasi Pi yang berbeda)
+  const amount = isPi ? randomFloat(0.5, 500, 4) : randomFloat(0.001, 50, 4);
   const timestamp = randomTimestamp(1, 730); // 1 hari sampai 2 tahun lalu
   const isSuccess = Math.random() > 0.08; // 92% success rate rata-rata
-  const gasUsed = randomRange(21000, 350000);
-  const gasPrice = randomFloat(5, 120, 2); // Gwei
+  
+  // Pi Network memiliki biaya gas yang jauh lebih rendah (mendekati 0)
+  const gasUsed = isPi ? randomRange(1, 1000) : randomRange(21000, 350000);
+  const gasPrice = isPi ? 0 : randomFloat(5, 120, 2); // Pi gas price 0
 
-  // Counterpart address: untuk send/approve/stake/bridge = penerima, lainnya = pengirim
+  // Counterpart address
   const isOutgoing = ['send', 'approve', 'stake', 'bridge', 'burn'].includes(type);
-  const counterparty = randomAddress();
+  const counterparty = isPi ? 'G' + randomHex(32) : randomAddress(); // Contoh format alamat Pi: Gxxxxx...
 
   return {
-    txHash: '0x' + randomHex(64),
+    txHash: isPi ? 'PiTx_' + randomHex(24) : '0x' + randomHex(64),
     type: type,
     token: token.symbol,
     tokenName: token.name,
@@ -95,10 +114,10 @@ function generateTransaction(walletAddress, index) {
     to: isOutgoing ? counterparty : walletAddress,
     gasUsed: gasUsed,
     gasPrice: gasPrice,
-    gasCostETH: parseFloat(((gasUsed * gasPrice) / 1e9).toFixed(6)),
+    gasCostETH: isPi ? 0 : parseFloat(((gasUsed * gasPrice) / 1e9).toFixed(6)),
     status: isSuccess ? 'success' : 'failed',
     timestamp: timestamp,
-    blockNumber: randomRange(18000000, 19500000),
+    blockNumber: isPi ? randomRange(1000000, 5000000) : randomRange(18000000, 19500000),
     nonce: index,
   };
 }
@@ -106,10 +125,10 @@ function generateTransaction(walletAddress, index) {
 /**
  * Menghasilkan array transaksi untuk sebuah wallet
  */
-function generateTransactions(walletAddress, count) {
+function generateTransactions(walletAddress, count, isPi) {
   const txs = [];
   for (let i = 0; i < count; i++) {
-    txs.push(generateTransaction(walletAddress, i));
+    txs.push(generateTransaction(walletAddress, i, isPi));
   }
   // Urutkan dari terbaru
   txs.sort((a, b) => b.timestamp - a.timestamp);
@@ -130,7 +149,7 @@ const POSSIBLE_RISK_FLAGS = [
   { id: 'rf_06', label: 'Frekuensi transaksi sporadis', severity: 'low', description: 'Aktivitas transaksi tidak konsisten — ada periode sangat padat dan sangat sepi.' },
   { id: 'rf_07', label: 'Multiple bridge dalam waktu singkat', severity: 'medium', description: 'Beberapa transaksi bridge ke chain berbeda dalam rentang waktu kurang dari 1 jam.' },
   { id: 'rf_08', label: 'Interaksi dengan mixer/tumbler', severity: 'critical', description: 'Wallet terdeteksi berinteraksi dengan kontrak mixer yang umum digunakan untuk money laundering.' },
-  { id: 'rf_09', label: 'Gas price anomalously low', severity: 'low', description: 'Beberapa transaksi menggunakan gas price jauh di bawah rata-rata, mengindikasikan private mempool.' },
+  { id: 'rf_09', label: 'Gas price anomali', severity: 'low', description: 'Beberapa transaksi menggunakan gas price jauh di bawah rata-rata.' },
   { id: 'rf_10', label: 'Wallet funded dari satu sumber', severity: 'medium', description: 'Seluruh saldo awal berasal dari satu address tanpa transaksi lain.' },
 ];
 
@@ -138,7 +157,6 @@ const POSSIBLE_RISK_FLAGS = [
  * Menghasilkan risk flags untuk sebuah wallet berdasarkan skor
  */
 function generateRiskFlags(score) {
-  // Semakin rendah skor, semakin banyak flag
   let flagCount = 0;
   if (score < 200) flagCount = randomRange(4, 6);
   else if (score < 400) flagCount = randomRange(2, 4);
@@ -146,7 +164,6 @@ function generateRiskFlags(score) {
   else if (score < 800) flagCount = randomRange(0, 1);
   else flagCount = 0;
 
-  // Acak dan ambil sejumlah flag
   const shuffled = [...POSSIBLE_RISK_FLAGS].sort(() => Math.random() - 0.5);
   return shuffled.slice(0, flagCount);
 }
@@ -156,8 +173,11 @@ function generateRiskFlags(score) {
  * Mengembalikan objek lengkap dengan breakdown
  */
 function calculateCreditScore(walletAddress) {
+  // Deteksi apakah ini Pi Network atau Ethereum
+  const isPi = isPiWallet(walletAddress);
+
   // --- Parameter dasar (acak tapi deterministik per address) ---
-  // Gunakan hash sederhana dari address untuk seed
+  // Gunakan hash sederhana dari address untuk seed (aman untuk string apa pun)
   let seed = 0;
   for (let i = 0; i < walletAddress.length; i++) {
     seed = ((seed << 5) - seed) + walletAddress.charCodeAt(i);
@@ -177,7 +197,7 @@ function calculateCreditScore(walletAddress) {
 
   // --- Generate data wallet ---
   const totalTransactions = seededRange(12, 850);
-  const successCount = Math.floor(totalTransactions * (0.7 + seededRandom() * 0.28)); // 70-98%
+  const successCount = Math.floor(totalTransactions * (0.7 + seededRandom() * 0.28));
   const failCount = totalTransactions - successCount;
   const successRate = parseFloat(((successCount / totalTransactions) * 100).toFixed(1));
 
@@ -185,12 +205,10 @@ function calculateCreditScore(walletAddress) {
   const walletAgeDays = seededRange(1, 1100);
   const firstTxTimestamp = Date.now() - (walletAgeDays * 24 * 60 * 60 * 1000);
 
-  // Generate transaksi
-  const transactions = generateTransactions(walletAddress, totalTransactions);
+  // Generate transaksi (mengirim flag isPi)
+  const transactions = generateTransactions(walletAddress, totalTransactions, isPi);
 
   // --- Hitung skor per kategori (masing-masing 0-250, total max 1000) ---
-
-  // 1. Success Rate Score (0-250)
   let successRateScore;
   if (successRate >= 98) successRateScore = 250;
   else if (successRate >= 95) successRateScore = Math.round(200 + (successRate - 95) * 10);
@@ -199,7 +217,6 @@ function calculateCreditScore(walletAddress) {
   else if (successRate >= 60) successRateScore = Math.round(30 + (successRate - 60) * 2.5);
   else successRateScore = Math.round((successRate / 60) * 30);
 
-  // 2. Volume Score (0-250) — berdasarkan jumlah transaksi
   let volumeScore;
   if (totalTransactions >= 500) volumeScore = 250;
   else if (totalTransactions >= 200) volumeScore = Math.round(180 + (totalTransactions - 200) * 0.233);
@@ -207,16 +224,15 @@ function calculateCreditScore(walletAddress) {
   else if (totalTransactions >= 20) volumeScore = Math.round(40 + (totalTransactions - 20) * 2);
   else volumeScore = Math.round((totalTransactions / 20) * 40);
 
-  // 3. Wallet Age Score (0-250)
   let ageScore;
-  if (walletAgeDays >= 730) ageScore = 250; // > 2 tahun
+  if (walletAgeDays >= 730) ageScore = 250;
   else if (walletAgeDays >= 365) ageScore = Math.round(200 + (walletAgeDays - 365) * 0.137);
   else if (walletAgeDays >= 180) ageScore = Math.round(140 + (walletAgeDays - 180) * 0.333);
   else if (walletAgeDays >= 90) ageScore = Math.round(80 + (walletAgeDays - 90) * 0.667);
   else if (walletAgeDays >= 30) ageScore = Math.round(30 + (walletAgeDays - 30) * 0.833);
   else ageScore = Math.round((walletAgeDays / 30) * 30);
 
-  // 4. Risk Penalty (0 = no penalty, -250 = max penalty)
+  // Risk Penalty
   const riskFlags = generateRiskFlags(successRateScore + volumeScore + ageScore);
   let riskPenalty = 0;
   riskFlags.forEach(flag => {
@@ -229,11 +245,8 @@ function calculateCreditScore(walletAddress) {
   });
   riskPenalty = Math.min(riskPenalty, 250);
 
-  // Skor akhir
   let rawScore = successRateScore + volumeScore + ageScore - riskPenalty;
   let finalScore = Math.max(0, Math.min(1000, rawScore));
-
-  // Round ke kelipatan 5 untuk tampilan lebih bersih
   finalScore = Math.round(finalScore / 5) * 5;
 
   // Status berdasarkan skor
@@ -251,22 +264,17 @@ function calculateCreditScore(walletAddress) {
   // Hitung total gas spent
   const totalGasETH = transactions
     .filter(t => t.status === 'success')
-    .reduce((sum, t) => sum + t.gasCostETH, 0);
+    .reduce((sum, t) => sum + (t.gasCostETH || 0), 0);
 
-  // Hitung saldo estimasi (dummy)
-  const estimatedBalance = randomFloat(0.01, 25, 4);
+  // Hitung saldo estimasi (Pi biasanya memiliki saldo yang lebih besar angkanya)
+  const estimatedBalance = isPi ? randomFloat(10, 5000, 4) : randomFloat(0.01, 25, 4);
 
-  // Hitung persentil (simulasi)
   const percentile = Math.min(99, Math.max(1, Math.round((finalScore / 1000) * 85 + seededRandom() * 14)));
-
-  // Hitung skor rata-rata network (simulasi statis)
   const networkAvg = 620;
 
-  // Activity dalam 7 hari terakhir
   const sevenDaysAgo = Date.now() - (7 * 24 * 60 * 60 * 1000);
   const recentTxCount = transactions.filter(t => t.timestamp > sevenDaysAgo).length;
 
-  // Skor tren (simulasi: apakah skor naik atau turun)
   const scoreChange = randomFloat(-30, 45, 1);
 
   return {
@@ -275,6 +283,7 @@ function calculateCreditScore(walletAddress) {
     walletAgeDays: walletAgeDays,
     firstTxTimestamp: firstTxTimestamp,
     estimatedBalance: estimatedBalance,
+    networkType: isPi ? 'pi' : 'ethereum', // Penanda jaringan
 
     // Skor utama
     score: finalScore,
@@ -320,16 +329,12 @@ function calculateCreditScore(walletAddress) {
 function generateScoreTrend(currentScore) {
   const trend = [];
   const now = Date.now();
-  let score = currentScore - randomRange(20, 60); // Mulai dari lebih rendah
+  let score = currentScore - randomRange(20, 60);
 
   for (let i = 29; i >= 0; i--) {
     const date = new Date(now - i * 24 * 60 * 60 * 1000);
-    // Sedikit fluktuasi acak
     const change = randomRange(-15, 18);
     score = Math.max(0, Math.min(1000, score + change));
-
-    // Di hari terakhir, pakai skor sebenarnya
-    if (i === 0) score = currentScore;
 
     trend.push({
       date: date.toISOString().split('T')[0],
