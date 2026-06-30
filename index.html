@@ -65,8 +65,7 @@
     .container { width:100%; max-width:1200px; margin:0 auto; padding:0 24px; }
 
     /* NAV */
-    .nav { position:fixed; top:0; left:0; right:0; z-index:100; padding:0 20px; transition:background var(--transition-base), backdrop-filter var(--transition-base), z-index 0ms; }
-    .nav.menu-active { z-index:300; }
+    .nav { position:fixed; top:0; left:0; right:0; z-index:100; padding:0 20px; transition:background var(--transition-base), backdrop-filter var(--transition-base); }
     .nav.scrolled { background:rgba(6,10,19,0.85); backdrop-filter:blur(20px); -webkit-backdrop-filter:blur(20px); border-bottom:1px solid var(--border-subtle); }
     .nav-inner { max-width:1200px; margin:0 auto; display:flex; align-items:center; justify-content:space-between; height:64px; }
     .nav-brand { display:flex; align-items:center; gap:8px; font-family:var(--font-display); font-weight:700; font-size:1.1rem; letter-spacing:-0.02em; }
@@ -82,11 +81,13 @@
     .btn-outline { color:var(--accent); background:transparent; border:1.5px solid var(--border-color); }
     .btn-outline:hover { border-color:var(--border-color-hover); background:var(--accent-dim); }
     .btn-lg { padding:14px 32px; font-size:1rem; }
-    .nav-toggle { display:none; flex-direction:column; gap:5px; padding:8px; cursor:pointer; z-index:1; position:relative; }
-    .nav-toggle span { display:block; width:22px; height:2px; background:var(--text-secondary); border-radius:2px; transition:all 0.35s cubic-bezier(0.77, 0, 0.175, 1); transform-origin:center; }
-    .nav-toggle.open span:nth-child(1) { transform:translateY(7px) rotate(45deg); background:var(--accent); }
-    .nav-toggle.open span:nth-child(2) { opacity:0; transform:scaleX(0); }
-    .nav-toggle.open span:nth-child(3) { transform:translateY(-7px) rotate(-45deg); background:var(--accent); }
+
+    /* ── Status terhubung di nav ── */
+    .nav-connection { display:none; align-items:center; gap:8px; }
+    .nav-connection.show { display:flex; }
+    .nav-connection-dot { width:8px; height:8px; background:var(--success); border-radius:50%; box-shadow:0 0 8px rgba(34,197,94,0.5); animation:connPulse 2.5s ease-in-out infinite; }
+    @keyframes connPulse { 0%,100%{opacity:1;box-shadow:0 0 8px rgba(34,197,94,0.5)} 50%{opacity:0.6;box-shadow:0 0 16px rgba(34,197,94,0.3)} }
+    .nav-connection-label { font-size:0.78rem; font-weight:500; color:var(--success); white-space:nowrap; }
 
     /* User info di nav setelah login */
     .nav-user-info { display:none; align-items:center; gap:8px; font-size:0.84rem; color:var(--text-secondary); }
@@ -105,6 +106,14 @@
     .hero-subtitle { font-size:clamp(0.9rem,2.5vw,1.15rem); color:var(--text-secondary); max-width:540px; margin:0 auto 32px; line-height:1.7; animation:fadeInUp 0.6s ease-out 0.2s both; }
     .hero-actions { display:flex; justify-content:center; gap:12px; flex-wrap:wrap; animation:fadeInUp 0.6s ease-out 0.3s both; }
     @keyframes fadeInUp { from{opacity:0;transform:translateY(20px)} to{opacity:1;transform:translateY(0)} }
+
+    /* ── Connected banner di hero (muncul setelah login) ── */
+    .hero-connected { display:none; align-items:center; justify-content:center; gap:12px; margin-bottom:20px; padding:12px 20px; background:rgba(34,197,94,0.08); border:1px solid rgba(34,197,94,0.2); border-radius:var(--radius-full); animation:fadeInUp 0.5s ease-out; }
+    .hero-connected.show { display:inline-flex; }
+    .hero-connected-dot { width:8px; height:8px; background:var(--success); border-radius:50%; box-shadow:0 0 10px rgba(34,197,94,0.5); animation:connPulse 2.5s ease-in-out infinite; }
+    .hero-connected-text { font-size:0.85rem; font-weight:500; color:var(--success); }
+    .hero-connected-wallet { font-family:var(--font-display); font-weight:600; font-size:0.82rem; color:var(--text-secondary); background:rgba(255,255,255,0.05); padding:2px 10px; border-radius:var(--radius-full); }
+    .hero-connected-arrow { color:var(--accent); font-size:0.7rem; }
 
     /* SECTIONS */
     .section-header { text-align:center; margin-bottom:48px; }
@@ -198,43 +207,6 @@
     .reveal { opacity:0; transform:translateY(30px); transition:opacity 0.7s ease-out,transform 0.7s ease-out; }
     .reveal.visible { opacity:1; transform:translateY(0); }
 
-    /* MOBILE MENU */
-    .mobile-menu { display:none; position:fixed; inset:0; z-index:200; }
-    .mobile-menu-backdrop { position:absolute; inset:0; background:rgba(6,10,19,0.0); backdrop-filter:blur(0px); -webkit-backdrop-filter:blur(0px); transition:all 0.5s cubic-bezier(0.4, 0, 0.2, 1); pointer-events:none; }
-    .mobile-menu.open .mobile-menu-backdrop { background:rgba(6,10,19,0.92); backdrop-filter:blur(24px); -webkit-backdrop-filter:blur(24px); pointer-events:all; }
-    .mobile-menu-panel { position:relative; z-index:1; height:100%; display:flex; flex-direction:column; justify-content:center; padding:80px 24px 40px; }
-    .mobile-menu-nav { list-style:none; display:flex; flex-direction:column; gap:2px; }
-    .mobile-menu-nav li { opacity:0; transform:translateX(-30px); }
-    .mobile-menu.open .mobile-menu-nav li { opacity:1; transform:translateX(0); }
-    .mobile-menu.open .mobile-menu-nav li:nth-child(1) { transition:opacity 0.4s ease 0.15s, transform 0.4s cubic-bezier(0.4, 0, 0.2, 1) 0.15s; }
-    .mobile-menu.open .mobile-menu-nav li:nth-child(2) { transition:opacity 0.4s ease 0.2s, transform 0.4s cubic-bezier(0.4, 0, 0.2, 1) 0.2s; }
-    .mobile-menu.open .mobile-menu-nav li:nth-child(3) { transition:opacity 0.4s ease 0.25s, transform 0.4s cubic-bezier(0.4, 0, 0.2, 1) 0.25s; }
-    .mobile-menu.open .mobile-menu-nav li:nth-child(4) { transition:opacity 0.4s ease 0.3s, transform 0.4s cubic-bezier(0.4, 0, 0.2, 1) 0.3s; }
-    .mobile-menu.open .mobile-menu-nav li:nth-child(5) { transition:opacity 0.4s ease 0.35s, transform 0.4s cubic-bezier(0.4, 0, 0.2, 1) 0.35s; }
-    .mobile-menu.open .mobile-menu-nav li:nth-child(6) { transition:opacity 0.4s ease 0.4s, transform 0.4s cubic-bezier(0.4, 0, 0.2, 1) 0.4s; }
-    .mobile-menu-nav a { display:flex; align-items:center; gap:14px; padding:14px 16px; font-family:var(--font-display); font-size:1.15rem; font-weight:600; color:var(--text-secondary); border-radius:var(--radius-md); transition:all 0.25s ease; position:relative; overflow:hidden; cursor:pointer; }
-    .mobile-menu-nav a::before { content:''; position:absolute; left:0; top:50%; transform:translateY(-50%) scaleY(0); width:3px; height:60%; background:var(--accent); border-radius:0 3px 3px 0; transition:transform 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
-    .mobile-menu-nav a::after { content:''; position:absolute; inset:0; background:linear-gradient(90deg, var(--accent-dim), transparent 60%); opacity:0; transition:opacity 0.25s ease; border-radius:var(--radius-md); pointer-events:none; }
-    .mobile-menu-nav a:hover, .mobile-menu-nav a.active { color:var(--text-primary); }
-    .mobile-menu-nav a:hover::before, .mobile-menu-nav a.active::before { transform:translateY(-50%) scaleY(1); }
-    .mobile-menu-nav a:hover::after, .mobile-menu-nav a.active::after { opacity:1; }
-    .mobile-menu-nav a .nav-icon { width:24px; text-align:center; font-size:1rem; transition:color 0.25s ease, transform 0.25s ease; position:relative; z-index:1; }
-    .mobile-menu-nav a:hover .nav-icon, .mobile-menu-nav a.active .nav-icon { color:var(--accent); transform:scale(1.15); }
-    .mobile-menu-nav a .nav-text { position:relative; z-index:1; }
-    .mobile-menu-nav a .nav-arrow { margin-left:auto; font-size:0.8rem; opacity:0; transform:translateX(-8px); transition:all 0.25s ease; position:relative; z-index:1; color:var(--accent); }
-    .mobile-menu-nav a:hover .nav-arrow, .mobile-menu-nav a.active .nav-arrow { opacity:1; transform:translateX(0); }
-    .mobile-menu-divider { height:1px; background:linear-gradient(90deg, transparent, var(--border-color), transparent); margin:20px 16px; opacity:0; transform:scaleX(0); transition:opacity 0.4s ease 0.45s, transform 0.5s cubic-bezier(0.4, 0, 0.2, 1) 0.45s; }
-    .mobile-menu.open .mobile-menu-divider { opacity:1; transform:scaleX(1); }
-    .mobile-menu-actions { display:flex; flex-direction:column; gap:10px; padding:0 16px; opacity:0; transform:translateY(20px); transition:opacity 0.4s ease 0.5s, transform 0.4s cubic-bezier(0.4, 0, 0.2, 1) 0.5s; }
-    .mobile-menu.open .mobile-menu-actions { opacity:1; transform:translateY(0); }
-    .mobile-menu-actions .btn { width:100%; justify-content:center; padding:13px 20px; font-size:0.95rem; }
-    .mobile-menu-footer { margin-top:auto; padding:0 16px; opacity:0; transform:translateY(16px); transition:opacity 0.4s ease 0.6s, transform 0.4s cubic-bezier(0.4, 0, 0.2, 1) 0.6s; }
-    .mobile-menu.open .mobile-menu-footer { opacity:1; transform:translateY(0); }
-    .mobile-menu-footer-text { font-size:0.75rem; color:var(--text-muted); text-align:center; }
-    .mobile-menu-footer-socials { display:flex; justify-content:center; gap:16px; margin-top:14px; }
-    .mobile-menu-footer-socials a { width:38px; height:38px; border-radius:50%; display:flex; align-items:center; justify-content:center; color:var(--text-muted); font-size:0.9rem; border:1px solid var(--border-subtle); transition:all 0.25s ease; cursor:pointer; }
-    .mobile-menu-footer-socials a:hover { color:var(--accent); border-color:var(--border-color); background:var(--accent-dim); transform:translateY(-2px); }
-
     /* RESPONSIVE */
     @media (max-width:1024px) {
       .features-grid { grid-template-columns:repeat(2,1fr); }
@@ -254,12 +226,13 @@
       .nav-brand-icon { width:28px; height:28px; font-size:0.75rem; }
       .nav-links { display:none; }
       .nav-user-info { display:none !important; }
-      .nav-toggle { display:flex; }
-      .mobile-menu { display:block; }
+      .nav-connection { display:none !important; }
       .container { padding:0 16px; }
       .hero { padding:100px 0 48px; }
       .hero-badge { font-size:0.7rem; padding:5px 12px 5px 7px; margin-bottom:20px; }
       .hero-subtitle { margin-bottom:28px; }
+      .hero-connected { flex-direction:column; gap:8px; padding:10px 16px; }
+      .hero-connected-wallet { font-size:0.75rem; }
       .features { padding:48px 0; }
       .section-header { margin-bottom:36px; }
       .section-label { font-size:0.7rem; }
@@ -297,10 +270,6 @@
       .hero-subtitle { font-size:0.85rem; }
       .steps-grid { grid-template-columns:1fr; max-width:260px; }
       .footer-grid { grid-template-columns:1fr; gap:20px; }
-      .mobile-menu-panel { padding:72px 20px 32px; }
-      .mobile-menu-nav a { font-size:1.05rem; padding:12px 14px; }
-      .mobile-menu-nav a .nav-icon { width:22px; font-size:0.9rem; }
-      .mobile-menu-footer-socials a { width:34px; height:34px; font-size:0.85rem; }
     }
     @media (prefers-reduced-motion:reduce) {
       *,*::before,*::after { animation-duration:0.01ms!important; transition-duration:0.01ms!important; }
@@ -320,7 +289,7 @@
 
   <div class="page-wrapper">
 
-    <!-- NAVIGATION — Tanpa tombol login -->
+    <!-- NAVIGATION -->
     <nav class="nav" id="mainNav" role="navigation" aria-label="Navigasi utama">
       <div class="nav-inner">
         <a href="index.html" class="nav-brand" aria-label="Wallet Health Score - Beranda">
@@ -334,26 +303,42 @@
           <li><a href="#" data-protected="history">Riwayat</a></li>
         </ul>
         <div class="nav-actions">
-          <!-- Hanya muncul setelah login -->
+
+          <!-- Status terhubung — hanya muncul setelah login -->
+          <div class="nav-connection" id="navConnection">
+            <span class="nav-connection-dot"></span>
+            <span class="nav-connection-label">Terhubung</span>
+          </div>
+
+          <!-- Info user — hanya muncul setelah login -->
           <div class="nav-user-info" id="navUserInfo">
             <div class="nav-avatar" id="navAvatar">U</div>
             <span id="navUsername">User</span>
             <button class="btn btn-logout" id="logoutBtnDesktop">Keluar</button>
           </div>
-          <button class="nav-toggle" id="navToggle" aria-label="Toggle menu" aria-expanded="false">
-            <span></span><span></span><span></span>
-          </button>
+
         </div>
       </div>
     </nav>
 
-    <!-- HERO — 1 tombol login di sini -->
+    <!-- HERO -->
     <header class="hero">
       <div class="container">
-        <div class="hero-badge">
+
+        <!-- Banner "Terhubung" — muncul saat sudah login, menggantikan posisi badge -->
+        <div class="hero-connected" id="heroConnected">
+          <span class="hero-connected-dot"></span>
+          <span class="hero-connected-text">Terhubung sebagai <strong id="heroConnectedUser">@user</strong></span>
+          <span class="hero-connected-wallet" id="heroConnectedWallet">0x0000...0000</span>
+          <i class="fa-solid fa-arrow-right hero-connected-arrow"></i>
+          <a href="dashboard.html" style="font-size:0.82rem;font-weight:600;color:var(--accent);">Buka Dashboard</a>
+        </div>
+
+        <div class="hero-badge" id="heroBadge">
           <span class="hero-badge-dot" aria-hidden="true"></span>
           Powered by Live On-Chain Analysis
         </div>
+
         <h1 class="hero-title">
           Ukur Kesehatan<br /><span class="highlight">Wallet On-Chain</span>
         </h1>
@@ -362,7 +347,8 @@
           Login dengan Pi Network dan dapatkan skor reputasi wallet Anda secara instan.
         </p>
         <div class="hero-actions">
-          <a href="login.html" class="btn btn-primary btn-lg">
+          <!-- Tombol ini berubah jadi "Buka Dashboard" jika sudah login -->
+          <a href="login.html" class="btn btn-primary btn-lg" id="heroCtaBtn">
             <i class="fa-solid fa-right-to-bracket"></i> Login dengan Pi Sekarang
           </a>
         </div>
@@ -405,7 +391,7 @@
       </div>
     </section>
 
-    <!-- VISUAL PREVIEW — Tanpa tombol login -->
+    <!-- VISUAL PREVIEW -->
     <section class="visual-preview" id="visual-preview" aria-labelledby="previewTitle">
       <div class="container">
         <div class="preview-grid">
@@ -436,14 +422,15 @@
       </div>
     </section>
 
-    <!-- CTA — 1 tombol login di sini -->
+    <!-- CTA -->
     <section class="cta-section" aria-labelledby="ctaTitle">
       <div class="container">
         <div class="cta-card reveal">
           <h2 class="cta-title" id="ctaTitle">Siap Menilai Kesehatan Wallet Anda?</h2>
           <p class="cta-desc">Login dengan akun Pi Network Anda untuk mulai menganalisis Wallet Health Score dan tingkatkan kepercayaan on-chain Anda.</p>
           <div class="cta-actions">
-            <a href="login.html" class="btn btn-primary btn-lg">
+            <!-- Tombol ini juga berubah jika sudah login -->
+            <a href="login.html" class="btn btn-primary btn-lg" id="ctaBtn">
               <span style="font-weight:800;font-size:1.1rem;">π</span> Login dengan Pi Sekarang
             </a>
           </div>
@@ -503,16 +490,32 @@
     document.addEventListener('DOMContentLoaded', function() {
 
       /* ==========================================
-         SESSION (localStorage)
+         SESSION — Baca data yang sama dengan login.html
+         Login menyimpan: whs_wallet, whs_pi_user, whs_login_time
          ========================================== */
-      var SESSION_KEY = 'wallelscore_session';
-
       function getSession() {
-        try { return JSON.parse(localStorage.getItem(SESSION_KEY)); } catch(e) { return null; }
+        try {
+          var user = localStorage.getItem('whs_pi_user');
+          var wallet = localStorage.getItem('whs_wallet');
+          var loginTime = localStorage.getItem('whs_login_time');
+          if (user && wallet) {
+            return {
+              user: JSON.parse(user),
+              wallet: wallet,
+              loginTime: loginTime ? parseInt(loginTime, 10) : null
+            };
+          }
+        } catch (e) {}
+        return null;
       }
 
       function isLoggedIn() {
         return getSession() !== null;
+      }
+
+      function shortAddress(addr) {
+        if (!addr || addr.length < 12) return addr || '—';
+        return addr.slice(0, 6) + '...' + addr.slice(-4);
       }
 
       /* ==========================================
@@ -521,10 +524,11 @@
       var toastContainer = document.getElementById('toastContainer');
 
       function showToast(message, type) {
+        type = type || 'info';
         var icons = { success:'fa-circle-check', error:'fa-circle-xmark', info:'fa-circle-info' };
         var toast = document.createElement('div');
         toast.className = 'toast ' + type;
-        toast.innerHTML = '<i class="fa-solid ' + icons[type] + '"></i><span>' + message + '</span>';
+        toast.innerHTML = '<i class="fa-solid ' + (icons[type] || icons.info) + '"></i><span>' + message + '</span>';
         toastContainer.appendChild(toast);
         requestAnimationFrame(function() {
           requestAnimationFrame(function() { toast.classList.add('show'); });
@@ -537,7 +541,6 @@
 
       /* ==========================================
          HALAMAN YANG WAJIB LOGIN
-         Tangkap semua klik pada [data-protected]
          ========================================== */
       document.addEventListener('click', function(e) {
         var link = e.target.closest('[data-protected]');
@@ -547,127 +550,89 @@
           if (isLoggedIn()) {
             window.location.href = page + '.html';
           } else {
-            showToast('Silakan login terlebih dahulu' + page, 'error');
+            showToast('Silakan login terlebih dahulu', 'error');
             setTimeout(function() { window.location.href = 'login.html'; }, 800);
           }
         }
       });
 
       /* ==========================================
-         NAV STATE: tampilkan info user setelah login
+         UPDATE UI BERDASARKAN STATUS LOGIN
          ========================================== */
+      var navConnection = document.getElementById('navConnection');
       var navUserInfo = document.getElementById('navUserInfo');
       var navAvatar = document.getElementById('navAvatar');
       var navUsername = document.getElementById('navUsername');
       var logoutBtnDesktop = document.getElementById('logoutBtnDesktop');
+      var heroConnected = document.getElementById('heroConnected');
+      var heroConnectedUser = document.getElementById('heroConnectedUser');
+      var heroConnectedWallet = document.getElementById('heroConnectedWallet');
+      var heroBadge = document.getElementById('heroBadge');
+      var heroCtaBtn = document.getElementById('heroCtaBtn');
+      var ctaBtn = document.getElementById('ctaBtn');
 
-      function updateNavState() {
+      function updateUI() {
         var session = getSession();
-        if (session) {
-          navUserInfo.classList.add('show');
-          navAvatar.textContent = session.username.charAt(0).toUpperCase();
-          navUsername.textContent = session.username;
-        } else {
-          navUserInfo.classList.remove('show');
-        }
-        updateMobileMenuState();
-      }
 
-      logoutBtnDesktop.addEventListener('click', function() {
-        localStorage.removeItem(SESSION_KEY);
-        updateNavState();
-        showToast('Anda telah keluar dari akun', 'info');
-      });
+        if (session) {
+          var username = session.user.username || 'User';
+
+          /* Nav: tampilkan status terhubung + info user */
+          navConnection.classList.add('show');
+          navUserInfo.classList.add('show');
+          navAvatar.textContent = username.charAt(0).toUpperCase();
+          navUsername.textContent = '@' + username;
+
+          /* Hero: tampilkan banner terhubung, sembunyikan badge default */
+          heroConnected.classList.add('show');
+          heroConnectedUser.textContent = '@' + username;
+          heroConnectedWallet.textContent = shortAddress(session.wallet);
+          heroBadge.style.display = 'none';
+
+          /* Tombol CTA: ubah jadi "Buka Dashboard" */
+          heroCtaBtn.href = 'dashboard.html';
+          heroCtaBtn.innerHTML = '<i class="fa-solid fa-table-columns"></i> Buka Dashboard';
+          ctaBtn.href = 'dashboard.html';
+          ctaBtn.innerHTML = '<i class="fa-solid fa-table-columns"></i> Buka Dashboard';
+
+        } else {
+          /* Nav: sembunyikan */
+          navConnection.classList.remove('show');
+          navUserInfo.classList.remove('show');
+
+          /* Hero: kembalikan ke default */
+          heroConnected.classList.remove('show');
+          heroBadge.style.display = '';
+
+          /* Tombol CTA: kembalikan ke default */
+          heroCtaBtn.href = 'login.html';
+          heroCtaBtn.innerHTML = '<i class="fa-solid fa-right-to-bracket"></i> Login dengan Pi Sekarang';
+          ctaBtn.href = 'login.html';
+          ctaBtn.innerHTML = '<span style="font-weight:800;font-size:1.1rem;">π</span> Login dengan Pi Sekarang';
+        }
+      }
 
       /* ==========================================
-         MOBILE MENU
+         LOGOUT
          ========================================== */
-      var navToggle = document.getElementById('navToggle');
-      var mainNav = document.getElementById('mainNav');
-
-      var mobileMenu = document.createElement('div');
-      mobileMenu.className = 'mobile-menu';
-      mobileMenu.id = 'mobileMenu';
-      mobileMenu.innerHTML =
-        '<div class="mobile-menu-backdrop" id="menuBackdrop"></div>' +
-        '<div class="mobile-menu-panel">' +
-          '<ul class="mobile-menu-nav">' +
-            '<li><a href="index.html"><i class="fa-solid fa-house nav-icon"></i><span class="nav-text">Beranda</span><i class="fa-solid fa-arrow-right nav-arrow"></i></a></li>' +
-            '<li><a href="#" data-protected="dashboard"><i class="fa-solid fa-table-columns nav-icon"></i><span class="nav-text">Dashboard</span><i class="fa-solid fa-arrow-right nav-arrow"></i></a></li>' +
-            '<li><a href="#" data-protected="wallet"><i class="fa-solid fa-wallet nav-icon"></i><span class="nav-text">Wallet</span><i class="fa-solid fa-arrow-right nav-arrow"></i></a></li>' +
-            '<li><a href="#" data-protected="analytics"><i class="fa-solid fa-chart-line nav-icon"></i><span class="nav-text">Analitik</span><i class="fa-solid fa-arrow-right nav-arrow"></i></a></li>' +
-            '<li><a href="#" data-protected="history"><i class="fa-solid fa-clock-rotate-left nav-icon"></i><span class="nav-text">Riwayat</span><i class="fa-solid fa-arrow-right nav-arrow"></i></a></li>' +
-            '<li><a href="#" data-protected="settings"><i class="fa-solid fa-gear nav-icon"></i><span class="nav-text">Pengaturan</span><i class="fa-solid fa-arrow-right nav-arrow"></i></a></li>' +
-          '</ul>' +
-          '<div class="mobile-menu-divider"></div>' +
-          '<div class="mobile-menu-actions" id="mobileMenuActions"></div>' +
-          '<div class="mobile-menu-footer">' +
-            '<div class="mobile-menu-footer-socials">' +
-              '<a href="#" aria-label="Twitter"><i class="fa-brands fa-x-twitter"></i></a>' +
-              '<a href="#" aria-label="Discord"><i class="fa-brands fa-discord"></i></a>' +
-              '<a href="#" aria-label="GitHub"><i class="fa-brands fa-github"></i></a>' +
-              '<a href="#" aria-label="Telegram"><i class="fa-brands fa-telegram"></i></a>' +
-            '</div>' +
-            '<p class="mobile-menu-footer-text" style="margin-top:16px;">&copy; 2025 WalletScore. All rights reserved.</p>' +
-          '</div>' +
-        '</div>';
-      document.body.appendChild(mobileMenu);
-
-      var menuBackdrop = document.getElementById('menuBackdrop');
-
-      function updateMobileMenuState() {
-        var mobileActions = document.getElementById('mobileMenuActions');
-        var session = getSession();
-        if (session) {
-          mobileActions.innerHTML =
-            '<button class="btn btn-outline" id="mobileLogoutBtn" type="button">' +
-              '<i class="fa-solid fa-right-from-bracket"></i> Keluar (' + session.username + ')' +
-            '</button>';
-          document.getElementById('mobileLogoutBtn').addEventListener('click', function() {
-            localStorage.removeItem(SESSION_KEY);
-            updateNavState();
-            closeMobileMenu();
-            showToast('Anda telah keluar dari akun', 'info');
-          });
-        } else {
-          mobileActions.innerHTML =
-            '<a href="login.html" class="btn btn-primary">' +
-              '<i class="fa-solid fa-right-to-bracket"></i> Login dengan Pi' +
-            '</a>';
-        }
+      function doLogout() {
+        localStorage.removeItem('whs_wallet');
+        localStorage.removeItem('whs_pi_user');
+        localStorage.removeItem('whs_pi_token');
+        localStorage.removeItem('whs_login_time');
+        sessionStorage.removeItem('whs_pi_user');
+        sessionStorage.removeItem('currentWallet');
+        sessionStorage.removeItem('walletData');
+        updateUI();
+        showToast('Anda telah keluar dari akun', 'info');
       }
 
-      function openMobileMenu() {
-        navToggle.classList.add('open');
-        navToggle.setAttribute('aria-expanded', 'true');
-        mobileMenu.classList.add('open');
-        mainNav.classList.add('menu-active');
-        document.body.style.overflow = 'hidden';
-        updateMobileMenuState();
-      }
-
-      function closeMobileMenu() {
-        navToggle.classList.remove('open');
-        navToggle.setAttribute('aria-expanded', 'false');
-        mobileMenu.classList.remove('open');
-        mainNav.classList.remove('menu-active');
-        document.body.style.overflow = '';
-      }
-
-      navToggle.addEventListener('click', function() {
-        if (mobileMenu.classList.contains('open')) closeMobileMenu();
-        else openMobileMenu();
-      });
-
-      menuBackdrop.addEventListener('click', closeMobileMenu);
-
-      document.addEventListener('keydown', function(e) {
-        if (e.key === 'Escape' && mobileMenu.classList.contains('open')) closeMobileMenu();
-      });
+      logoutBtnDesktop.addEventListener('click', doLogout);
 
       /* ==========================================
          NAV SCROLL EFFECT
          ========================================== */
+      var mainNav = document.getElementById('mainNav');
       window.addEventListener('scroll', function() {
         if (window.scrollY > 50) mainNav.classList.add('scrolled');
         else mainNav.classList.remove('scrolled');
@@ -686,7 +651,7 @@
       /* ==========================================
          INIT
          ========================================== */
-      updateNavState();
+      updateUI();
 
     });
   </script>
