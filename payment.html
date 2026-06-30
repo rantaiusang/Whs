@@ -21,22 +21,24 @@
 
   <h2>💳 WHS Payment</h2>
   
-  <button class="btn-pay" id="payBtn" onclick="pay()">💰 Bayar 1 Pi</button>
+  <button class="btn-pay" id="payBtn" onclick="pay()" disabled>💰 Bayar 1 Pi</button>
   
   <p id="status">Menyiapkan...</p>
   <div id="debug" class="debug" style="display:none;"></div>
 
   <script>
-    // ===========================
-    // 1. CONFIG (LANGSUNG DI SINI)
-    // ===========================
+    // ==========================================
+    // 1. CONFIG & BACKEND URL
+    // ==========================================
     const SUPABASE_URL = "https://valpwlebldnkedrznaym.supabase.co";
     const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZhbHB3bGVibGRua2VkcnpuYXltIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODI3Mzk3ODUsImV4cCI6MjA5ODMxNTc4NX0.G3BDRqiRBmcFwtBRtdiJI3CkptRrya9bxiVozcQZCSc";
-    const ENDPOINT_PAYMENT = `${SUPABASE_URL}/functions/v1/verify-pi-payment`;
+    
+    // 👇 INI URL BACKEND KAMU DI SUPABASE
+    const URL_BACKEND = SUPABASE_URL + "/functions/v1/verify-pi-payment";
 
-    // ===========================
-    // 2. PI INIT (LANGSUNG DI SINI)
-    // ===========================
+    // ==========================================
+    // 2. PI SDK INIT
+    // ==========================================
     let piReady = false;
     
     function initPiSDK() {
@@ -47,17 +49,14 @@
         document.getElementById('status').innerText = "Siap membayar";
         document.getElementById('payBtn').disabled = false;
       } else {
-        console.log("⏳ Menunggu SDK...");
         setTimeout(initPiSDK, 100);
       }
     }
-    
-    // Mulai init
     initPiSDK();
 
-    // ===========================
+    // ==========================================
     // 3. DEBUG HELPER
-    // ===========================
+    // ==========================================
     function dbg(msg) {
       const el = document.getElementById('debug');
       el.style.display = 'block';
@@ -65,9 +64,38 @@
       console.log(msg);
     }
 
-    // ===========================
-    // 4. PAYMENT FUNCTION
-    // ===========================
+    // ==========================================
+    // 4. FUNGSI KIRIM KE SUPABASE (BACKEND)
+    // ==========================================
+    async function kirimKeBackend(action, paymentId, txid = null) {
+      dbg("🔄 Kirim ke backend: " + action + "...");
+      
+      const bodyData = { action: action, paymentId: paymentId };
+      if (txid) bodyData.txid = txid;
+
+      try {
+        const response = await fetch(URL_BACKEND, {
+          method: "POST",
+          headers: { 
+            "Content-Type": "application/json",
+            "Authorization": "Bearer " + SUPABASE_ANON_KEY
+          },
+          body: JSON.stringify(bodyData)
+        });
+
+        const data = await response.json();
+        dbg("✅ Backend jawab: " + JSON.stringify(data));
+        return data;
+
+      } catch (error) {
+        dbg("❌ Gagal hubungi backend: " + error.message);
+        return null;
+      }
+    }
+
+    // ==========================================
+    // 5. PAYMENT FUNCTION UTAMA
+    // ==========================================
     async function pay() {
       if (!piReady) {
         alert("SDK belum siap!");
@@ -75,14 +103,13 @@
       }
 
       const statusEl = document.getElementById('status');
-      const debugEl = document.getElementById('debug');
-      debugEl.innerText = '';
+      document.getElementById('debug').innerText = '';
       
       try {
         dbg("🔄 Authentikasi...");
         statusEl.innerText = "Login...";
 
-        // AUTH DENGAN SCOPE PAYMENTS
+        // LOGIN
         const auth = await Pi.authenticate(['username', 'payments']);
         const username = auth.user?.username || "unknown";
         dbg("✅ Login sukses: " + username);
@@ -98,24 +125,46 @@
           metadata: { user: username }
         }, {
 
-          onReadyForServerApproval: function(paymentId) {
-            dbg("✅ APPROVAL: " + paymentId);
-            statusEl.innerText = "Menunggu approval server...";
+          // ==========================================
+          // 👇 INI DIA! SAMBUNGAN KE BACKEND PERTAMA
+          // ==========================================
+          onReadyForServerApproval: async function(paymentId) {
+            dbg("📡 Pi minta approval ke server...");
+            statusEl.innerText = "Menghubungi server...";
             
-            // TODO: Kirim ke Supabase untuk di-approve
-            // fetch(ENDPOINT_PAYMENT, { method: 'POST', body: JSON.stringify({ action: 'approve', paymentId }) })
+            // KIRIM KE SUPABASE UNTUK DI-APPROVE
+            const hasil = await kirimKeBackend("approve", paymentId);
+            
+            if (hasil && hasil.status === "approved") {
+              dbg("✅ Server Approved!");
+              statusEl.innerText = "Disetujui, menunggu completion...";
+            } else {
+              dbg("❌ Server Gagal Approve!");
+              statusEl.innerText = "Server gagal approve";
+            }
           },
 
-          onReadyForServerCompletion: function(paymentId, txid) {
-            dbg("✅ COMPLETE: " + txid);
-            statusEl.innerText = "Pembayaran BERHASIL! ✔";
+          // ==========================================
+          // 👇 INI DIA! SAMBUNGAN KE BACKEND KEDUA
+          // ==========================================
+          onReadyForServerCompletion: async function(paymentId, txid) {
+            dbg("📡 Pi minta completion ke server...");
+            statusEl.innerText = "Finalisasi pembayaran...";
             
-            // TODO: Kirim ke Supabase untuk di-complete
-            // fetch(ENDPOINT_PAYMENT, { method: 'POST', body: JSON.stringify({ action: 'complete', paymentId, txid }) })
+            // KIRIM KE SUPABASE UNTUK DI-COMPLETE & SIMPAN DB
+            const hasil = await kirimKeBackend("complete", paymentId, txid);
+            
+            if (hasil && hasil.status === "completed") {
+              dbg("🎉 PEMBAYARAN SUKSES TOTAL!");
+              statusEl.innerText = "Pembayaran BERHASIL! ✔";
+            } else {
+              dbg("❌ Server Gagal Complete!");
+              statusEl.innerText = "Gagal finalisasi";
+            }
           },
 
           onCancel: function(paymentId) {
-            dbg("❌ CANCEL: " + paymentId);
+            dbg("❌ User cancel: " + paymentId);
             statusEl.innerText = "Dibatalkan";
           },
 
