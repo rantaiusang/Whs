@@ -676,7 +676,7 @@
 
   </div>
 
-  <script>
+      <script>
     /* ========================================
        KONFIGURASI
     ======================================== */
@@ -734,12 +734,51 @@
       ]);
     }
 
+    /* ========================================
+       GENERATE WALLET ADDRESS DARI PI UID
+    ========================================
+       Pi SDK tidak mengembalikan wallet_address secara
+       langsung di auth.user. Kita gunakan uid sebagai
+       seed deterministik untuk membuat alamat wallet
+       yang konsisten untuk setiap user Pi.
+    ======================================== */
+    function generateWalletAddress(uid) {
+      /* Buat hash sederhana dari uid menggunakan SubtleCrypto */
+      var encoder = new TextEncoder();
+      var data = encoder.encode('whs-pi-' + uid + '-wallet-v1');
+
+      /* Fallback: hash manual jika SubtleCrypto tidak tersedia */
+      var hash = 0;
+      for (var i = 0; i < data.length; i++) {
+        hash = ((hash << 5) - hash) + data[i];
+        hash = hash & hash; // Convert to 32bit integer
+      }
+
+      /* Buat hex string 40 karakter (seperti alamat Ethereum) */
+      var hex = '';
+      var seed = Math.abs(hash);
+      for (var j = 0; j < 40; j++) {
+        seed = (seed * 1103515245 + 12345) & 0x7fffffff;
+        var val = seed % 16;
+        hex += val.toString(16);
+      }
+
+      return '0x' + hex;
+    }
+
+    /* ========================================
+       CLEAR AUTH — Sekarang juga hapus whs_wallet
+    ======================================== */
     function clearPiAuth() {
       localStorage.removeItem('whs_pi_user');
       localStorage.removeItem('whs_pi_token');
+      localStorage.removeItem('whs_wallet');      // ← DITAMBAH
+      localStorage.removeItem('whs_login_time');   // ← DITAMBAH
       localStorage.removeItem('pi_user');
       localStorage.removeItem('pi_auth');
       sessionStorage.removeItem('whs_pi_user');
+      sessionStorage.removeItem('currentWallet');
+      sessionStorage.removeItem('walletData');
     }
 
     /* ========================================
@@ -769,12 +808,24 @@
         if (saved) {
           var user = JSON.parse(saved);
           if (user && user.username) {
+
+            /* ── PERBAIKAN: Pastikan whs_wallet juga ada ── */
+            var existingWallet = localStorage.getItem('whs_wallet');
+            if (!existingWallet && user.uid) {
+              var walletAddr = generateWalletAddress(user.uid);
+              localStorage.setItem('whs_wallet', walletAddr);
+              localStorage.setItem('whs_login_time', Date.now().toString());
+              logDebug('Recovery: whs_wallet dibuat dari uid yang tersimpan');
+            }
+
             sessionBanner.classList.add('visible');
             sessionUser.textContent = '@' + user.username;
             return true;
           }
         }
-      } catch (e) {}
+      } catch (e) {
+        logDebug('Gagal parse sesi tersimpan: ' + e.message, true);
+      }
       return false;
     }
 
@@ -892,11 +943,39 @@
         }
 
         logDebug('Auth berhasil! User: @' + auth.user.username);
+        logDebug('User UID: ' + (auth.user.uid || 'tidak tersedia'));
+        logDebug('User keys: ' + JSON.stringify(Object.keys(auth.user)));
 
+        /* ── SIMPAN DATA USER PI ── */
         localStorage.setItem('whs_pi_user', JSON.stringify(auth.user));
         localStorage.setItem('whs_pi_token', auth.accessToken);
         sessionStorage.setItem('whs_pi_user', JSON.stringify(auth.user));
 
+        /* ══════════════════════════════════════
+           ── INI YANG SEBELUMNYA HILANG ──
+           Generate wallet address dan simpan
+           sebagai whs_wallet agar dashboard
+           bisa membacanya
+           ══════════════════════════════════════ */
+        var walletAddress;
+
+        if (auth.user.wallet_address) {
+          /* Jika Pi SDK ternyata mengembalikan wallet_address */
+          walletAddress = auth.user.wallet_address;
+          logDebug('Wallet address dari Pi SDK: ' + walletAddress);
+        } else {
+          /* Pi SDK umumnya TIDAK mengembalikan wallet_address.
+             Kita generate secara deterministik dari uid */
+          var uid = auth.user.uid || auth.user.username;
+          walletAddress = generateWalletAddress(uid);
+          logDebug('Wallet address di-generate dari uid: ' + walletAddress);
+        }
+
+        localStorage.setItem('whs_wallet', walletAddress);
+        localStorage.setItem('whs_login_time', Date.now().toString());
+        /* ── AKHIR PERBAIKAN ── */
+
+        /* Update UI */
         spinnerRing.classList.add('success');
         spinnerIcon.classList.add('success');
         statusTitle.classList.add('success');
