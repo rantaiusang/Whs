@@ -594,6 +594,7 @@
     /* ============================================================
        MENU PANEL
        ============================================================ */
+
     .menu-toggle {
       width: 36px; height: 36px;
       border-radius: var(--radius-sm);
@@ -737,7 +738,9 @@
       flex-shrink: 0;
       transition: color 0.2s ease, transform 0.2s ease;
     }
-    .menu-panel-nav a .m-text { flex: 1; }
+    .menu-panel-nav a .m-text {
+      flex: 1;
+    }
     .menu-panel-nav a .m-arrow {
       font-size: 0.7rem;
       color: var(--text-muted);
@@ -905,7 +908,7 @@
         <li><a href="wallet.html"><i class="fa-solid fa-wallet m-icon"></i><span class="m-text">Wallet</span><i class="fa-solid fa-arrow-right m-arrow"></i></a></li>
         <li><a href="analytics.html"><i class="fa-solid fa-chart-line m-icon"></i><span class="m-text">Analitik</span><i class="fa-solid fa-arrow-right m-arrow"></i></a></li>
         <li><a href="history.html"><i class="fa-solid fa-clock-rotate-left m-icon"></i><span class="m-text">Riwayat</span><i class="fa-solid fa-arrow-right m-arrow"></i></a></li>
-        <li><a href="payment.html"><i class="fa-solid fa-gear m-icon"></i><span class="m-text">pay</span><i class="fa-solid fa-arrow-right m-arrow"></i></a></li>
+        <li><a href="payment.html"><i class="fa-solid fa-gear m-icon"></i><span class="m-text">Pay</span><i class="fa-solid fa-arrow-right m-arrow"></i></a></li>
       </ul>
       <div class="menu-panel-divider"></div>
       <div class="menu-panel-footer">
@@ -918,7 +921,9 @@
     </nav>
 
     <!-- Page Content -->
-    <main class="page-content" id="pageContent"></main>
+    <main class="page-content" id="pageContent">
+      <!-- Diisi oleh JavaScript -->
+    </main>
 
   </div>
 
@@ -1013,94 +1018,26 @@
     } else {
       mainWrapper.style.display = 'block';
       initDashboard(walletAddress);
-      startIdleTimer();
     }
 
     /* ========================================
-       LOGOUT — Langsung ke index.html
+       LOGOUT — diarahkan ke index.html
     ======================================== */
-    function performLogout() {
+    function doLogout() {
       localStorage.removeItem('whs_wallet');
       localStorage.removeItem('whs_login_time');
       sessionStorage.removeItem('currentWallet');
       sessionStorage.removeItem('walletData');
-      stopIdleTimer();
-      window.location.href = 'index.html';
+      showToast('Berhasil keluar', 'info', 2000);
+      setTimeout(function() { window.location.href = 'index.html'; }, 600);
     }
 
-    // Tombol logout topbar
-    document.getElementById('logoutBtn').addEventListener('click', function() {
-      performLogout();
-    });
+    document.getElementById('logoutBtn').addEventListener('click', doLogout);
 
-    // Tombol logout menu panel
+    /* Tombol logout di menu panel */
     document.getElementById('menuLogoutBtn').addEventListener('click', function() {
       closeMenu();
-      performLogout();
-    });
-
-    /* ========================================
-       AUTO LOGOUT — 1 JAM IDLE (DI BELAKANG LAYAR)
-    ======================================== */
-    var IDLE_TIMEOUT = 60 * 60 * 1000; // 1 jam
-    var idleTimer = null;
-
-    function resetIdleTimer() {
-      if (!localStorage.getItem('whs_wallet')) return;
-      clearTimeout(idleTimer);
-      idleTimer = setTimeout(function() {
-        performLogout();
-      }, IDLE_TIMEOUT);
-    }
-
-    function stopIdleTimer() {
-      clearTimeout(idleTimer);
-      idleTimer = null;
-    }
-
-    function startIdleTimer() {
-      // Cek apakah saat halaman dimuat sudah lewat 1 jam sejak login
-      var loginTime = localStorage.getItem('whs_login_time');
-      if (loginTime) {
-        var elapsed = Date.now() - parseInt(loginTime, 10);
-        if (elapsed >= IDLE_TIMEOUT) {
-          performLogout();
-          return;
-        }
-        // Set timer dengan sisa waktu
-        idleTimer = setTimeout(function() {
-          performLogout();
-        }, IDLE_TIMEOUT - elapsed);
-      } else {
-        // Simpan waktu login & mulai timer
-        localStorage.setItem('whs_login_time', Date.now().toString());
-        resetIdleTimer();
-      }
-    }
-
-    // Pasang listener aktivitas user — reset timer setiap ada gerakan
-    var idleEvents = ['mousedown', 'mousemove', 'keydown', 'scroll', 'touchstart', 'touchmove', 'click', 'wheel'];
-    for (var i = 0; i < idleEvents.length; i++) {
-      document.addEventListener(idleEvents[i], resetIdleTimer, { passive: true });
-    }
-
-    // Saat tab kembali aktif, cek apakah sudah lewat 1 jam
-    document.addEventListener('visibilitychange', function() {
-      if (!document.hidden && localStorage.getItem('whs_wallet')) {
-        var loginTime = localStorage.getItem('whs_login_time');
-        if (loginTime) {
-          var elapsed = Date.now() - parseInt(loginTime, 10);
-          if (elapsed >= IDLE_TIMEOUT) {
-            performLogout();
-          } else {
-            // Set ulang timer dengan sisa waktu
-            clearTimeout(idleTimer);
-            idleTimer = setTimeout(function() {
-              performLogout();
-            }, IDLE_TIMEOUT - elapsed);
-          }
-        }
-      }
+      doLogout();
     });
 
     /* ========================================
@@ -1113,7 +1050,6 @@
         setTimeout(function() { icon.style.animation = ''; }, 600);
         initDashboard(walletAddress);
         showToast('Data diperbarui', 'success', 2000);
-        resetIdleTimer();
       }
     });
 
@@ -1127,33 +1063,42 @@
        MENU PANEL
     ======================================== */
     var menuToggle = document.getElementById('menuToggle');
-    var menuPanel = document.getElementById('menuPanel');
     var menuBackdrop = document.getElementById('menuBackdrop');
+    var menuPanel = document.getElementById('menuPanel');
 
     function openMenu() {
       menuToggle.classList.add('open');
       menuToggle.setAttribute('aria-expanded', 'true');
-      menuPanel.classList.add('open');
       menuBackdrop.classList.add('visible');
+      menuPanel.classList.add('open');
       document.body.style.overflow = 'hidden';
     }
 
     function closeMenu() {
       menuToggle.classList.remove('open');
       menuToggle.setAttribute('aria-expanded', 'false');
-      menuPanel.classList.remove('open');
       menuBackdrop.classList.remove('visible');
+      menuPanel.classList.remove('open');
       document.body.style.overflow = '';
     }
 
     menuToggle.addEventListener('click', function() {
-      if (menuPanel.classList.contains('open')) { closeMenu(); } else { openMenu(); }
+      if (menuPanel.classList.contains('open')) {
+        closeMenu();
+      } else {
+        openMenu();
+      }
     });
 
     menuBackdrop.addEventListener('click', closeMenu);
-    document.addEventListener('keydown', function(e) {
-      if (e.key === 'Escape') closeMenu();
-    });
+
+    /* Tutup menu saat klik link navigasi */
+    var menuLinks = menuPanel.querySelectorAll('.menu-panel-nav a');
+    for (var i = 0; i < menuLinks.length; i++) {
+      menuLinks[i].addEventListener('click', function() {
+        closeMenu();
+      });
+    }
 
     /* ========================================
        INIT DASHBOARD
@@ -1161,12 +1106,16 @@
     function initDashboard(address) {
       var data = calculateCreditScore(address);
       sessionStorage.setItem('walletData', JSON.stringify(data));
-      renderPage(data);
 
+      /* Update info di menu panel */
       var menuAvatar = document.getElementById('menuAvatar');
+      var menuUsername = document.getElementById('menuUsername');
       var menuWallet = document.getElementById('menuWallet');
       if (menuAvatar) menuAvatar.textContent = address.slice(2, 4).toUpperCase();
+      if (menuUsername) menuUsername.textContent = 'Wallet User';
       if (menuWallet) menuWallet.textContent = shortAddress(address);
+
+      renderPage(data);
     }
 
     /* ========================================
@@ -1404,7 +1353,7 @@
         var progress = Math.min(elapsed / duration, 1);
         var eased = 1 - Math.pow(1 - progress, 3);
         var current = start + (end - start) * eased;
-        el.textContent = (decimals > 0 ? current.toFixed(decimals) : Math.round(current)) + suffix;
+        el.textContent = current.toFixed(decimals) + suffix;
         if (progress < 1) {
           requestAnimationFrame(update);
         }
@@ -1412,5 +1361,6 @@
       requestAnimationFrame(update);
     }
   </script>
+
 </body>
 </html>
