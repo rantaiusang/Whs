@@ -9,7 +9,7 @@
   <script src="https://sdk.minepi.com/pi-sdk.js"></script>
 
   <script>
-    // Init Pi SDK (sandbox untuk test)
+    // INIT PI SDK (sandbox untuk test)
     Pi.init({ version: "2.0", sandbox: true });
   </script>
 </head>
@@ -26,26 +26,35 @@
     async function pay() {
       try {
 
+        console.log("START PAYMENT FLOW");
+
         document.getElementById("status").innerText = "Login Pi...";
 
-        // LOGIN PI
+        // =========================
+        // 1. PI LOGIN
+        // =========================
         const auth = await Pi.authenticate(['username']);
 
-        console.log("AUTH:", auth);
+        console.log("AUTH FULL:", auth);
 
-        document.getElementById("status").innerText = "Membuat pembayaran...";
+        const username = auth?.user?.username || "unknown";
 
-        // PAYMENT PI
+        document.getElementById("status").innerText = "Create payment...";
+
+        // =========================
+        // 2. PAYMENT FLOW
+        // =========================
         Pi.createPayment({
           amount: 1,
           memo: "WHS Test Payment Step 10",
           metadata: {
-            user: auth.username
+            user: username
           }
         }, {
 
           onReadyForServerApproval: function(paymentId) {
             console.log("APPROVAL:", paymentId);
+            document.getElementById("status").innerText = "Waiting approval...";
           },
 
           onReadyForServerCompletion: function(paymentId, txid) {
@@ -59,15 +68,19 @@
           },
 
           onError: function(error) {
-            console.log("ERROR PAYMENT:", error);
-            document.getElementById("status").innerText = "Error payment (cek console)";
+            console.log("PAYMENT ERROR:", error);
+            document.getElementById("status").innerText = "Payment error (cek console)";
           }
 
         });
 
       } catch (err) {
-        console.log("LOGIN ERROR:", err);
-        document.getElementById("status").innerText = "Login gagal (cek console)";
+
+        console.log("FULL ERROR (LOGIN/PAYMENT):", err);
+
+        document.getElementById("status").innerText =
+          "Error Pi SDK (cek console)";
+
       }
     }
   </script>
