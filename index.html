@@ -3,13 +3,12 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Wallet Health Score — Web3 Credit Intelligence</title>
+  <title>Wallet Health Score — Pi Network Credit Intelligence</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
 
-  <!-- === COPY INI KE SEMUA FILE === -->
   <style>
     :root {
       --bg-primary: #060a13;
@@ -45,9 +44,6 @@
       --transition-fast: 150ms cubic-bezier(0.4, 0, 0.2, 1);
       --transition-base: 250ms cubic-bezier(0.4, 0, 0.2, 1);
       --transition-slow: 400ms cubic-bezier(0.4, 0, 0.2, 1);
-      --sidebar-width: 260px;
-      --sidebar-collapsed: 72px;
-      --topbar-height: 64px;
     }
     *, *::before, *::after { margin:0; padding:0; box-sizing:border-box; }
     html { scroll-behavior:smooth; -webkit-font-smoothing:antialiased; }
@@ -56,7 +52,6 @@
     button { font-family:var(--font-body); cursor:pointer; border:none; outline:none; background:none; }
     img { max-width:100%; display:block; }
 
-    /* Background Atmosphere */
     .bg-atmosphere { position:fixed; top:0; left:0; width:100%; height:100%; pointer-events:none; z-index:0; overflow:hidden; }
     .bg-atmosphere .orb { position:absolute; border-radius:50%; filter:blur(100px); opacity:0.4; animation:orbFloat 20s ease-in-out infinite; }
     .bg-atmosphere .orb-1 { width:600px; height:600px; background:radial-gradient(circle,rgba(45,212,191,0.12) 0%,transparent 70%); top:-15%; left:-10%; }
@@ -69,14 +64,14 @@
     .page-wrapper { position:relative; z-index:1; min-height:100vh; }
     .container { width:100%; max-width:1200px; margin:0 auto; padding:0 24px; }
 
-    /* === LANDING NAV === */
+    /* NAV */
     .nav { position:fixed; top:0; left:0; right:0; z-index:100; padding:0 24px; transition:background var(--transition-base), backdrop-filter var(--transition-base); }
     .nav.scrolled { background:rgba(6,10,19,0.85); backdrop-filter:blur(20px); -webkit-backdrop-filter:blur(20px); border-bottom:1px solid var(--border-subtle); }
     .nav-inner { max-width:1200px; margin:0 auto; display:flex; align-items:center; justify-content:space-between; height:72px; }
     .nav-brand { display:flex; align-items:center; gap:10px; font-family:var(--font-display); font-weight:700; font-size:1.2rem; letter-spacing:-0.02em; }
     .nav-brand-icon { width:36px; height:36px; background:linear-gradient(135deg,var(--accent),#0d9488); border-radius:var(--radius-sm); display:flex; align-items:center; justify-content:center; font-size:1rem; color:var(--bg-primary); box-shadow:0 0 20px var(--accent-glow); }
-    .nav-links { display:flex; align-items:center; gap:4px; list-style:none; }
-    .nav-links a { padding:8px 16px; font-size:0.9rem; font-weight:500; color:var(--text-secondary); border-radius:var(--radius-full); transition:all var(--transition-fast); position:relative; }
+    .nav-links { display:flex; align-items:center; gap:8px; list-style:none; }
+    .nav-links a { padding:8px 16px; font-size:0.9rem; font-weight:500; color:var(--text-secondary); border-radius:var(--radius-full); transition:all var(--transition-fast); }
     .nav-links a:hover, .nav-links a.active { color:var(--text-primary); background:rgba(255,255,255,0.05); }
     .nav-actions { display:flex; align-items:center; gap:12px; }
     .btn { display:inline-flex; align-items:center; justify-content:center; gap:8px; font-family:var(--font-body); font-weight:600; font-size:0.9rem; padding:10px 22px; border-radius:var(--radius-full); transition:all var(--transition-base); white-space:nowrap; }
@@ -87,103 +82,32 @@
     .btn-primary:active { transform:translateY(0); }
     .btn-outline { color:var(--accent); background:transparent; border:1.5px solid var(--border-color); }
     .btn-outline:hover { border-color:var(--border-color-hover); background:var(--accent-dim); }
-    .btn-sm { padding:7px 16px; font-size:0.82rem; }
-    .btn-danger { color:#fff; background:var(--danger); }
-    .btn-danger:hover { opacity:0.9; }
-
-    /* === MOBILE MENU === */
+    .btn-lg { padding:14px 32px; font-size:1rem; }
     .nav-toggle { display:none; flex-direction:column; gap:5px; padding:8px; cursor:pointer; z-index:210; }
     .nav-toggle span { display:block; width:22px; height:2px; background:var(--text-secondary); border-radius:2px; transition:all 0.35s cubic-bezier(0.77, 0, 0.175, 1); transform-origin:center; }
     .nav-toggle.open span:nth-child(1) { transform:translateY(7px) rotate(45deg); background:var(--accent); }
     .nav-toggle.open span:nth-child(2) { opacity:0; transform:scaleX(0); }
     .nav-toggle.open span:nth-child(3) { transform:translateY(-7px) rotate(-45deg); background:var(--accent); }
 
-    .mobile-menu { display:none; position:fixed; inset:0; z-index:200; }
-    .mobile-menu-backdrop { position:absolute; inset:0; background:rgba(6,10,19,0.0); backdrop-filter:blur(0px); -webkit-backdrop-filter:blur(0px); transition:all 0.5s cubic-bezier(0.4, 0, 0.2, 1); }
-    .mobile-menu.open .mobile-menu-backdrop { background:rgba(6,10,19,0.92); backdrop-filter:blur(24px); -webkit-backdrop-filter:blur(24px); }
-
-    .mobile-menu-panel { position:relative; z-index:1; height:100%; display:flex; flex-direction:column; justify-content:center; padding:100px 40px 60px; }
-    .mobile-menu-nav { list-style:none; display:flex; flex-direction:column; gap:4px; }
-    .mobile-menu-nav li { opacity:0; transform:translateX(-30px); }
-    .mobile-menu.open .mobile-menu-nav li { opacity:1; transform:translateX(0); }
-    .mobile-menu.open .mobile-menu-nav li:nth-child(1) { transition:opacity 0.4s ease 0.15s, transform 0.4s cubic-bezier(0.4, 0, 0.2, 1) 0.15s; }
-    .mobile-menu.open .mobile-menu-nav li:nth-child(2) { transition:opacity 0.4s ease 0.2s, transform 0.4s cubic-bezier(0.4, 0, 0.2, 1) 0.2s; }
-    .mobile-menu.open .mobile-menu-nav li:nth-child(3) { transition:opacity 0.4s ease 0.25s, transform 0.4s cubic-bezier(0.4, 0, 0.2, 1) 0.25s; }
-    .mobile-menu.open .mobile-menu-nav li:nth-child(4) { transition:opacity 0.4s ease 0.3s, transform 0.4s cubic-bezier(0.4, 0, 0.2, 1) 0.3s; }
-    .mobile-menu.open .mobile-menu-nav li:nth-child(5) { transition:opacity 0.4s ease 0.35s, transform 0.4s cubic-bezier(0.4, 0, 0.2, 1) 0.35s; }
-    .mobile-menu.open .mobile-menu-nav li:nth-child(6) { transition:opacity 0.4s ease 0.4s, transform 0.4s cubic-bezier(0.4, 0, 0.2, 1) 0.4s; }
-
-    .mobile-menu-nav a { display:flex; align-items:center; gap:16px; padding:16px 20px; font-family:var(--font-display); font-size:1.35rem; font-weight:600; color:var(--text-secondary); border-radius:var(--radius-lg); transition:all 0.25s ease; position:relative; overflow:hidden; }
-    .mobile-menu-nav a::before { content:''; position:absolute; left:0; top:50%; transform:translateY(-50%) scaleY(0); width:3px; height:60%; background:var(--accent); border-radius:0 3px 3px 0; transition:transform 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
-    .mobile-menu-nav a::after { content:''; position:absolute; inset:0; background:linear-gradient(90deg, var(--accent-dim), transparent 60%); opacity:0; transition:opacity 0.25s ease; border-radius:var(--radius-lg); pointer-events:none; }
-    .mobile-menu-nav a:hover, .mobile-menu-nav a.active { color:var(--text-primary); }
-    .mobile-menu-nav a:hover::before, .mobile-menu-nav a.active::before { transform:translateY(-50%) scaleY(1); }
-    .mobile-menu-nav a:hover::after, .mobile-menu-nav a.active::after { opacity:1; }
-    .mobile-menu-nav a .nav-icon { width:28px; text-align:center; font-size:1.1rem; transition:color 0.25s ease, transform 0.25s ease; position:relative; z-index:1; }
-    .mobile-menu-nav a:hover .nav-icon, .mobile-menu-nav a.active .nav-icon { color:var(--accent); transform:scale(1.15); }
-    .mobile-menu-nav a .nav-text { position:relative; z-index:1; }
-    .mobile-menu-nav a .nav-arrow { margin-left:auto; font-size:0.85rem; opacity:0; transform:translateX(-8px); transition:all 0.25s ease; position:relative; z-index:1; color:var(--accent); }
-    .mobile-menu-nav a:hover .nav-arrow, .mobile-menu-nav a.active .nav-arrow { opacity:1; transform:translateX(0); }
-
-    .mobile-menu-divider { height:1px; background:linear-gradient(90deg, transparent, var(--border-color), transparent); margin:28px 20px; opacity:0; transform:scaleX(0); transition:opacity 0.4s ease 0.45s, transform 0.5s cubic-bezier(0.4, 0, 0.2, 1) 0.45s; }
-    .mobile-menu.open .mobile-menu-divider { opacity:1; transform:scaleX(1); }
-
-    .mobile-menu-actions { display:flex; flex-direction:column; gap:12px; padding:0 20px; opacity:0; transform:translateY(20px); transition:opacity 0.4s ease 0.5s, transform 0.4s cubic-bezier(0.4, 0, 0.2, 1) 0.5s; }
-    .mobile-menu.open .mobile-menu-actions { opacity:1; transform:translateY(0); }
-    .mobile-menu-actions .btn { width:100%; justify-content:center; padding:14px 24px; font-size:1rem; }
-
-    .mobile-menu-footer { margin-top:auto; padding:0 20px; opacity:0; transform:translateY(16px); transition:opacity 0.4s ease 0.6s, transform 0.4s cubic-bezier(0.4, 0, 0.2, 1) 0.6s; }
-    .mobile-menu.open .mobile-menu-footer { opacity:1; transform:translateY(0); }
-    .mobile-menu-footer-text { font-size:0.78rem; color:var(--text-muted); text-align:center; }
-    .mobile-menu-footer-socials { display:flex; justify-content:center; gap:20px; margin-top:16px; }
-    .mobile-menu-footer-socials a { width:40px; height:40px; border-radius:50%; display:flex; align-items:center; justify-content:center; color:var(--text-muted); font-size:0.95rem; border:1px solid var(--border-subtle); transition:all 0.25s ease; }
-    .mobile-menu-footer-socials a:hover { color:var(--accent); border-color:var(--border-color); background:var(--accent-dim); transform:translateY(-2px); }
-
-    /* === HERO === */
-    .hero { padding:160px 0 80px; text-align:center; position:relative; }
+    /* HERO */
+    .hero { padding:180px 0 100px; text-align:center; position:relative; }
     .hero-badge { display:inline-flex; align-items:center; gap:8px; padding:6px 16px 6px 8px; background:var(--accent-dim); border:1px solid var(--border-color); border-radius:var(--radius-full); font-size:0.8rem; font-weight:500; color:var(--accent); margin-bottom:32px; animation:fadeInUp 0.6s ease-out; }
     .hero-badge-dot { width:8px; height:8px; background:var(--accent); border-radius:50%; animation:pulse 2s ease-in-out infinite; }
     @keyframes pulse { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:0.5;transform:scale(0.8)} }
     .hero-title { font-family:var(--font-display); font-size:clamp(2.8rem,6vw,4.5rem); font-weight:700; line-height:1.08; letter-spacing:-0.03em; margin-bottom:24px; animation:fadeInUp 0.6s ease-out 0.1s both; }
     .hero-title .highlight { background:linear-gradient(135deg,var(--accent),#5eead4,var(--accent-secondary)); -webkit-background-clip:text; -webkit-text-fill-color:transparent; background-clip:text; }
-    .hero-subtitle { font-size:clamp(1rem,2vw,1.2rem); color:var(--text-secondary); max-width:600px; margin:0 auto 48px; line-height:1.7; animation:fadeInUp 0.6s ease-out 0.2s both; }
+    .hero-subtitle { font-size:clamp(1rem,2vw,1.2rem); color:var(--text-secondary); max-width:600px; margin:0 auto 40px; line-height:1.7; animation:fadeInUp 0.6s ease-out 0.2s both; }
+    .hero-actions { display:flex; justify-content:center; gap:16px; flex-wrap:wrap; animation:fadeInUp 0.6s ease-out 0.3s both; }
     @keyframes fadeInUp { from{opacity:0;transform:translateY(20px)} to{opacity:1;transform:translateY(0)} }
 
-    /* Wallet Input */
-    .wallet-input-section { max-width:680px; margin:0 auto 40px; animation:fadeInUp 0.6s ease-out 0.3s both; }
-    .wallet-input-card { background:var(--bg-card); border:1px solid var(--border-color); border-radius:var(--radius-xl); padding:8px; display:flex; align-items:center; gap:8px; box-shadow:var(--shadow-card),var(--shadow-glow); transition:all var(--transition-base); position:relative; overflow:hidden; }
-    .wallet-input-card::before { content:''; position:absolute; inset:0; border-radius:var(--radius-xl); background:linear-gradient(135deg,rgba(45,212,191,0.05),transparent 50%); pointer-events:none; }
-    .wallet-input-card:focus-within { border-color:var(--border-color-hover); box-shadow:var(--shadow-card),0 0 50px rgba(45,212,191,0.12); }
-    .wallet-input-icon { flex-shrink:0; width:48px; height:48px; display:flex; align-items:center; justify-content:center; color:var(--text-muted); font-size:1.1rem; margin-left:4px; }
-    .wallet-input-wrapper { flex:1; position:relative; }
-    .wallet-input { width:100%; background:transparent; border:none; outline:none; font-family:'Space Grotesk',monospace; font-size:1rem; color:var(--text-primary); padding:14px 0; letter-spacing:0.02em; }
-    .wallet-input::placeholder { color:var(--text-muted); font-family:var(--font-body); letter-spacing:0; }
-    .wallet-input-btn { flex-shrink:0; padding:14px 32px; border-radius:var(--radius-lg); font-size:0.95rem; }
-    .input-hint { text-align:left; margin-top:12px; font-size:0.8rem; color:var(--text-muted); min-height:20px; transition:all var(--transition-fast); }
-    .input-hint.error { color:var(--danger); }
-    .input-hint.success { color:var(--success); }
-    .demo-wallets { display:flex; flex-wrap:wrap; justify-content:center; gap:8px; margin-top:20px; animation:fadeInUp 0.6s ease-out 0.4s both; }
-    .demo-wallet-btn { padding:6px 14px; font-size:0.78rem; font-family:'Space Grotesk',monospace; color:var(--text-muted); background:rgba(255,255,255,0.03); border:1px solid var(--border-subtle); border-radius:var(--radius-full); transition:all var(--transition-fast); cursor:pointer; }
-    .demo-wallet-btn:hover { color:var(--accent); border-color:var(--border-color); background:var(--accent-dim); }
-
-    /* Stats Marquee */
-    .stats-marquee { border-top:1px solid var(--border-subtle); border-bottom:1px solid var(--border-subtle); padding:20px 0; overflow:hidden; position:relative; animation:fadeInUp 0.6s ease-out 0.5s both; }
-    .stats-marquee::before, .stats-marquee::after { content:''; position:absolute; top:0; bottom:0; width:120px; z-index:2; pointer-events:none; }
-    .stats-marquee::before { left:0; background:linear-gradient(90deg,var(--bg-primary),transparent); }
-    .stats-marquee::after { right:0; background:linear-gradient(-90deg,var(--bg-primary),transparent); }
-    .marquee-track { display:flex; gap:60px; animation:marqueeScroll 30s linear infinite; width:max-content; }
-    .marquee-item { display:flex; align-items:center; gap:12px; white-space:nowrap; flex-shrink:0; }
-    .marquee-value { font-family:var(--font-display); font-size:1.3rem; font-weight:700; color:var(--text-primary); }
-    .marquee-label { font-size:0.85rem; color:var(--text-muted); }
-    .marquee-divider { width:4px; height:4px; background:var(--text-muted); border-radius:50%; opacity:0.4; }
-    @keyframes marqueeScroll { from{transform:translateX(0)} to{transform:translateX(-50%)} }
-
-    /* Sections */
+    /* SECTIONS */
     .section-header { text-align:center; margin-bottom:64px; }
     .section-label { display:inline-flex; align-items:center; gap:8px; font-size:0.8rem; font-weight:600; text-transform:uppercase; letter-spacing:0.1em; color:var(--accent); margin-bottom:16px; }
     .section-label::before, .section-label::after { content:''; width:20px; height:1px; background:var(--accent); opacity:0.4; }
     .section-title { font-family:var(--font-display); font-size:clamp(1.8rem,4vw,2.5rem); font-weight:700; letter-spacing:-0.02em; margin-bottom:16px; }
     .section-desc { font-size:1.05rem; color:var(--text-secondary); max-width:520px; margin:0 auto; }
+
+    /* FEATURES */
     .features { padding:100px 0; }
     .features-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:20px; }
     .feature-card { background:var(--bg-card); border:1px solid var(--border-subtle); border-radius:var(--radius-lg); padding:32px 28px; transition:all var(--transition-base); position:relative; overflow:hidden; }
@@ -200,16 +124,49 @@
     .feature-title { font-family:var(--font-display); font-size:1.1rem; font-weight:600; margin-bottom:10px; }
     .feature-desc { font-size:0.9rem; color:var(--text-secondary); line-height:1.65; }
 
+    /* HOW IT WORKS */
+    .how-it-works { padding:100px 0; background:linear-gradient(180deg,transparent,rgba(45,212,191,0.02) 50%,transparent); }
+    .steps-grid { display:grid; grid-template-columns:repeat(4,1fr); gap:24px; position:relative; }
+    .steps-grid::before { content:''; position:absolute; top:40px; left:calc(12.5% + 24px); right:calc(12.5% + 24px); height:2px; background:linear-gradient(90deg,var(--border-color),var(--accent-dim),var(--border-color)); z-index:0; }
+    .step-card { text-align:center; position:relative; z-index:1; }
+    .step-number { width:56px; height:56px; border-radius:50%; background:var(--bg-secondary); border:2px solid var(--border-color); display:flex; align-items:center; justify-content:center; font-family:var(--font-display); font-size:1.2rem; font-weight:700; color:var(--accent); margin:0 auto 20px; position:relative; }
+    .step-number::after { content:''; position:absolute; inset:-6px; border-radius:50%; border:1px solid var(--accent-dim); }
+    .step-title { font-family:var(--font-display); font-size:1.05rem; font-weight:600; margin-bottom:8px; }
+    .step-desc { font-size:0.85rem; color:var(--text-secondary); line-height:1.6; max-width:220px; margin:0 auto; }
+
+    /* VISUAL PREVIEW (Abstrak Ilustrasi) */
+    .visual-preview { padding:100px 0; }
+    .preview-grid { display:grid; grid-template-columns:1fr 1fr; gap:60px; align-items:center; }
+    .preview-content .section-label { justify-content:flex-start; }
+    .preview-content .section-title { text-align:left; }
+    .preview-features { list-style:none; margin-top:28px; display:flex; flex-direction:column; gap:16px; }
+    .preview-features li { display:flex; align-items:flex-start; gap:12px; font-size:0.95rem; color:var(--text-secondary); line-height:1.5; }
+    .preview-features li i { color:var(--accent); margin-top:4px; flex-shrink:0; font-size:0.85rem; }
+    
+    .preview-visual { display:flex; justify-content:center; align-items:center; position:relative; }
+    .abstract-shape { width:100%; max-width:400px; aspect-ratio:1; position:relative; }
+    .shape-ring { position:absolute; border-radius:50%; border:1px solid var(--border-color); }
+    .shape-ring-1 { inset:0; border-color: rgba(45, 212, 191, 0.2); animation: spinSlow 30s linear infinite; border-style: dashed; }
+    .shape-ring-2 { inset:15%; border-color: rgba(245, 158, 11, 0.15); animation: spinSlow 20s linear infinite reverse; }
+    .shape-ring-3 { inset:30%; border-color: rgba(59, 130, 246, 0.15); animation: spinSlow 25s linear infinite; }
+    .shape-core { position:absolute; inset:40%; background:var(--bg-card); border:1px solid var(--border-color); border-radius:50%; display:flex; align-items:center; justify-content:center; box-shadow:var(--shadow-glow); }
+    .shape-core i { font-size:2rem; color:var(--accent); }
+    .shape-dot { position:absolute; width:8px; height:8px; background:var(--accent); border-radius:50%; box-shadow:0 0 12px var(--accent-glow); }
+    .shape-dot-1 { top:10%; left:50%; animation: floatGentle 4s ease-in-out infinite; }
+    .shape-dot-2 { bottom:15%; right:10%; background:var(--accent-secondary); box-shadow:0 0 12px var(--accent-secondary-dim); animation: floatGentle 5s ease-in-out infinite reverse; }
+    @keyframes spinSlow { to { transform: rotate(360deg); } }
+    @keyframes floatGentle { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-10px)} }
+
     /* CTA */
     .cta-section { padding:100px 0; }
     .cta-card { background:var(--bg-card); border:1px solid var(--border-color); border-radius:var(--radius-xl); padding:64px 48px; text-align:center; position:relative; overflow:hidden; }
     .cta-card::before { content:''; position:absolute; top:-1px; left:20%; right:20%; height:2px; background:linear-gradient(90deg,transparent,var(--accent),transparent); }
     .cta-card::after { content:''; position:absolute; top:0; left:50%; transform:translateX(-50%); width:400px; height:300px; background:radial-gradient(ellipse,var(--accent-glow) 0%,transparent 70%); opacity:0.3; pointer-events:none; }
     .cta-title { font-family:var(--font-display); font-size:clamp(1.6rem,3.5vw,2.2rem); font-weight:700; letter-spacing:-0.02em; margin-bottom:16px; position:relative; }
-    .cta-desc { font-size:1.05rem; color:var(--text-secondary); max-width:480px; margin:0 auto 32px; position:relative; }
-    .cta-actions { display:flex; justify-content:center; gap:12px; position:relative; flex-wrap: wrap; }
+    .cta-desc { font-size:1.05rem; color:var(--text-secondary); max-width:500px; margin:0 auto 32px; position:relative; line-height:1.7; }
+    .cta-actions { display:flex; justify-content:center; gap:12px; position:relative; flex-wrap:wrap; }
 
-    /* Footer */
+    /* FOOTER */
     .footer { border-top:1px solid var(--border-subtle); padding:48px 0 32px; }
     .footer-grid { display:grid; grid-template-columns:2fr 1fr 1fr 1fr; gap:40px; margin-bottom:40px; }
     .footer-brand { font-family:var(--font-display); font-size:1.1rem; font-weight:700; display:flex; align-items:center; gap:8px; margin-bottom:12px; }
@@ -223,7 +180,7 @@
     .footer-socials a { color:var(--text-muted); font-size:1rem; transition:color var(--transition-fast); }
     .footer-socials a:hover { color:var(--accent); }
 
-    /* Toast */
+    /* TOAST */
     .toast-container { position:fixed; top:88px; right:24px; z-index:500; display:flex; flex-direction:column; gap:8px; }
     .toast { display:flex; align-items:center; gap:12px; padding:14px 20px; background:var(--bg-secondary); border:1px solid var(--border-subtle); border-radius:var(--radius-md); box-shadow:0 8px 32px rgba(0,0,0,0.4); font-size:0.88rem; color:var(--text-primary); transform:translateX(120%); transition:transform var(--transition-base); max-width:360px; }
     .toast.show { transform:translateX(0); }
@@ -232,27 +189,57 @@
     .toast.error i { color:var(--danger); }
     .toast.info i { color:var(--info); }
 
-    /* Loading Overlay */
-    .loading-overlay { position:fixed; inset:0; background:rgba(6,10,19,0.92); backdrop-filter:blur(10px); z-index:400; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:24px; opacity:0; pointer-events:none; transition:opacity var(--transition-base); }
-    .loading-overlay.active { opacity:1; pointer-events:all; }
-    .loading-spinner { width:48px; height:48px; border:3px solid var(--border-subtle); border-top-color:var(--accent); border-radius:50%; animation:spin 0.8s linear infinite; }
-    @keyframes spin { to{transform:rotate(360deg)} }
-    .loading-text { font-family:var(--font-display); font-size:0.95rem; color:var(--text-secondary); }
-    .loading-steps { display:flex; flex-direction:column; gap:8px; margin-top:8px; }
-    .loading-step { font-size:0.8rem; color:var(--text-muted); display:flex; align-items:center; gap:8px; transition:color var(--transition-fast); }
-    .loading-step.active { color:var(--accent); }
-    .loading-step.done { color:var(--success); }
-    .loading-step i { width:16px; text-align:center; }
-
-    /* Scroll Reveal */
+    /* REVEAL */
     .reveal { opacity:0; transform:translateY(30px); transition:opacity 0.7s ease-out,transform 0.7s ease-out; }
     .reveal.visible { opacity:1; transform:translateY(0); }
 
-    /* ========================================
-       RESPONSIVE
-    ======================================== */
+    /* MOBILE MENU */
+    .mobile-menu { display:none; position:fixed; inset:0; z-index:200; }
+    .mobile-menu-backdrop { position:absolute; inset:0; background:rgba(6,10,19,0.0); backdrop-filter:blur(0px); -webkit-backdrop-filter:blur(0px); transition:all 0.5s cubic-bezier(0.4, 0, 0.2, 1); pointer-events:none; }
+    .mobile-menu.open .mobile-menu-backdrop { background:rgba(6,10,19,0.92); backdrop-filter:blur(24px); -webkit-backdrop-filter:blur(24px); pointer-events:all; }
+    .mobile-menu-panel { position:relative; z-index:1; height:100%; display:flex; flex-direction:column; justify-content:center; padding:100px 40px 60px; }
+    .mobile-menu-nav { list-style:none; display:flex; flex-direction:column; gap:4px; }
+    .mobile-menu-nav li { opacity:0; transform:translateX(-30px); }
+    .mobile-menu.open .mobile-menu-nav li { opacity:1; transform:translateX(0); }
+    .mobile-menu.open .mobile-menu-nav li:nth-child(1) { transition:opacity 0.4s ease 0.15s, transform 0.4s cubic-bezier(0.4, 0, 0.2, 1) 0.15s; }
+    .mobile-menu.open .mobile-menu-nav li:nth-child(2) { transition:opacity 0.4s ease 0.2s, transform 0.4s cubic-bezier(0.4, 0, 0.2, 1) 0.2s; }
+    .mobile-menu.open .mobile-menu-nav li:nth-child(3) { transition:opacity 0.4s ease 0.25s, transform 0.4s cubic-bezier(0.4, 0, 0.2, 1) 0.25s; }
+    .mobile-menu.open .mobile-menu-nav li:nth-child(4) { transition:opacity 0.4s ease 0.3s, transform 0.4s cubic-bezier(0.4, 0, 0.2, 1) 0.3s; }
+    .mobile-menu.open .mobile-menu-nav li:nth-child(5) { transition:opacity 0.4s ease 0.35s, transform 0.4s cubic-bezier(0.4, 0, 0.2, 1) 0.35s; }
+    .mobile-menu.open .mobile-menu-nav li:nth-child(6) { transition:opacity 0.4s ease 0.4s, transform 0.4s cubic-bezier(0.4, 0, 0.2, 1) 0.4s; }
+    .mobile-menu-nav a { display:flex; align-items:center; gap:16px; padding:16px 20px; font-family:var(--font-display); font-size:1.35rem; font-weight:600; color:var(--text-secondary); border-radius:var(--radius-lg); transition:all 0.25s ease; position:relative; overflow:hidden; }
+    .mobile-menu-nav a::before { content:''; position:absolute; left:0; top:50%; transform:translateY(-50%) scaleY(0); width:3px; height:60%; background:var(--accent); border-radius:0 3px 3px 0; transition:transform 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
+    .mobile-menu-nav a::after { content:''; position:absolute; inset:0; background:linear-gradient(90deg, var(--accent-dim), transparent 60%); opacity:0; transition:opacity 0.25s ease; border-radius:var(--radius-lg); pointer-events:none; }
+    .mobile-menu-nav a:hover, .mobile-menu-nav a.active { color:var(--text-primary); }
+    .mobile-menu-nav a:hover::before, .mobile-menu-nav a.active::before { transform:translateY(-50%) scaleY(1); }
+    .mobile-menu-nav a:hover::after, .mobile-menu-nav a.active::after { opacity:1; }
+    .mobile-menu-nav a .nav-icon { width:28px; text-align:center; font-size:1.1rem; transition:color 0.25s ease, transform 0.25s ease; position:relative; z-index:1; }
+    .mobile-menu-nav a:hover .nav-icon, .mobile-menu-nav a.active .nav-icon { color:var(--accent); transform:scale(1.15); }
+    .mobile-menu-nav a .nav-text { position:relative; z-index:1; }
+    .mobile-menu-nav a .nav-arrow { margin-left:auto; font-size:0.85rem; opacity:0; transform:translateX(-8px); transition:all 0.25s ease; position:relative; z-index:1; color:var(--accent); }
+    .mobile-menu-nav a:hover .nav-arrow, .mobile-menu-nav a.active .nav-arrow { opacity:1; transform:translateX(0); }
+    .mobile-menu-divider { height:1px; background:linear-gradient(90deg, transparent, var(--border-color), transparent); margin:28px 20px; opacity:0; transform:scaleX(0); transition:opacity 0.4s ease 0.45s, transform 0.5s cubic-bezier(0.4, 0, 0.2, 1) 0.45s; }
+    .mobile-menu.open .mobile-menu-divider { opacity:1; transform:scaleX(1); }
+    .mobile-menu-actions { display:flex; flex-direction:column; gap:12px; padding:0 20px; opacity:0; transform:translateY(20px); transition:opacity 0.4s ease 0.5s, transform 0.4s cubic-bezier(0.4, 0, 0.2, 1) 0.5s; }
+    .mobile-menu.open .mobile-menu-actions { opacity:1; transform:translateY(0); }
+    .mobile-menu-actions .btn { width:100%; justify-content:center; padding:14px 24px; font-size:1rem; }
+    .mobile-menu-footer { margin-top:auto; padding:0 20px; opacity:0; transform:translateY(16px); transition:opacity 0.4s ease 0.6s, transform 0.4s cubic-bezier(0.4, 0, 0.2, 1) 0.6s; }
+    .mobile-menu.open .mobile-menu-footer { opacity:1; transform:translateY(0); }
+    .mobile-menu-footer-text { font-size:0.78rem; color:var(--text-muted); text-align:center; }
+    .mobile-menu-footer-socials { display:flex; justify-content:center; gap:20px; margin-top:16px; }
+    .mobile-menu-footer-socials a { width:40px; height:40px; border-radius:50%; display:flex; align-items:center; justify-content:center; color:var(--text-muted); font-size:0.95rem; border:1px solid var(--border-subtle); transition:all 0.25s ease; }
+    .mobile-menu-footer-socials a:hover { color:var(--accent); border-color:var(--border-color); background:var(--accent-dim); transform:translateY(-2px); }
+
+    /* RESPONSIVE */
     @media (max-width:1024px) {
       .features-grid { grid-template-columns:repeat(2,1fr); }
+      .steps-grid { grid-template-columns:repeat(2,1fr); gap:40px; }
+      .steps-grid::before { display:none; }
+      .preview-grid { grid-template-columns:1fr; gap:48px; }
+      .preview-content { text-align:center; }
+      .preview-content .section-label { justify-content:center; }
+      .preview-content .section-title { text-align:center; }
+      .preview-features { align-items:center; }
       .footer-grid { grid-template-columns:1fr 1fr; }
     }
     @media (max-width:768px) {
@@ -261,10 +248,8 @@
       .nav-actions .btn-ghost { display:none; }
       .mobile-menu { display:block; }
       .hero { padding:140px 0 60px; }
-      .wallet-input-card { flex-direction:column; padding:12px; gap:4px; }
-      .wallet-input-icon { display:none; }
-      .wallet-input-btn { width:100%; }
       .features-grid { grid-template-columns:1fr; }
+      .steps-grid { grid-template-columns:1fr; max-width:320px; margin:0 auto; }
       .cta-card { padding:48px 24px; }
       .cta-actions { flex-direction:column; align-items:center; }
       .footer-grid { grid-template-columns:1fr; gap:28px; }
@@ -273,34 +258,15 @@
     @media (max-width:480px) {
       .container { padding:0 16px; }
       .hero-title { font-size:2rem; }
-      .demo-wallets { gap:6px; }
-      .demo-wallet-btn { font-size:0.7rem; padding:5px 10px; }
       .mobile-menu-panel { padding:100px 24px 48px; }
       .mobile-menu-nav a { font-size:1.15rem; padding:14px 16px; }
     }
     @media (prefers-reduced-motion:reduce) {
       *,*::before,*::after { animation-duration:0.01ms!important; transition-duration:0.01ms!important; }
-      .marquee-track { animation:none; }
     }
   </style>
 </head>
 <body>
-  
-  <!-- 
-    ==========================================
-    DEFENSIVE KILL SWITCH (PENYELESAI BUG OVERLAY TRANSPARAN)
-    Script inline ini berjalan SEBELUM CSS/HTML lain diproses oleh browser.
-    Ini menjamin elemen loading TIDAK PERNAH bisa menutupi halaman saat load awal.
-    ==========================================
-  -->
-  <script>
-    (function() {
-      var ol = document.getElementById('loadingOverlay');
-      if(ol) { ol.style.display = 'none'; }
-    })();
-  </script>
-
-  <!-- Background Atmosphere -->
   <div class="bg-atmosphere" aria-hidden="true">
     <div class="orb orb-1"></div>
     <div class="orb orb-2"></div>
@@ -309,42 +275,24 @@
   <div class="bg-grid" aria-hidden="true"></div>
   <div class="bg-noise" aria-hidden="true"></div>
 
-  <!-- Loading Overlay -->
-  <div class="loading-overlay" id="loadingOverlay" role="alert" aria-live="polite">
-    <div class="loading-spinner"></div>
-    <div class="loading-text">Menganalisis Wallet...</div>
-    <div class="loading-steps">
-      <div class="loading-step" id="step1"><i class="fa-solid fa-circle-notch fa-spin"></i><span>Mengambil data on-chain</span></div>
-      <div class="loading-step" id="step2"><i class="fa-solid fa-circle"></i><span>Menganalisis pola transaksi</span></div>
-      <div class="loading-step" id="step3"><i class="fa-solid fa-circle"></i><span>Menghitung risk score</span></div>
-      <div class="loading-step" id="step4"><i class="fa-solid fa-circle"></i><span>Generate laporan</span></div>
-    </div>
-  </div>
-
-  <!-- Toast Container -->
   <div class="toast-container" id="toastContainer" aria-live="polite"></div>
 
-  <!-- Page Wrapper -->
   <div class="page-wrapper">
-
-    <!-- Navigation -->
+    <!-- NAVIGATION -->
     <nav class="nav" id="mainNav" role="navigation" aria-label="Navigasi utama">
       <div class="nav-inner">
-        <a href="#" class="nav-brand" aria-label="Wallet Health Score - Beranda">
+        <a href="index.html" class="nav-brand" aria-label="Wallet Health Score - Beranda">
           <div class="nav-brand-icon"><i class="fa-solid fa-shield-halved"></i></div>
           <span>WalletScore</span>
         </a>
         <ul class="nav-links">
-          <li><a href="#" class="active">Beranda</a></li>
-          <li><a href="#">Dashboard</a></li>
-          <li><a href="#">Wallet</a></li>
-          <li><a href="#">Analitik</a></li>
-          <li><a href="#">Riwayat</a></li>
-          <li><a href="#">Pengaturan</a></li>
+          <li><a href="index.html" class="active">Beranda</a></li>
+          <li><a href="dashboard.html">Dashboard</a></li>
+          <li><a href="analytics.html">Analitik</a></li>
+          <li><a href="history.html">Riwayat</a></li>
         </ul>
         <div class="nav-actions">
-          <a href="#" class="btn btn-ghost" id="loginBtnDesktop">Masuk</a>
-          <a href="#" class="btn btn-primary" id="startBtnDesktop">Mulai Gratis</a>
+          <a href="login.html" class="btn btn-ghost" id="loginBtnDesktop">Masuk</a>
           <button class="nav-toggle" id="navToggle" aria-label="Toggle menu" aria-expanded="false">
             <span></span><span></span><span></span>
           </button>
@@ -352,156 +300,118 @@
       </div>
     </nav>
 
-    <!-- Mobile Menu Overlay -->
-    <div class="mobile-menu" id="mobileMenu" aria-hidden="true">
-      <div class="mobile-menu-backdrop" id="menuBackdrop"></div>
-      <div class="mobile-menu-panel">
-        <ul class="mobile-menu-nav">
-          <li><a href="#" class="active" onclick="closeMobileMenu()"><i class="fa-solid fa-house nav-icon"></i><span class="nav-text">Beranda</span><i class="fa-solid fa-arrow-right nav-arrow"></i></a></li>
-          <li><a href="#" onclick="closeMobileMenu()"><i class="fa-solid fa-table-columns nav-icon"></i><span class="nav-text">Dashboard</span><i class="fa-solid fa-arrow-right nav-arrow"></i></a></li>
-          <li><a href="#" onclick="closeMobileMenu()"><i class="fa-solid fa-wallet nav-icon"></i><span class="nav-text">Wallet</span><i class="fa-solid fa-arrow-right nav-arrow"></i></a></li>
-          <li><a href="#" onclick="closeMobileMenu()"><i class="fa-solid fa-chart-line nav-icon"></i><span class="nav-text">Analitik</span><i class="fa-solid fa-arrow-right nav-arrow"></i></a></li>
-          <li><a href="#" onclick="closeMobileMenu()"><i class="fa-solid fa-clock-rotate-left nav-icon"></i><span class="nav-text">Riwayat</span><i class="fa-solid fa-arrow-right nav-arrow"></i></a></li>
-          <li><a href="#" onclick="closeMobileMenu()"><i class="fa-solid fa-gear nav-icon"></i><span class="nav-text">Pengaturan</span><i class="fa-solid fa-arrow-right nav-arrow"></i></a></li>
-        </ul>
-        <div class="mobile-menu-divider"></div>
-        <div class="mobile-menu-actions">
-          <a href="#" class="btn btn-outline" id="loginBtnMobile">Masuk</a>
-          <a href="#" class="btn btn-primary" id="startBtnMobile"><i class="fa-solid fa-rocket"></i> Mulai Gratis</a>
-        </div>
-        <div class="mobile-menu-footer">
-          <div class="mobile-menu-footer-socials">
-            <a href="#" aria-label="Twitter"><i class="fa-brands fa-x-twitter"></i></a>
-            <a href="#" aria-label="Discord"><i class="fa-brands fa-discord"></i></a>
-            <a href="#" aria-label="GitHub"><i class="fa-brands fa-github"></i></a>
-            <a href="#" aria-label="Telegram"><i class="fa-brands fa-telegram"></i></a>
-          </div>
-          <p class="mobile-menu-footer-text" style="margin-top:20px;">&copy; 2025 WalletScore. All rights reserved.</p>
-        </div>
-      </div>
-    </div>
-
-    <!-- Hero Section -->
+    <!-- HERO SECTION -->
     <header class="hero">
       <div class="container">
         <div class="hero-badge">
           <span class="hero-badge-dot" aria-hidden="true"></span>
-          Simulasi Data — Tanpa Koneksi Blockchain
+          Powered by Live On-Chain Analysis
         </div>
         <h1 class="hero-title">
           Ukur Kesehatan<br /><span class="highlight">Wallet On-Chain</span>
         </h1>
         <p class="hero-subtitle">
-          Sistem credit scoring berbasis analisis transaksi on-chain.
-          Masukkan alamat wallet dan dapatkan skor reputasi instan.
+          Sistem credit scoring berbasis analisis transaksi on-chain. 
+          Login dengan Pi Network dan dapatkan skor reputasi wallet Anda secara instan.
         </p>
-
-        <!-- Wallet Input -->
-        <div class="wallet-input-section">
-          <div class="wallet-input-card" id="inputCard">
-            <div class="wallet-input-icon"><i class="fa-solid fa-wallet"></i></div>
-            <div class="wallet-input-wrapper">
-              <input type="text" class="wallet-input" id="walletInput" placeholder="Masukkan alamat wallet (0x...)" spellcheck="false" autocomplete="off" />
-            </div>
-            <button class="btn btn-primary wallet-input-btn" id="analyzeBtn">
-              <i class="fa-solid fa-magnifying-glass-chart"></i> Analisis
-            </button>
-          </div>
-          <div class="input-hint" id="inputHint"></div>
-          <div class="demo-wallets">
-            <button class="demo-wallet-btn" data-wallet="0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045">vitalik.eth</button>
-            <button class="demo-wallet-btn" data-wallet="0x1f9840a85d5aF5bf1D1762F925BDADdC4201F984">Uniswap</button>
-            <button class="demo-wallet-btn" data-wallet="0x742d35Cc6634C0532925a3b844Bc454e4438f44e">Whale A</button>
-          </div>
+        <div class="hero-actions">
+          <a href="login.html" class="btn btn-primary btn-lg">
+            <i class="fa-brands fa-pi"></i> Login dengan Pi
+          </a>
+          <a href="#how-it-works" class="btn btn-outline btn-lg">
+            Pelajari Lebih Lanjut
+          </a>
         </div>
       </div>
     </header>
 
-    <!-- Stats Marquee -->
-    <section class="stats-marquee" aria-label="Statistik platform">
-      <div class="marquee-track">
-        <div class="marquee-item"><span class="marquee-value">1.2M+</span><span class="marquee-label">Wallet Dianalisis</span></div>
-        <div class="marquee-divider"></div>
-        <div class="marquee-item"><span class="marquee-value">$4.8B</span><span class="marquee-label">Total TVL Terlacak</span></div>
-        <div class="marquee-divider"></div>
-        <div class="marquee-item"><span class="marquee-value">15</span><span class="marquee-label">Chain Didukung</span></div>
-        <div class="marquee-divider"></div>
-        <div class="marquee-item"><span class="marquee-value">99.9%</span><span class="marquee-label">Uptime</span></div>
-        <div class="marquee-divider"></div>
-        <div class="marquee-item"><span class="marquee-value">< 2s</span><span class="marquee-label">Waktu Analisis</span></div>
-        <div class="marquee-divider"></div>
-        <!-- Duplicate for infinite scroll -->
-        <div class="marquee-item"><span class="marquee-value">1.2M+</span><span class="marquee-label">Wallet Dianalisis</span></div>
-        <div class="marquee-divider"></div>
-        <div class="marquee-item"><span class="marquee-value">$4.8B</span><span class="marquee-label">Total TVL Terlacak</span></div>
-        <div class="marquee-divider"></div>
-        <div class="marquee-item"><span class="marquee-value">15</span><span class="marquee-label">Chain Didukung</span></div>
-        <div class="marquee-divider"></div>
-        <div class="marquee-item"><span class="marquee-value">99.9%</span><span class="marquee-label">Uptime</span></div>
-        <div class="marquee-divider"></div>
-        <div class="marquee-item"><span class="marquee-value">< 2s</span><span class="marquee-label">Waktu Analisis</span></div>
-      </div>
-    </section>
-
-    <!-- Features Section -->
-    <section class="features reveal" id="features">
+    <!-- FEATURES SECTION -->
+    <section class="features" id="features" aria-labelledby="featuresTitle">
       <div class="container">
-        <div class="section-header">
-          <div class="section-label">Fitur Unggulan</div>
-          <h2 class="section-title">Analisis Mendalam, Hasil Instan</h2>
-          <p class="section-desc">Kami menggabungkan on-chain analytics dengan machine learning untuk memberikan skor kredit yang akurat.</p>
+        <div class="section-header reveal">
+          <div class="section-label">Fitur Utama</div>
+          <h2 class="section-title" id="featuresTitle">Analisis Mendalam untuk<br />Setiap Wallet</h2>
+          <p class="section-desc">Enam dimensi penilaian yang memberikan gambaran lengkap tentang reputasi on-chain sebuah wallet.</p>
         </div>
         <div class="features-grid">
-          <div class="feature-card">
-            <div class="feature-icon teal"><i class="fa-solid fa-link"></i></div>
-            <h3 class="feature-title">Analisis Multichain</h3>
-            <p class="feature-desc">Menghubungkan jejak transaksi di Ethereum, BSC, Polygon, Arbitrum, dan 11 chain lainnya secara instan.</p>
-          </div>
-          <div class="feature-card">
-            <div class="feature-icon amber"><i class="fa-solid fa-bug-slash"></i></div>
-            <h3 class="feature-title">Deteksi Sybil & Bot</h3>
-            <p class="feature-desc">AI kami mendeteksi pola pencucian uang, airdrop farming, dan interaksi kontrak berisiko tinggi.</p>
-          </div>
-          <div class="feature-card">
-            <div class="feature-icon blue"><i class="fa-solid fa-clock-rotate-left"></i></div>
-            <h3 class="feature-title">Riwayat Permanen</h3>
-            <p class="feature-desc">Semua laporan analisis tersimpan secara immutable. Cocok untuk compliance dan audit trail.</p>
-          </div>
-          <div class="feature-card">
-            <div class="feature-icon green"><i class="fa-solid fa-shield-halved"></i></div>
-            <h3 class="feature-title">Risk Scoring</h3>
-            <p class="feature-desc">Skor 0-100 yang merepresentasikan kesehatan finansial dan perilaku on-chain wallet.</p>
-          </div>
-          <div class="feature-card">
-            <div class="feature-icon red"><i class="fa-solid fa-bell"></i></div>
-            <h3 class="feature-title">Alert Real-time</h3>
-            <p class="feature-desc">Dapatkan notifikasi langsung jika wallet yang Anda pantau terlibat aktivitas mencurigakan.</p>
-          </div>
-          <div class="feature-card">
-            <div class="feature-icon purple"><i class="fa-solid fa-code"></i></div>
-            <h3 class="feature-title">API & Integration</h3>
-            <p class="feature-desc">Integrasikan skor wallet langsung ke dApp, DeFi protocol, atau smart contract Anda.</p>
-          </div>
+          <div class="feature-card reveal"><div class="feature-icon teal"><i class="fa-solid fa-chart-line"></i></div><h3 class="feature-title">Credit Score Akurat</h3><p class="feature-desc">Skor komposit dari berbagai faktor on-chain, memberikan penilaian reputasi yang menyeluruh dan terukur.</p></div>
+          <div class="feature-card reveal"><div class="feature-icon amber"><i class="fa-solid fa-bolt"></i></div><h3 class="feature-title">Analisis Transaksi</h3><p class="feature-desc">Evaluasi success rate, frekuensi, dan pola transaksi untuk mengidentifikasi perilaku wallet secara mendalam.</p></div>
+          <div class="feature-card reveal"><div class="feature-icon red"><i class="fa-solid fa-triangle-exclamation"></i></div><h3 class="feature-title">Risk Flag Detection</h3><p class="feature-desc">Deteksi otomatis interaksi dengan kontrak berisiko, address terblacklist, dan pola anomali mencurigakan.</p></div>
+          <div class="feature-card reveal"><div class="feature-icon green"><i class="fa-solid fa-clock-rotate-left"></i></div><h3 class="feature-title">Umur Wallet Tracking</h3><p class="feature-desc">Analisis usia wallet sejak first transaction, faktor penting dalam menilai kredibilitas suatu alamat.</p></div>
+          <div class="feature-card reveal"><div class="feature-icon blue"><i class="fa-solid fa-chart-pie"></i></div><h3 class="feature-title">Visual Analytics</h3><p class="feature-desc">Dashboard interaktif dengan grafik breakdown skor, tren waktu, dan perbandingan secara real-time.</p></div>
+          <div class="feature-card reveal"><div class="feature-icon purple"><i class="fa-solid fa-tags"></i></div><h3 class="feature-title">Status Klasifikasi</h3><p class="feature-desc">Label otomatis: Excellent, Good, Risky, atau Dangerous berdasarkan threshold skor yang ketat.</p></div>
         </div>
       </div>
     </section>
 
-    <!-- CTA Section -->
-    <section class="cta-section reveal">
+    <!-- HOW IT WORKS -->
+    <section class="how-it-works" id="how-it-works" aria-labelledby="howTitle">
       <div class="container">
-        <div class="cta-card">
-          <h2 class="cta-title">Siap Mengamankan Portofolio On-Chain Anda?</h2>
-          <p class="cta-desc">Bergabung dengan ribuan trader dan protokol DeFi yang sudah menggunakan WalletScore.</p>
-          <div class="cta-actions">
-            <a href="#" class="btn btn-primary" id="ctaStartBtn"><i class="fa-solid fa-rocket"></i> Mulai Gratis Sekarang</a>
-            <a href="#" class="btn btn-outline">Lihat Dokumentasi API</a>
+        <div class="section-header reveal">
+          <div class="section-label">Cara Kerja</div>
+          <h2 class="section-title" id="howTitle">Tiga Langkah Mudah</h2>
+          <p class="section-desc">Dari login hingga laporan lengkap, proses yang aman dan tanpa ribet.</p>
+        </div>
+        <div class="steps-grid">
+          <div class="step-card reveal"><div class="step-number">1</div><h3 class="step-title">Login Pi Network</h3><p class="step-desc">Autentikasi akun menggunakan kredensial Pi Network Anda secara aman.</p></div>
+          <div class="step-card reveal"><div class="step-number">2</div><h3 class="step-title">Sambungkan Wallet</h3><p class="step-desc">Sistem secara otomatis mengambil data on-chain dari wallet yang terhubung.</p></div>
+          <div class="step-card reveal"><div class="step-number">3</div><h3 class="step-title">Lihat Skor Anda</h3><p class="step-desc">Dashboard lengkap dengan breakdown, grafik, dan rekomendasi langsung tersaji.</p></div>
+          <div class="step-card reveal"><div class="step-number"><i class="fa-solid fa-lock" style="font-size:1rem;"></i></div><h3 class="step-title">Aman & Privat</h3><p class="step-desc">Data Anda terenkripsi dan tidak pernah menyimpan private key di server kami.</p></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- VISUAL PREVIEW (Abstrak) -->
+    <section class="visual-preview" id="visual-preview" aria-labelledby="previewTitle">
+      <div class="container">
+        <div class="preview-grid">
+          <div class="preview-content reveal">
+            <div class="section-label">Dashboard Preview</div>
+            <h2 class="section-title" id="previewTitle">Visualisasi Data yang<br />Mudah Dipahami</h2>
+            <ul class="preview-features">
+              <li><i class="fa-solid fa-check"></i><span>Gauge skor real-time dengan indikator warna status</span></li>
+              <li><i class="fa-solid fa-check"></i><span>Breakdown per kategori: transaksi, umur, risk flags, konsistensi</span></li>
+              <li><i class="fa-solid fa-check"></i><span>Perbandingan skor dengan persentil wallet lain di network</span></li>
+              <li><i class="fa-solid fa-check"></i><span>Rekomendasi konkret untuk meningkatkan skor wallet</span></li>
+              <li><i class="fa-solid fa-check"></i><span>Riwayat perubahan skor dari waktu ke waktu</span></li>
+            </ul>
+            <div style="margin-top: 32px;">
+              <a href="login.html" class="btn btn-primary">Akses Dashboard <i class="fa-solid fa-arrow-right"></i></a>
+            </div>
+          </div>
+          <div class="preview-visual reveal">
+            <div class="abstract-shape">
+              <div class="shape-ring shape-ring-1"></div>
+              <div class="shape-ring shape-ring-2"></div>
+              <div class="shape-ring shape-ring-3"></div>
+              <div class="shape-core">
+                <i class="fa-solid fa-shield-halved"></i>
+              </div>
+              <div class="shape-dot shape-dot-1"></div>
+              <div class="shape-dot shape-dot-2"></div>
+            </div>
           </div>
         </div>
       </div>
     </section>
 
-    <!-- Footer -->
-    <footer class="footer">
+    <!-- CTA SECTION -->
+    <section class="cta-section" aria-labelledby="ctaTitle">
+      <div class="container">
+        <div class="cta-card reveal">
+          <h2 class="cta-title" id="ctaTitle">Siap Menilai Kesehatan Wallet Anda?</h2>
+          <p class="cta-desc">Login dengan akun Pi Network Anda untuk mulai menganalisis Wallet Health Score dan tingkatkan kepercayaan on-chain Anda.</p>
+          <div class="cta-actions">
+            <a href="login.html" class="btn btn-primary btn-lg">
+              <i class="fa-brands fa-pi"></i> Login dengan Pi Sekarang
+            </a>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- FOOTER -->
+    <footer class="footer" role="contentinfo">
       <div class="container">
         <div class="footer-grid">
           <div>
@@ -509,7 +419,7 @@
               <div class="nav-brand-icon" style="width:28px;height:28px;font-size:0.8rem;"><i class="fa-solid fa-shield-halved"></i></div>
               WalletScore
             </div>
-            <p class="footer-desc">Platform credit intelligence terdepan untuk ekosistem Web3. Analisis mendalam, hasil instan.</p>
+            <p class="footer-desc">Platform credit intelligence terdepan untuk ekosistem Pi Network. Analisis mendalam, hasil instan.</p>
           </div>
           <div>
             <h4 class="footer-heading">Produk</h4>
@@ -517,7 +427,6 @@
               <li><a href="#">Wallet Scanner</a></li>
               <li><a href="#">API Docs</a></li>
               <li><a href="#">Pricing</a></li>
-              <li><a href="#">Changelog</a></li>
             </ul>
           </div>
           <div>
@@ -525,7 +434,6 @@
             <ul class="footer-links">
               <li><a href="#">Tentang Kami</a></li>
               <li><a href="#">Blog</a></li>
-              <li><a href="#">Karir</a></li>
               <li><a href="#">Kontak</a></li>
             </ul>
           </div>
@@ -534,7 +442,6 @@
             <ul class="footer-links">
               <li><a href="#">Privacy Policy</a></li>
               <li><a href="#">Terms of Service</a></li>
-              <li><a href="#">Cookie Policy</a></li>
             </ul>
           </div>
         </div>
@@ -549,216 +456,86 @@
         </div>
       </div>
     </footer>
-
   </div>
 
-  <!-- ==========================================
-       JAVASCRIPT INTI (LOGIKA TANPA MENGUBAH TAMPILAN)
-  ========================================== -->
   <script>
     document.addEventListener('DOMContentLoaded', () => {
-      
-      // 1. LOGIKA MOBILE MENU
       const navToggle = document.getElementById('navToggle');
-      const mobileMenu = document.getElementById('mobileMenu');
-      const menuBackdrop = document.getElementById('menuBackdrop');
+      const mainNav = document.getElementById('mainNav');
       const body = document.body;
+
+      // INJECT MOBILE MENU DINAMIS (MENGHINDARI BUG OVERLAY)
+      const mobileMenu = document.createElement('div');
+      mobileMenu.className = 'mobile-menu';
+      mobileMenu.id = 'mobileMenu';
+      mobileMenu.innerHTML = `
+        <div class="mobile-menu-backdrop" id="menuBackdrop"></div>
+        <div class="mobile-menu-panel">
+          <ul class="mobile-menu-nav">
+            <li><a href="index.html" class="active"><i class="fa-solid fa-house nav-icon"></i><span class="nav-text">Beranda</span><i class="fa-solid fa-arrow-right nav-arrow"></i></a></li>
+            <li><a href="dashboard.html"><i class="fa-solid fa-table-columns nav-icon"></i><span class="nav-text">Dashboard</span><i class="fa-solid fa-arrow-right nav-arrow"></i></a></li>
+            <li><a href="wallet.html"><i class="fa-solid fa-wallet nav-icon"></i><span class="nav-text">Wallet</span><i class="fa-solid fa-arrow-right nav-arrow"></i></a></li>
+            <li><a href="analytics.html"><i class="fa-solid fa-chart-line nav-icon"></i><span class="nav-text">Analitik</span><i class="fa-solid fa-arrow-right nav-arrow"></i></a></li>
+            <li><a href="history.html"><i class="fa-solid fa-clock-rotate-left nav-icon"></i><span class="nav-text">Riwayat</span><i class="fa-solid fa-arrow-right nav-arrow"></i></a></li>
+            <li><a href="settings.html"><i class="fa-solid fa-gear nav-icon"></i><span class="nav-text">Pengaturan</span><i class="fa-solid fa-arrow-right nav-arrow"></i></a></li>
+          </ul>
+          <div class="mobile-menu-divider"></div>
+          <div class="mobile-menu-actions">
+            <a href="login.html" class="btn btn-outline">Masuk</a>
+            <a href="login.html" class="btn btn-primary"><i class="fa-brands fa-pi"></i> Login dengan Pi</a>
+          </div>
+          <div class="mobile-menu-footer">
+            <div class="mobile-menu-footer-socials">
+              <a href="#" aria-label="Twitter"><i class="fa-brands fa-x-twitter"></i></a>
+              <a href="#" aria-label="Discord"><i class="fa-brands fa-discord"></i></a>
+              <a href="#" aria-label="GitHub"><i class="fa-brands fa-github"></i></a>
+              <a href="#" aria-label="Telegram"><i class="fa-brands fa-telegram"></i></a>
+            </div>
+            <p class="mobile-menu-footer-text" style="margin-top:20px;">&copy; 2025 WalletScore. All rights reserved.</p>
+          </div>
+        </div>
+      `;
+      document.body.appendChild(mobileMenu);
+
+      const menuBackdrop = document.getElementById('menuBackdrop');
 
       function openMobileMenu() {
         navToggle.classList.add('open');
         mobileMenu.classList.add('open');
-        mobileMenu.setAttribute('aria-hidden', 'false');
-        navToggle.setAttribute('aria-expanded', 'true');
         body.style.overflow = 'hidden';
       }
-
-      window.closeMobileMenu = function() {
+      function closeMobileMenu() {
         navToggle.classList.remove('open');
         mobileMenu.classList.remove('open');
-        mobileMenu.setAttribute('aria-hidden', 'true');
-        navToggle.setAttribute('aria-expanded', 'false');
         body.style.overflow = '';
-      };
+      }
 
       navToggle.addEventListener('click', () => {
-        if (mobileMenu.classList.contains('open')) {
-          window.closeMobileMenu();
-        } else {
-          openMobileMenu();
-        }
+        if (mobileMenu.classList.contains('open')) closeMobileMenu();
+        else openMobileMenu();
       });
 
-      menuBackdrop.addEventListener('click', window.closeMobileMenu);
-
+      menuBackdrop.addEventListener('click', closeMobileMenu);
       document.addEventListener('keydown', (e) => {
-        if (e.key === 'Escape' && mobileMenu.classList.contains('open')) {
-          window.closeMobileMenu();
-        }
+        if (e.key === 'Escape' && mobileMenu.classList.contains('open')) closeMobileMenu();
+      });
+      mobileMenu.querySelectorAll('.mobile-menu-nav a').forEach(link => {
+        link.addEventListener('click', closeMobileMenu);
       });
 
-
-      // 2. LOGIKA LOGIN / MULAI GRATIS
-      const handleLoginClick = (e) => {
-        e.preventDefault();
-        window.closeMobileMenu();
-        showToast('info', 'Fitur login akan segera tersedia. Saat ini Anda berada di mode Demo.');
-      };
-
-      const handleStartClick = (e) => {
-        e.preventDefault();
-        window.closeMobileMenu();
-        document.getElementById('walletInput').focus();
-        window.scrollTo({ top: 0, behavior: 'smooth' });
-      };
-
-      document.getElementById('loginBtnDesktop').addEventListener('click', handleLoginClick);
-      document.getElementById('startBtnDesktop').addEventListener('click', handleStartClick);
-      document.getElementById('loginBtnMobile').addEventListener('click', handleLoginClick);
-      document.getElementById('startBtnMobile').addEventListener('click', handleStartClick);
-      document.getElementById('ctaStartBtn').addEventListener('click', handleStartClick);
-
-
-      // 3. LOGIKA INPUT WALLET & ANALISIS
-      const walletInput = document.getElementById('walletInput');
-      const analyzeBtn = document.getElementById('analyzeBtn');
-      const inputHint = document.getElementById('inputHint');
-      // Ambil referensi overlay
-      const loadingOverlay = document.getElementById('loadingOverlay');
-      const demoWalletBtns = document.querySelectorAll('.demo-wallet-btn');
-
-      demoWalletBtns.forEach(btn => {
-        btn.addEventListener('click', () => {
-          walletInput.value = btn.dataset.wallet;
-          inputHint.textContent = 'Demo wallet dipilih. Klik "Analisis" untuk memulai.';
-          inputHint.className = 'input-hint success';
-          walletInput.focus();
-        });
+      // SCROLL EFFECTS
+      window.addEventListener('scroll', () => { 
+        if (window.scrollY > 50) mainNav.classList.add('scrolled'); 
+        else mainNav.classList.remove('scrolled'); 
       });
 
-      const startAnalysis = () => {
-        const val = walletInput.value.trim();
-        if (!val) {
-          inputHint.textContent = 'Alamat wallet tidak boleh kosong.';
-          inputHint.className = 'input-hint error';
-          walletInput.focus();
-          return;
-        }
-        if (!val.startsWith('0x') || val.length < 10) {
-          inputHint.textContent = 'Format alamat wallet tidak valid. Harus diawali dengan 0x.';
-          inputHint.className = 'input-hint error';
-          return;
-        }
-        runLoadingSimulation();
-      };
-
-      analyzeBtn.addEventListener('click', startAnalysis);
-      walletInput.addEventListener('keypress', (e) => {
-        if (e.key === 'Enter') startAnalysis();
-      });
-
-
-      // 4. SIMULASI LOADING ANIMASI
-      const runLoadingSimulation = () => {
-        // [PERBAIKAN] Kembalikan display ke flex SEBELUM menambahkan class active
-        // Karena kita bunuh display-nya di atas tadi pakai Kill Switch
-        loadingOverlay.style.display = 'flex'; 
-        
-        // Beri jeda mikro agar browser mengubah display, baru jalankan animasi opacity
-        setTimeout(() => {
-          loadingOverlay.classList.add('active');
-        }, 10);
-
-        const steps = [
-          document.getElementById('step1'),
-          document.getElementById('step2'),
-          document.getElementById('step3'),
-          document.getElementById('step4')
-        ];
-
-        steps.forEach((step) => {
-          step.className = 'loading-step';
-          step.querySelector('i').className = 'fa-solid fa-circle';
-        });
-        steps[0].classList.add('active');
-        steps[0].querySelector('i').className = 'fa-solid fa-circle-notch fa-spin';
-
-        let currentStep = 0;
-        const interval = setInterval(() => {
-          if (currentStep > 0) {
-            steps[currentStep - 1].classList.remove('active');
-            steps[currentStep - 1].classList.add('done');
-            steps[currentStep - 1].querySelector('i').className = 'fa-solid fa-circle-check';
-          }
-          
-          if (currentStep < steps.length) {
-            steps[currentStep].classList.add('active');
-            steps[currentStep].querySelector('i').className = 'fa-solid fa-circle-notch fa-spin';
-            currentStep++;
-          } else {
-            clearInterval(interval);
-            setTimeout(() => {
-              loadingOverlay.classList.remove('active');
-              // [PERBAIKAN] Sembunyikan kembali setelah animasi fade out selesai
-              setTimeout(() => {
-                loadingOverlay.style.display = 'none';
-              }, 300);
-              
-              showToast('success', 'Analisis selesai! Skor wallet: 85/100 (Excellent).');
-            }, 500);
-          }
-        }, 800);
-      };
-
-
-      // 5. EFEK SCROLL PADA NAVBAR
-      const mainNav = document.getElementById('mainNav');
-      window.addEventListener('scroll', () => {
-        if (window.scrollY > 50) {
-          mainNav.classList.add('scrolled');
-        } else {
-          mainNav.classList.remove('scrolled');
-        }
-      });
-
-
-      // 6. SCROLL REVEAL ANIMATION
-      const revealElements = document.querySelectorAll('.reveal');
-      const revealObserver = new IntersectionObserver((entries) => {
-        entries.forEach(entry => {
-          if (entry.isIntersecting) {
-            entry.target.classList.add('visible');
-          }
-        });
+      // SCROLL REVEAL
+      const revealObserver = new IntersectionObserver((entries) => { 
+        entries.forEach(entry => { 
+          if (entry.isIntersecting) entry.target.classList.add('visible'); 
+        }); 
       }, { threshold: 0.1 });
-
-      revealElements.forEach(el => revealObserver.observe(el));
-
-
-      // 7. SISTEM TOAST NOTIFICATION
-      window.showToast = function(type, message) {
-        const container = document.getElementById('toastContainer');
-        const toast = document.createElement('div');
-        toast.className = `toast ${type}`;
-        
-        let iconClass = 'fa-circle-info';
-        if (type === 'success') iconClass = 'fa-circle-check';
-        if (type === 'error') iconClass = 'fa-circle-xmark';
-        
-        toast.innerHTML = `<i class="fa-solid ${iconClass}"></i><span>${message}</span>`;
-        container.appendChild(toast);
-
-        requestAnimationFrame(() => {
-          requestAnimationFrame(() => {
-            toast.classList.add('show');
-          });
-        });
-
-        setTimeout(() => {
-          toast.classList.remove('show');
-          setTimeout(() => toast.remove(), 300);
-        }, 4000);
-      };
-
+      document.querySelectorAll('.reveal').forEach(el => revealObserver.observe(el));
     });
   </script>
 </body>
