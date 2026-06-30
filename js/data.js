@@ -1,173 +1,3 @@
-/* ========================================
-   DATA.JS — Fake Blockchain Data Generator
-   Sumber data simulasi untuk seluruh aplikasi
-   (Diperbarui: Support Deteksi Pi Network)
-======================================== */
-
-/**
- * Menghasilkan angka acak dalam range
- */
-function randomRange(min, max) {
-  return Math.floor(Math.random() * (max - min + 1)) + min;
-}
-
-/**
- * Menghasilkan angka desimal acak dalam range
- */
-function randomFloat(min, max, decimals = 2) {
-  return parseFloat((Math.random() * (max - min) + min).toFixed(decimals));
-}
-
-/**
- * Menghasilkan hex string acak
- */
-function randomHex(length) {
-  let result = '';
-  const chars = '0123456789abcdef';
-  for (let i = 0; i < length; i++) {
-    result += chars[Math.floor(Math.random() * chars.length)];
-  }
-  return result;
-}
-
-/**
- * Menghasilkan alamat Ethereum palsu
- */
-function randomAddress() {
-  return '0x' + randomHex(40);
-}
-
-/**
- * Cek apakah alamat termasuk wallet Pi Network
- * (Pi wallet biasanya tidak dimulai dengan 0x, atau jika menggunakan format hex bisa sangat panjang/berbeda)
- */
-function isPiWallet(address) {
-  if (!address) return false;
-  // Jika login via Pi SDK, localstorage menyimpan tanda ini
-  if (localStorage.getItem('whs_auth_type') === 'pi_network') return true;
-  // Fallback pengecekan format (Pi address biasanya bukan 0x...)
-  return !address.startsWith('0x');
-}
-
-/**
- * Daftar nama token populer untuk simulasi
- */
-const TOKEN_LIST_ETH = [
-  { symbol: 'ETH', name: 'Ethereum', decimals: 18 },
-  { symbol: 'USDT', name: 'Tether', decimals: 6 },
-  { symbol: 'USDC', name: 'USD Coin', decimals: 6 },
-  { symbol: 'DAI', name: 'Dai', decimals: 18 },
-  { symbol: 'WBTC', name: 'Wrapped Bitcoin', decimals: 8 },
-  { symbol: 'LINK', name: 'Chainlink', decimals: 18 },
-  { symbol: 'UNI', name: 'Uniswap', decimals: 18 },
-];
-
-const TOKEN_LIST_PI = [
-  { symbol: 'Pi', name: 'Pi Network', decimals: 18 },
-  { symbol: 'USDT', name: 'Tether on Pi', decimals: 6 },
-  { symbol: 'PiBridge', name: 'Pi Bridge Token', decimals: 18 },
-];
-
-/**
- * Menghasilkan timestamp acak dalam rentang waktu
- */
-function randomTimestamp(daysAgoMin, daysAgoMax) {
-  const now = Date.now();
-  const minTime = now - (daysAgoMax * 24 * 60 * 60 * 1000);
-  const maxTime = now - (daysAgoMin * 24 * 60 * 60 * 1000);
-  return Math.floor(Math.random() * (maxTime - minTime) + minTime);
-}
-
-/**
- * Tipe transaksi yang mungkin
- */
-const TX_TYPES = ['send', 'receive', 'swap', 'approve', 'stake', 'unstake', 'bridge', 'mint', 'burn'];
-
-/**
- * Menghasilkan satu transaksi palsu
- */
-function generateTransaction(walletAddress, index, isPi) {
-  const type = TX_TYPES[Math.floor(Math.random() * TX_TYPES.length)];
-  const tokenList = isPi ? TOKEN_LIST_PI : TOKEN_LIST_ETH;
-  const token = tokenList[Math.floor(Math.random() * tokenList.length)];
-  
-  // Jika Pi, jumlahnya lebih besar (karena valuasi Pi yang berbeda)
-  const amount = isPi ? randomFloat(0.5, 500, 4) : randomFloat(0.001, 50, 4);
-  const timestamp = randomTimestamp(1, 730); // 1 hari sampai 2 tahun lalu
-  const isSuccess = Math.random() > 0.08; // 92% success rate rata-rata
-  
-  // Pi Network memiliki biaya gas yang jauh lebih rendah (mendekati 0)
-  const gasUsed = isPi ? randomRange(1, 1000) : randomRange(21000, 350000);
-  const gasPrice = isPi ? 0 : randomFloat(5, 120, 2); // Pi gas price 0
-
-  // Counterpart address
-  const isOutgoing = ['send', 'approve', 'stake', 'bridge', 'burn'].includes(type);
-  const counterparty = isPi ? 'G' + randomHex(32) : randomAddress(); // Contoh format alamat Pi: Gxxxxx...
-
-  return {
-    txHash: isPi ? 'PiTx_' + randomHex(24) : '0x' + randomHex(64),
-    type: type,
-    token: token.symbol,
-    tokenName: token.name,
-    amount: amount,
-    from: isOutgoing ? walletAddress : counterparty,
-    to: isOutgoing ? counterparty : walletAddress,
-    gasUsed: gasUsed,
-    gasPrice: gasPrice,
-    gasCostETH: isPi ? 0 : parseFloat(((gasUsed * gasPrice) / 1e9).toFixed(6)),
-    status: isSuccess ? 'success' : 'failed',
-    timestamp: timestamp,
-    blockNumber: isPi ? randomRange(1000000, 5000000) : randomRange(18000000, 19500000),
-    nonce: index,
-  };
-}
-
-/**
- * Menghasilkan array transaksi untuk sebuah wallet
- */
-function generateTransactions(walletAddress, count, isPi) {
-  const txs = [];
-  for (let i = 0; i < count; i++) {
-    txs.push(generateTransaction(walletAddress, i, isPi));
-  }
-  // Urutkan dari terbaru
-  txs.sort((a, b) => b.timestamp - a.timestamp);
-  // Re-assign nonce berdasarkan urutan waktu
-  txs.forEach((tx, i) => tx.nonce = i);
-  return txs;
-}
-
-/**
- * Risk flags yang mungkin muncul
- */
-const POSSIBLE_RISK_FLAGS = [
-  { id: 'rf_01', label: 'Interaksi dengan kontrak berisiko', severity: 'high', description: 'Wallet pernah berinteraksi dengan smart contract yang teridentifikasi berisiko oleh scanner keamanan.' },
-  { id: 'rf_02', label: 'Transaksi besar dalam satu blok', severity: 'medium', description: 'Terdapat transaksi dengan nilai nominal jauh di atas rata-rata wallet.' },
-  { id: 'rf_03', label: 'Pola transaksi tidak wajar', severity: 'high', description: 'Pola timing transaksi menunjukkan karakteristik bot atau automasi.' },
-  { id: 'rf_04', label: 'Pertukaran dengan address terblacklist', severity: 'critical', description: 'Wallet pernah menerima atau mengirim aset ke address yang ada di blacklist.' },
-  { id: 'rf_05', label: 'Umur wallet sangat baru', severity: 'low', description: 'Wallet pertama kali aktif dalam 30 hari terakhir.' },
-  { id: 'rf_06', label: 'Frekuensi transaksi sporadis', severity: 'low', description: 'Aktivitas transaksi tidak konsisten — ada periode sangat padat dan sangat sepi.' },
-  { id: 'rf_07', label: 'Multiple bridge dalam waktu singkat', severity: 'medium', description: 'Beberapa transaksi bridge ke chain berbeda dalam rentang waktu kurang dari 1 jam.' },
-  { id: 'rf_08', label: 'Interaksi dengan mixer/tumbler', severity: 'critical', description: 'Wallet terdeteksi berinteraksi dengan kontrak mixer yang umum digunakan untuk money laundering.' },
-  { id: 'rf_09', label: 'Gas price anomali', severity: 'low', description: 'Beberapa transaksi menggunakan gas price jauh di bawah rata-rata.' },
-  { id: 'rf_10', label: 'Wallet funded dari satu sumber', severity: 'medium', description: 'Seluruh saldo awal berasal dari satu address tanpa transaksi lain.' },
-];
-
-/**
- * Menghasilkan risk flags untuk sebuah wallet berdasarkan skor
- */
-function generateRiskFlags(score) {
-  let flagCount = 0;
-  if (score < 200) flagCount = randomRange(4, 6);
-  else if (score < 400) flagCount = randomRange(2, 4);
-  else if (score < 600) flagCount = randomRange(1, 2);
-  else if (score < 800) flagCount = randomRange(0, 1);
-  else flagCount = 0;
-
-  const shuffled = [...POSSIBLE_RISK_FLAGS].sort(() => Math.random() - 0.5);
-  return shuffled.slice(0, flagCount);
-}
-
 /**
  * Menghitung credit score berdasarkan parameter
  * Mengembalikan objek lengkap dengan breakdown
@@ -177,13 +7,15 @@ function calculateCreditScore(walletAddress) {
   const isPi = isPiWallet(walletAddress);
 
   // --- Parameter dasar (acak tapi deterministik per address) ---
-  // Gunakan hash sederhana dari address untuk seed (aman untuk string apa pun)
-  let seed = 0;
+  // Gunakan hash yang lebih robust agar tidak error pada alamat yang banyak angka 0
+  let seed = 5381; // Hash awal (dari algoritma djb2)
   for (let i = 0; i < walletAddress.length; i++) {
-    seed = ((seed << 5) - seed) + walletAddress.charCodeAt(i);
+    seed = ((seed << 5) + seed) + walletAddress.charCodeAt(i); 
     seed = seed & seed; // Convert to 32bit int
   }
-  seed = Math.abs(seed);
+  // Tambahkan panjang string dan indeks karakter terakhir untuk menghindari seed 0
+  seed = Math.abs(seed) + walletAddress.length + walletAddress.charCodeAt(walletAddress.length - 1);
+  if (seed === 0) seed = 12345; // Fallback mutlak agar tidak pernah 0
 
   // Seeded pseudo-random
   function seededRandom() {
@@ -283,7 +115,7 @@ function calculateCreditScore(walletAddress) {
     walletAgeDays: walletAgeDays,
     firstTxTimestamp: firstTxTimestamp,
     estimatedBalance: estimatedBalance,
-    networkType: isPi ? 'pi' : 'ethereum', // Penanda jaringan
+    networkType: isPi ? 'pi' : 'ethereum',
 
     // Skor utama
     score: finalScore,
@@ -321,98 +153,4 @@ function calculateCreditScore(walletAddress) {
     generatedAt: new Date().toISOString(),
     isSimulated: true,
   };
-}
-
-/**
- * Menghasilkan data tren skor harian (30 hari terakhir)
- */
-function generateScoreTrend(currentScore) {
-  const trend = [];
-  const now = Date.now();
-  let score = currentScore - randomRange(20, 60);
-
-  for (let i = 29; i >= 0; i--) {
-    const date = new Date(now - i * 24 * 60 * 60 * 1000);
-    const change = randomRange(-15, 18);
-    score = Math.max(0, Math.min(1000, score + change));
-
-    trend.push({
-      date: date.toISOString().split('T')[0],
-      score: i === 0 ? currentScore : Math.round(score / 5) * 5,
-      txCount: randomRange(0, 12),
-    });
-  }
-
-  return trend;
-}
-
-/**
- * Menghasilkan data distribusi tipe transaksi
- */
-function generateTxTypeDistribution(transactions) {
-  const dist = {};
-  transactions.forEach(tx => {
-    dist[tx.type] = (dist[tx.type] || 0) + 1;
-  });
-
-  return Object.entries(dist)
-    .map(([type, count]) => ({ type, count }))
-    .sort((a, b) => b.count - a.count);
-}
-
-/**
- * Format timestamp ke string yang mudah dibaca
- */
-function formatTimestamp(ts) {
-  const date = new Date(ts);
-  const now = new Date();
-  const diffMs = now - date;
-  const diffMins = Math.floor(diffMs / 60000);
-  const diffHours = Math.floor(diffMs / 3600000);
-  const diffDays = Math.floor(diffMs / 86400000);
-
-  if (diffMins < 1) return 'Baru saja';
-  if (diffMins < 60) return `${diffMins} menit lalu`;
-  if (diffHours < 24) return `${diffHours} jam lalu`;
-  if (diffDays < 7) return `${diffDays} hari lalu`;
-  if (diffDays < 30) return `${Math.floor(diffDays / 7)} minggu lalu`;
-  if (diffDays < 365) return `${Math.floor(diffDays / 30)} bulan lalu`;
-  return `${Math.floor(diffDays / 365)} tahun lalu`;
-}
-
-/**
- * Format tanggal lengkap
- */
-function formatDate(ts) {
-  return new Date(ts).toLocaleDateString('id-ID', {
-    day: 'numeric',
-    month: 'short',
-    year: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit',
-  });
-}
-
-/**
- * Format angka dengan pemisah ribuan
- */
-function formatNumber(num) {
-  return num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ',');
-}
-
-/**
- * Format saldo ETH
- */
-function formatETH(amount) {
-  if (amount >= 1) return amount.toFixed(4) + ' ETH';
-  if (amount >= 0.001) return amount.toFixed(6) + ' ETH';
-  return amount.toFixed(8) + ' ETH';
-}
-
-/**
- * Singkatkan alamat
- */
-function shortAddress(addr) {
-  if (!addr || addr.length < 10) return addr || '—';
-  return addr.slice(0, 6) + '...' + addr.slice(-4);
 }
