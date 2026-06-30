@@ -5,11 +5,9 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>WHS Payment Test</title>
 
-  <!-- Pi SDK -->
   <script src="https://sdk.minepi.com/pi-sdk.js"></script>
 
   <script>
-    // INIT PI SDK (sandbox untuk test)
     Pi.init({ version: "2.0", sandbox: true });
   </script>
 </head>
@@ -26,27 +24,23 @@
     async function pay() {
       try {
 
-        console.log("START PAYMENT FLOW");
+        console.log("=== START PAYMENT ===");
 
         document.getElementById("status").innerText = "Login Pi...";
 
-        // =========================
-        // 1. PI LOGIN
-        // =========================
+        // 1. LOGIN PI
         const auth = await Pi.authenticate(['username']);
 
-        console.log("AUTH FULL:", auth);
+        console.log("LOGIN SUCCESS:", auth);
 
         const username = auth?.user?.username || "unknown";
 
-        document.getElementById("status").innerText = "Create payment...";
+        document.getElementById("status").innerText = "Buat Payment...";
 
-        // =========================
-        // 2. PAYMENT FLOW
-        // =========================
+        // 2. CREATE PAYMENT
         Pi.createPayment({
           amount: 1,
-          memo: "WHS Test Payment Step 10",
+          memo: "WHS Test Payment",
           metadata: {
             user: username
           }
@@ -54,12 +48,12 @@
 
           onReadyForServerApproval: function(paymentId) {
             console.log("APPROVAL:", paymentId);
-            document.getElementById("status").innerText = "Waiting approval...";
+            document.getElementById("status").innerText = "Menunggu approval...";
           },
 
           onReadyForServerCompletion: function(paymentId, txid) {
             console.log("COMPLETE:", paymentId, txid);
-            document.getElementById("status").innerText = "Payment sukses ✔";
+            document.getElementById("status").innerText = "Payment BERHASIL ✔";
           },
 
           onCancel: function(paymentId) {
@@ -67,19 +61,22 @@
             document.getElementById("status").innerText = "Payment dibatalkan";
           },
 
-          onError: function(error) {
-            console.log("PAYMENT ERROR:", error);
-            document.getElementById("status").innerText = "Payment error (cek console)";
+          onError: function(err) {
+            console.log("PAYMENT ERROR:", err);
+            alert("PAYMENT ERROR:\n" + JSON.stringify(err, null, 2));
+            document.getElementById("status").innerText = "Payment error";
           }
 
         });
 
       } catch (err) {
 
-        console.log("FULL ERROR (LOGIN/PAYMENT):", err);
+        // 🔥 INI ERROR LOGIN / SDK
+        console.log("LOGIN/SDK ERROR:", err);
+        alert("LOGIN ERROR:\n" + JSON.stringify(err, null, 2));
 
         document.getElementById("status").innerText =
-          "Error Pi SDK (cek console)";
+          "Login gagal / SDK error (lihat popup)";
 
       }
     }
