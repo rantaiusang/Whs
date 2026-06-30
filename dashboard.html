@@ -296,7 +296,7 @@
     }
 
     .topbar-right {
-      display: flex; align-items: center; gap: 12px;
+      display: flex; align-items: center; gap: 8px;
     }
 
     .topbar-btn {
@@ -320,6 +320,48 @@
       background: var(--danger);
       border-radius: 50%;
       border: 1.5px solid var(--bg-primary);
+    }
+
+    /* ========================================
+       TOPBAR NAV BUTTONS (TAMBAHAN)
+    ======================================== */
+    .topbar-nav-btn {
+      display: inline-flex; align-items: center; gap: 7px;
+      padding: 8px 16px;
+      font-size: 0.82rem; font-weight: 500;
+      color: var(--text-secondary);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-full);
+      transition: all var(--transition-fast);
+      white-space: nowrap;
+    }
+
+    .topbar-nav-btn:hover {
+      color: var(--text-primary);
+      border-color: var(--border-color);
+      background: rgba(255, 255, 255, 0.04);
+    }
+
+    .topbar-nav-btn i {
+      font-size: 0.85rem;
+    }
+
+    .topbar-nav-btn.back-btn {
+      color: var(--accent);
+      border-color: var(--border-color);
+    }
+
+    .topbar-nav-btn.back-btn:hover {
+      background: var(--accent-dim);
+      border-color: var(--border-color-hover);
+    }
+
+    .topbar-divider {
+      width: 1px;
+      height: 24px;
+      background: var(--border-subtle);
+      margin: 0 4px;
+      flex-shrink: 0;
     }
 
     .btn-logout {
@@ -813,6 +855,14 @@
     @media (max-width: 1100px) {
       .stats-grid { grid-template-columns: repeat(2, 1fr); }
       .bottom-grid { grid-template-columns: 1fr; }
+      
+      /* Sembunyikan teks di tombol navigasi topbar jika layar kecil */
+      .topbar-nav-btn .btn-text {
+        display: none;
+      }
+      .topbar-nav-btn {
+        padding: 8px 10px;
+      }
     }
 
     @media (max-width: 768px) {
@@ -853,13 +903,27 @@
 
       .tx-table { font-size: 0.8rem; }
       .tx-table th:nth-child(4),
-      .tx-table td:nth-child(4) { display: none; } /* Sembunyikan kolom status di mobile */
+      .tx-table td:nth-child(4) { display: none; }
+
+      /* Di mobile, sembunyikan divider dan beberapa tombol topbar */
+      .topbar-divider {
+        display: none;
+      }
+      .topbar-nav-btn.back-btn {
+        display: none;
+      }
     }
 
     @media (max-width: 480px) {
       .stats-grid { grid-template-columns: 1fr; }
       .topbar { padding: 0 16px; }
       .topbar-title { font-size: 1rem; }
+      .topbar-nav-btn {
+        padding: 8px;
+      }
+      .topbar-nav-btn .btn-text {
+        display: none;
+      }
     }
 
     @media (prefers-reduced-motion: reduce) {
@@ -954,6 +1018,29 @@
           <h1 class="topbar-title">Dashboard</h1>
         </div>
         <div class="topbar-right">
+
+          <!-- Tombol Kembali ke Beranda -->
+          <a href="index.html" class="topbar-nav-btn back-btn" title="Kembali ke Beranda">
+            <i class="fa-solid fa-arrow-left"></i>
+            <span class="btn-text">Kembali</span>
+          </a>
+
+          <div class="topbar-divider"></div>
+
+          <!-- Tombol Menu Wallet -->
+          <a href="wallet.html" class="topbar-nav-btn" title="Wallet Detail">
+            <i class="fa-solid fa-wallet"></i>
+            <span class="btn-text">Wallet</span>
+          </a>
+
+          <!-- Tombol Menu Pengaturan -->
+          <a href="settings.html" class="topbar-nav-btn" title="Pengaturan">
+            <i class="fa-solid fa-gear"></i>
+            <span class="btn-text">Pengaturan</span>
+          </a>
+
+          <div class="topbar-divider"></div>
+
           <button class="topbar-btn" aria-label="Notifikasi">
             <i class="fa-solid fa-bell"></i>
             <span class="notif-dot"></span>
