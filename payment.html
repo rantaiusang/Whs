@@ -8,168 +8,164 @@
   <script src="https://sdk.minepi.com/pi-sdk.js"></script>
 
   <style>
-    body { font-family: sans-serif; padding: 20px; }
-    button { padding: 15px 30px; font-size: 18px; cursor: pointer; margin: 10px 5px; border-radius: 10px; border: none; }
-    .btn-pay { background: #6B3FA0; color: white; }
-    .btn-pay:disabled { background: #ccc; }
-    #status { margin-top: 20px; font-weight: bold; }
-    .debug { background: #eee; padding: 10px; margin-top: 10px; font-size: 12px; white-space: pre-wrap; }
+    body { font-family: sans-serif; padding: 20px; background: #0c1222; color: #f1f5f9; }
+    h2 { color: #2dd4bf; }
+    button { padding: 15px 30px; font-size: 18px; cursor: pointer; margin: 10px 0; border-radius: 10px; border: none; font-weight: bold; }
+    .btn-pay { background: #6B3FA0; color: white; transition: background 0.2s; }
+    .btn-pay:hover:not(:disabled) { background: #553082; }
+    .btn-pay:disabled { background: #475569; color: #94a3b8; cursor: not-allowed; }
+    #status { margin-top: 20px; font-weight: bold; font-size: 1.1rem; }
+    .debug { background: #060a13; border: 1px solid #2dd4bf; padding: 15px; margin-top: 15px; font-size: 12px; white-space: pre-wrap; font-family: monospace; color: #2dd4bf; max-height: 250px; overflow-y: auto; }
   </style>
 </head>
 
 <body>
 
-<h2>💳 WHS Payment FIX</h2>
+<h2>💳 WHS Payment - FIXED VERSION</h2>
 
 <button class="btn-pay" id="payBtn" onclick="pay()" disabled>Bayar 1 Pi</button>
 
-<p id="status">Loading...</p>
-<div id="debug" class="debug"></div>
+<p id="status">Menginisialisasi Pi SDK...</p>
+<div id="debug" class="debug">=== LOG SYSTEM ===&#10;</div>
 
 <script>
-const URL_BACKEND = "/api/approve"; // 🔥 FIX: HARUS SESUAI BACKEND
+// 🔥 UBAH INI: Masukkan URL lengkap Edge Function Supabase Anda!
+const URL_BACKEND = "https://<PROJECT_ID>.supabase.co/functions/v1/<NAMA_FUNCTION_ANDA>"; 
 
 let piReady = false;
 
-// =========================
-// INIT PI SDK
-// =========================
+// ==========================================
+// KONEKSI & INISIALISASI PI SDK
+// ==========================================
 function initPi() {
   if (typeof Pi !== "undefined") {
-    Pi.init({ version: "2.0", sandbox: true });
-    piReady = true;
-    document.getElementById("status").innerText = "Siap";
-    document.getElementById("payBtn").disabled = false;
+    try {
+      Pi.init({ version: "2.0", sandbox: true }); // Ubah sandbox ke false jika sudah siap Mainnet
+      piReady = true;
+      document.getElementById("status").innerText = "Status: Terhubung ke Pi Network (Siap Transaksi)";
+      document.getElementById("payBtn").disabled = false;
+      dbg("✅ Pi SDK Berhasil Ditemukan & Diinisialisasi");
+    } catch (err) {
+      dbg("❌ Gagal inisialisasi Pi SDK: " + err.message);
+    }
   } else {
     setTimeout(initPi, 100);
   }
 }
 initPi();
 
-// =========================
-// DEBUG
-// =========================
+// Fungsi mempermudah tracking log di layar HP / Pi Browser
 function dbg(msg) {
   document.getElementById("debug").innerText += msg + "\n";
   console.log(msg);
 }
 
-// =========================
-// BACKEND CALL SAFE
-// =========================
+// ==========================================
+// HIT API BACKEND EDGE FUNCTION
+// ==========================================
 async function kirimKeBackend(action, paymentId, txid = null) {
   try {
-    dbg("➡️ Kirim: " + action);
+    dbg("➡️ Mengirim permintaan '" + action + "' ke backend...");
 
     const res = await fetch(URL_BACKEND, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        action,
-        paymentId,
-        txid
-      })
+      body: JSON.stringify({ action, paymentId, txid })
     });
 
     const text = await res.text();
-    dbg("⬅️ RAW RESPONSE: " + text);
+    dbg("⬅️ RESPON MENTAH BACKEND: " + text);
 
     let data;
     try {
       data = JSON.parse(text);
     } catch (e) {
-      dbg("❌ JSON ERROR");
+      dbg("❌ ERROR: Backend tidak mengembalikan format JSON yang valid!");
       return null;
     }
 
     return data;
 
   } catch (err) {
-    dbg("❌ FETCH ERROR: " + err.message);
+    dbg("❌ FETCH ERROR (Gagal menghubungi server): " + err.message);
     return null;
   }
 }
 
-// =========================
-// MAIN PAYMENT
-// =========================
+// ==========================================
+// PROSES UTAMA EKSEKUSI PEMBAYARAN
+// ==========================================
 async function pay() {
-  if (!piReady) return alert("SDK belum siap");
+  if (!piReady) return alert("SDK belum siap digunakan!");
 
   const status = document.getElementById("status");
-  document.getElementById("debug").innerText = "";
+  document.getElementById("debug").innerText = "=== PROSES PEMBAYARAN DIMULAI ===\n";
 
   try {
-
-    dbg("🔐 Login...");
+    dbg("🔐 Melakukan otentikasi User...");
     const auth = await Pi.authenticate(["username", "payments"]);
     const username = auth.user.username;
 
-    dbg("User: " + username);
-
-    dbg("💰 Create Payment...");
+    dbg("User Terdeteksi: @" + username);
+    dbg("💰 Memicu pop-up Dompet Pi...");
 
     await Pi.createPayment({
-      amount: "1.00",
-      memo: "WHS Payment",
+      amount: 1.00,
+      memo: "Akses Dashboard Wallet Health Score",
       metadata: { user: username }
     }, {
 
-      // =====================
-      // APPROVAL
-      // =====================
+      // CALLBACK 1: APPROVAL (Lolos dari bug hitung mundur 50 detik)
       onReadyForServerApproval: async function(paymentId) {
-        dbg("📡 APPROVAL request");
-
-        status.innerText = "Approve...";
+        dbg("📡 Meminta APPROVAL backend untuk Payment ID: " + paymentId);
+        status.innerText = "Memproses Validasi Server (Approve)...";
 
         const res = await kirimKeBackend("approve", paymentId);
 
-        if (res && res.status === "approved") {
-          dbg("✅ APPROVED");
-          status.innerText = "Approved";
+        if (res && res.success === true) {
+          dbg("✅ Backend Sukses Approve! Meneruskan perintah Pi.approvePayment()...");
+          status.innerText = "Server Disetujui. Menunggu konfirmasi dompet Anda...";
+          
+          return Pi.approvePayment(paymentId); // Mengirim sinyal ke Pi SDK agar transaksi diteruskan ke blockchain
         } else {
-          dbg("❌ APPROVE FAIL");
-          status.innerText = "Approve gagal";
+          dbg("❌ BACKEND GAGAL MENYETUJUI TRANSAKSI");
+          status.innerText = "Pembayaran ditolak oleh backend sistem.";
         }
       },
 
-      // =====================
-      // COMPLETE
-      // =====================
+      // CALLBACK 2: COMPLETION (Penyelesaian & Sinkronisasi DB)
       onReadyForServerCompletion: async function(paymentId, txid) {
-        dbg("📡 COMPLETE request");
-
-        status.innerText = "Complete...";
+        dbg("📡 Transaksi Blockchain Terbentuk! TXID: " + txid);
+        status.innerText = "Menyelesaikan pencatatan transaksi di server...";
 
         const res = await kirimKeBackend("complete", paymentId, txid);
 
-        if (res && res.status === "completed") {
-          dbg("🎉 SUCCESS");
-          status.innerText = "SUCCESS ✔";
+        if (res && res.success === true) {
+          dbg("🎉 Backend sukses memproses data! Mengunci transaksi dengan Pi.completePayment()...");
+          status.innerText = "PROSES SUKSES ✔ Terima kasih!";
+          
+          return Pi.completePayment(paymentId); // Menutup transaksi secara permanen di server Pi
         } else {
-          dbg("❌ COMPLETE FAIL");
-          status.innerText = "Complete gagal";
+          dbg("❌ BACKEND GAGAL MENYELESAIKAN PROSES TRANSFER");
+          status.innerText = "Penyelesaian transaksi gagal.";
         }
       },
 
       onCancel: function(paymentId) {
-        dbg("❌ Cancel: " + paymentId);
-        status.innerText = "Canceled";
+        dbg("❌ Transaksi dibatalkan oleh pengguna.");
+        status.innerText = "Pembayaran dibatalkan.";
       },
 
       onError: function(err) {
-        dbg("❌ ERROR: " + (err.message || err));
-        status.innerText = "Error";
+        dbg("❌ PI SDK ERROR: " + (err.message || JSON.stringify(err)));
+        status.innerText = "Terjadi kesalahan sistem internal.";
       }
 
     });
 
-    dbg("🚀 Flow started");
-
   } catch (e) {
-    dbg("❌ CATCH: " + e.message);
-    status.innerText = "Failed";
+    dbg("❌ CATCH EXCEPTION: " + e.message);
+    status.innerText = "Proses pembayaran gagal dieksekusi.";
   }
 }
 </script>
