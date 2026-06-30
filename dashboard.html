@@ -62,7 +62,7 @@
     button { font-family: var(--font-body); cursor: pointer; border: none; outline: none; background: none; }
 
     /* ========================================
-       BACKGROUND (ringan untuk mobile)
+       BACKGROUND
     ======================================== */
     .bg-atmosphere {
       position: fixed; top: 0; left: 0; width: 100%; height: 100%;
@@ -534,6 +534,8 @@
     .toast.error i { color: var(--danger); }
     .toast.info { border-left: 3px solid var(--info); }
     .toast.info i { color: var(--info); }
+    .toast.warning { border-left: 3px solid var(--warning); }
+    .toast.warning i { color: var(--warning); }
 
     /* ========================================
        GUARD SCREEN
@@ -570,6 +572,91 @@
     }
 
     /* ========================================
+       IDLE WARNING MODAL
+    ======================================== */
+    .idle-overlay {
+      position: fixed; inset: 0; z-index: 600;
+      background: rgba(6, 10, 19, 0.88);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      display: none;
+      align-items: center; justify-content: center;
+      padding: 24px;
+    }
+    .idle-overlay.active { display: flex; }
+
+    .idle-modal {
+      background: var(--bg-secondary);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-lg);
+      padding: 32px 28px;
+      max-width: 380px;
+      width: 100%;
+      text-align: center;
+      box-shadow: 0 24px 64px rgba(0,0,0,0.5);
+      animation: modalIn 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    @keyframes modalIn {
+      from { opacity: 0; transform: scale(0.92) translateY(12px); }
+      to { opacity: 1; transform: scale(1) translateY(0); }
+    }
+    .idle-modal-icon {
+      width: 56px; height: 56px;
+      margin: 0 auto 18px;
+      border-radius: 50%;
+      background: rgba(245, 158, 11, 0.1);
+      border: 1px solid rgba(245, 158, 11, 0.2);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 1.4rem; color: var(--warning);
+    }
+    .idle-modal h3 {
+      font-family: var(--font-display);
+      font-size: 1.1rem; font-weight: 600;
+      margin-bottom: 8px;
+    }
+    .idle-modal p {
+      font-size: 0.85rem; color: var(--text-muted);
+      line-height: 1.5; margin-bottom: 8px;
+    }
+    .idle-countdown {
+      font-family: var(--font-display);
+      font-size: 1.8rem; font-weight: 700;
+      color: var(--warning);
+      margin: 14px 0 20px;
+      letter-spacing: 0.04em;
+    }
+    .idle-countdown .unit {
+      font-size: 0.7rem; font-weight: 500;
+      color: var(--text-muted);
+      margin-left: 4px;
+    }
+    .idle-actions {
+      display: flex; gap: 10px;
+    }
+    .idle-actions .btn {
+      flex: 1; padding: 11px 16px; font-size: 0.84rem;
+    }
+    .btn-outline {
+      color: var(--text-secondary);
+      background: transparent;
+      border: 1px solid var(--border-subtle);
+    }
+    .btn-outline:hover {
+      border-color: var(--border-color);
+      color: var(--text-primary);
+      background: rgba(255,255,255,0.03);
+    }
+    .btn-warning {
+      color: var(--bg-primary);
+      background: linear-gradient(135deg, var(--warning), #d97706);
+      box-shadow: 0 0 16px rgba(245, 158, 11, 0.2);
+    }
+    .btn-warning:hover {
+      box-shadow: 0 0 24px rgba(245, 158, 11, 0.3);
+      transform: translateY(-1px);
+    }
+
+    /* ========================================
        RESPONSIVE
     ======================================== */
     @media (min-width: 640px) {
@@ -592,17 +679,15 @@
     }
 
     /* ============================================================
-       MENU PANEL — Ditambahkan, tidak mengubah kode di atas
+       MENU PANEL
        ============================================================ */
-
-    /* Hamburger button di topbar */
     .menu-toggle {
       width: 36px; height: 36px;
       border-radius: var(--radius-sm);
       display: flex; flex-direction: column;
       align-items: center; justify-content: center; gap: 4px;
       color: var(--text-muted);
-      font-size: 0; /* hide text */
+      font-size: 0;
       transition: all var(--transition-fast);
     }
     .menu-toggle:hover {
@@ -630,7 +715,6 @@
       background: var(--accent);
     }
 
-    /* Backdrop */
     .menu-backdrop {
       position: fixed; inset: 0;
       background: rgba(0, 0, 0, 0);
@@ -647,7 +731,6 @@
       pointer-events: all;
     }
 
-    /* Panel — slide dari kanan */
     .menu-panel {
       position: fixed;
       top: 0; right: 0; bottom: 0;
@@ -667,7 +750,6 @@
       transform: translateX(0);
     }
 
-    /* Panel header */
     .menu-panel-header {
       padding: 20px 18px 16px;
       border-bottom: 1px solid var(--border-subtle);
@@ -699,7 +781,6 @@
       margin-top: 1px;
     }
 
-    /* Panel nav */
     .menu-panel-nav {
       list-style: none;
       padding: 12px 10px;
@@ -743,9 +824,7 @@
       flex-shrink: 0;
       transition: color 0.2s ease, transform 0.2s ease;
     }
-    .menu-panel-nav a .m-text {
-      flex: 1;
-    }
+    .menu-panel-nav a .m-text { flex: 1; }
     .menu-panel-nav a .m-arrow {
       font-size: 0.7rem;
       color: var(--text-muted);
@@ -783,7 +862,6 @@
       transform: translateY(-50%) scaleY(1);
     }
 
-    /* Panel divider */
     .menu-panel-divider {
       height: 1px;
       margin: 4px 18px 8px;
@@ -797,7 +875,6 @@
       transform: scaleX(1);
     }
 
-    /* Panel footer / logout */
     .menu-panel-footer {
       padding: 12px 10px 20px;
       opacity: 0;
@@ -864,6 +941,22 @@
     </a>
   </div>
 
+  <!-- Idle Warning Modal -->
+  <div class="idle-overlay" id="idleOverlay">
+    <div class="idle-modal">
+      <div class="idle-modal-icon">
+        <i class="fa-solid fa-clock"></i>
+      </div>
+      <h3>Sesi Anda Akan Berakhir</h3>
+      <p>Tidak ada aktivitas terdeteksi. Anda akan otomatis keluar karena keamanan.</p>
+      <div class="idle-countdown" id="idleCountdown">60<span class="unit">detik</span></div>
+      <div class="idle-actions">
+        <button class="btn btn-outline" id="idleLogoutNow">Keluar Sekarang</button>
+        <button class="btn btn-warning" id="idleStayBtn">Tetap Masuk</button>
+      </div>
+    </div>
+  </div>
+
   <!-- Toast -->
   <div class="toast-container" id="toastContainer" aria-live="polite"></div>
 
@@ -887,7 +980,6 @@
         <button class="topbar-btn" id="refreshBtn" aria-label="Refresh data" title="Refresh">
           <i class="fa-solid fa-arrows-rotate"></i>
         </button>
-        <!-- Hamburger menu — ditambahkan -->
         <button class="menu-toggle" id="menuToggle" aria-label="Buka menu" aria-expanded="false">
           <span></span><span></span><span></span>
         </button>
@@ -898,10 +990,10 @@
       </div>
     </header>
 
-    <!-- Menu backdrop — ditambahkan -->
+    <!-- Menu backdrop -->
     <div class="menu-backdrop" id="menuBackdrop"></div>
 
-    <!-- Menu panel — ditambahkan -->
+    <!-- Menu panel -->
     <nav class="menu-panel" id="menuPanel" aria-label="Menu navigasi">
       <div class="menu-panel-header">
         <div class="menu-panel-avatar" id="menuAvatar">U</div>
@@ -950,7 +1042,8 @@
       var icons = {
         success: 'fa-solid fa-circle-check',
         error: 'fa-solid fa-circle-xmark',
-        info: 'fa-solid fa-circle-info'
+        info: 'fa-solid fa-circle-info',
+        warning: 'fa-solid fa-triangle-exclamation'
       };
       toast.innerHTML = '<i class="' + (icons[type] || icons.info) + '"></i><span>' + message + '</span>';
       container.appendChild(toast);
@@ -1026,19 +1119,181 @@
     } else {
       mainWrapper.style.display = 'block';
       initDashboard(walletAddress);
+      startIdleTimer();
     }
 
     /* ========================================
-       LOGOUT
+       LOGOUT — Arahkan ke index.html
     ======================================== */
-    document.getElementById('logoutBtn').addEventListener('click', function() {
+    function performLogout(reason) {
+      // Bersihkan semua data sesi
       localStorage.removeItem('whs_wallet');
       localStorage.removeItem('whs_login_time');
       sessionStorage.removeItem('currentWallet');
       sessionStorage.removeItem('walletData');
-      showToast('Berhasil keluar', 'info', 2000);
-      setTimeout(function() { window.location.href = 'login.html'; }, 600);
+
+      // Hentikan timer idle
+      stopIdleTimer();
+
+      // Tampilkan pesan sesuai alasan
+      if (reason === 'idle') {
+        showToast('Sesi berakhir karena tidak ada aktivitas selama 1 jam', 'warning', 3500);
+      } else {
+        showToast('Berhasil keluar', 'info', 2000);
+      }
+
+      // Arahkan ke index.html
+      setTimeout(function() {
+        window.location.href = 'index.html';
+      }, 600);
+    }
+
+    // Tombol logout di topbar
+    document.getElementById('logoutBtn').addEventListener('click', function() {
+      performLogout('manual');
     });
+
+    // Tombol logout di menu panel
+    document.getElementById('menuLogoutBtn').addEventListener('click', function() {
+      closeMenu();
+      performLogout('manual');
+    });
+
+    /* ========================================
+       AUTO LOGOUT — 1 JAM IDLE
+    ======================================== */
+    var IDLE_TIMEOUT = 60 * 60 * 1000;       // 1 jam dalam ms
+    var WARNING_BEFORE_LOGOUT = 60 * 1000;   // Tampilkan peringatan 60 detik sebelum logout
+    var idleTimer = null;
+    var warningTimer = null;
+    var countdownInterval = null;
+    var countdownSeconds = 60;
+    var isWarningShown = false;
+
+    function resetIdleTimer() {
+      // Hanya berjalan jika user sudah login
+      if (!localStorage.getItem('whs_wallet')) return;
+
+      clearTimeout(idleTimer);
+      clearTimeout(warningTimer);
+      clearInterval(countdownInterval);
+
+      // Sembunyikan warning jika sedang tampil
+      if (isWarningShown) {
+        hideIdleWarning();
+      }
+
+      // Set timer peringatan muncul (1 jam - 60 detik)
+      warningTimer = setTimeout(function() {
+        showIdleWarning();
+      }, IDLE_TIMEOUT - WARNING_BEFORE_LOGOUT);
+
+      // Set timer logout otomatis (tepat 1 jam)
+      idleTimer = setTimeout(function() {
+        performLogout('idle');
+      }, IDLE_TIMEOUT);
+    }
+
+    function showIdleWarning() {
+      isWarningShown = true;
+      countdownSeconds = 60;
+      var overlay = document.getElementById('idleOverlay');
+      var countdownEl = document.getElementById('idleCountdown');
+      overlay.classList.add('active');
+      updateCountdownDisplay(countdownEl, countdownSeconds);
+
+      countdownInterval = setInterval(function() {
+        countdownSeconds--;
+        updateCountdownDisplay(countdownEl, countdownSeconds);
+
+        if (countdownSeconds <= 0) {
+          clearInterval(countdownInterval);
+          // Timer utama akan mengeksekusi logout
+        }
+      }, 1000);
+    }
+
+    function hideIdleWarning() {
+      isWarningShown = false;
+      clearInterval(countdownInterval);
+      var overlay = document.getElementById('idleOverlay');
+      overlay.classList.remove('active');
+    }
+
+    function updateCountdownDisplay(el, seconds) {
+      if (seconds <= 0) seconds = 0;
+      el.innerHTML = seconds + '<span class="unit">detik</span>';
+
+      // Ubah warna jadi merah saat tersisa 10 detik
+      if (seconds <= 10) {
+        el.style.color = 'var(--danger)';
+      } else {
+        el.style.color = 'var(--warning)';
+      }
+    }
+
+    function stopIdleTimer() {
+      clearTimeout(idleTimer);
+      clearTimeout(warningTimer);
+      clearInterval(countdownInterval);
+      idleTimer = null;
+      warningTimer = null;
+    }
+
+    // Tombol "Tetap Masuk" pada modal peringatan
+    document.getElementById('idleStayBtn').addEventListener('click', function() {
+      hideIdleWarning();
+      resetIdleTimer();
+      showToast('Sesi diperpanjang', 'success', 2000);
+    });
+
+    // Tombol "Keluar Sekarang" pada modal peringatan
+    document.getElementById('idleLogoutNow').addEventListener('click', function() {
+      hideIdleWarning();
+      performLogout('idle');
+    });
+
+    // Deteksi aktivitas user — reset timer
+    var idleEvents = [
+      'mousedown', 'mousemove', 'keydown', 'scroll',
+      'touchstart', 'touchmove', 'click', 'wheel'
+    ];
+
+    function onUserActivity() {
+      resetIdleTimer();
+    }
+
+    // Pasang listener untuk semua event aktivitas
+    for (var i = 0; i < idleEvents.length; i++) {
+      document.addEventListener(idleEvents[i], onUserActivity, { passive: true });
+    }
+
+    // Tangkap juga visibility change (tab aktif/nonaktif)
+    document.addEventListener('visibilitychange', function() {
+      if (!document.hidden) {
+        // Saat tab kembali aktif, cek apakah sudah melewati batas
+        var loginTime = localStorage.getItem('whs_login_time');
+        if (loginTime) {
+          var elapsed = Date.now() - parseInt(loginTime, 10);
+          if (elapsed >= IDLE_TIMEOUT) {
+            performLogout('idle');
+          } else if (elapsed >= IDLE_TIMEOUT - WARNING_BEFORE_LOGOUT) {
+            // Jika sudah masuk masa peringatan saat tab kembali aktif
+            if (!isWarningShown) {
+              showIdleWarning();
+              // Sesuaikan countdown dengan sisa waktu
+              var remaining = Math.ceil((IDLE_TIMEOUT - elapsed) / 1000);
+              countdownSeconds = Math.max(0, remaining);
+            }
+          }
+        }
+      }
+    });
+
+    // Simpan waktu login saat pertama kali
+    if (walletAddress && !localStorage.getItem('whs_login_time')) {
+      localStorage.setItem('whs_login_time', Date.now().toString());
+    }
 
     /* ========================================
        REFRESH
@@ -1050,6 +1305,8 @@
         setTimeout(function() { icon.style.animation = ''; }, 600);
         initDashboard(walletAddress);
         showToast('Data diperbarui', 'success', 2000);
+        // Reset timer idle saat refresh
+        resetIdleTimer();
       }
     });
 
@@ -1060,12 +1317,58 @@
     })();
 
     /* ========================================
+       MENU PANEL
+    ======================================== */
+    var menuToggle = document.getElementById('menuToggle');
+    var menuPanel = document.getElementById('menuPanel');
+    var menuBackdrop = document.getElementById('menuBackdrop');
+
+    function openMenu() {
+      menuToggle.classList.add('open');
+      menuToggle.setAttribute('aria-expanded', 'true');
+      menuPanel.classList.add('open');
+      menuBackdrop.classList.add('visible');
+      document.body.style.overflow = 'hidden';
+    }
+
+    function closeMenu() {
+      menuToggle.classList.remove('open');
+      menuToggle.setAttribute('aria-expanded', 'false');
+      menuPanel.classList.remove('open');
+      menuBackdrop.classList.remove('visible');
+      document.body.style.overflow = '';
+    }
+
+    menuToggle.addEventListener('click', function() {
+      if (menuPanel.classList.contains('open')) {
+        closeMenu();
+      } else {
+        openMenu();
+      }
+    });
+
+    menuBackdrop.addEventListener('click', closeMenu);
+
+    // Tutup menu dengan tombol Escape
+    document.addEventListener('keydown', function(e) {
+      if (e.key === 'Escape') {
+        closeMenu();
+      }
+    });
+
+    /* ========================================
        INIT DASHBOARD
     ======================================== */
     function initDashboard(address) {
       var data = calculateCreditScore(address);
       sessionStorage.setItem('walletData', JSON.stringify(data));
       renderPage(data);
+
+      // Update info di menu panel
+      var menuAvatar = document.getElementById('menuAvatar');
+      var menuWallet = document.getElementById('menuWallet');
+      if (menuAvatar) menuAvatar.textContent = address.slice(2, 4).toUpperCase();
+      if (menuWallet) menuWallet.textContent = shortAddress(address);
     }
 
     /* ========================================
@@ -1308,95 +1611,33 @@
           requestAnimationFrame(update);
         }
       }
-
       requestAnimationFrame(update);
     }
 
-    /* ============================================================
-       MENU PANEL LOGIC — Ditambahkan, tidak mengubah kode di atas
-       ============================================================ */
-    (function() {
-      var menuToggle = document.getElementById('menuToggle');
-      var menuPanel = document.getElementById('menuPanel');
-      var menuBackdrop = document.getElementById('menuBackdrop');
-      var menuLogoutBtn = document.getElementById('menuLogoutBtn');
-      var menuAvatar = document.getElementById('menuAvatar');
-      var menuUsername = document.getElementById('menuUsername');
-      var menuWallet = document.getElementById('menuWallet');
-
-      /* Isi info user di panel */
-      function populateMenuInfo() {
-        try {
-          var userStr = localStorage.getItem('whs_pi_user');
-          var wallet = localStorage.getItem('whs_wallet');
-          if (userStr) {
-            var user = JSON.parse(userStr);
-            var name = user.username || 'User';
-            menuUsername.textContent = '@' + name;
-            menuAvatar.textContent = name.charAt(0).toUpperCase();
-          }
-          if (wallet) {
-            menuWallet.textContent = shortAddress(wallet);
-          }
-        } catch(e) {}
-      }
-
-      function openMenu() {
-        menuToggle.classList.add('open');
-        menuToggle.setAttribute('aria-expanded', 'true');
-        menuPanel.classList.add('open');
-        menuBackdrop.classList.add('visible');
-        document.body.style.overflow = 'hidden';
-      }
-
-      function closeMenu() {
-        menuToggle.classList.remove('open');
-        menuToggle.setAttribute('aria-expanded', 'false');
-        menuPanel.classList.remove('open');
-        menuBackdrop.classList.remove('visible');
-        document.body.style.overflow = '';
-      }
-
-      menuToggle.addEventListener('click', function() {
-        if (menuPanel.classList.contains('open')) {
-          closeMenu();
-        } else {
-          populateMenuInfo();
-          openMenu();
+    /* ========================================
+       START IDLE TIMER
+    ======================================== */
+    function startIdleTimer() {
+      // Cek apakah waktu login sudah melewati batas saat halaman dimuat
+      var loginTime = localStorage.getItem('whs_login_time');
+      if (loginTime) {
+        var elapsed = Date.now() - parseInt(loginTime, 10);
+        if (elapsed >= IDLE_TIMEOUT) {
+          // Langsung logout jika sudah lewat 1 jam
+          performLogout('idle');
+          return;
+        } else if (elapsed >= IDLE_TIMEOUT - WARNING_BEFORE_LOGOUT) {
+          // Tampilkan warning jika sudah masuk masa peringatan
+          var remaining = Math.ceil((IDLE_TIMEOUT - elapsed) / 1000);
+          countdownSeconds = Math.max(0, remaining);
+          showIdleWarning();
+          return;
         }
-      });
-
-      menuBackdrop.addEventListener('click', closeMenu);
-
-      document.addEventListener('keydown', function(e) {
-        if (e.key === 'Escape' && menuPanel.classList.contains('open')) {
-          closeMenu();
-        }
-      });
-
-      /* Logout dari panel menu */
-      menuLogoutBtn.addEventListener('click', function() {
-        closeMenu();
-        localStorage.removeItem('whs_wallet');
-        localStorage.removeItem('whs_pi_user');
-        localStorage.removeItem('whs_pi_token');
-        localStorage.removeItem('whs_login_time');
-        sessionStorage.removeItem('whs_pi_user');
-        sessionStorage.removeItem('currentWallet');
-        sessionStorage.removeItem('walletData');
-        showToast('Berhasil keluar', 'info', 2000);
-        setTimeout(function() { window.location.href = 'login.html'; }, 600);
-      });
-
-      /* Tutup menu saat klik link navigasi */
-      var navLinks = menuPanel.querySelectorAll('.menu-panel-nav a');
-      for (var i = 0; i < navLinks.length; i++) {
-        navLinks[i].addEventListener('click', function() {
-          closeMenu();
-        });
       }
-    })();
+
+      // Mulai timer normal
+      resetIdleTimer();
+    }
   </script>
-
 </body>
 </html>
