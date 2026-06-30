@@ -1,24 +1,16 @@
 <!DOCTYPE html>
 <html lang="id">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>WHS Payment</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>WHS Payment Test</title>
 
   <!-- Pi SDK -->
   <script src="https://sdk.minepi.com/pi-sdk.js"></script>
 
-  <!-- Config kamu -->
-  <script src="pi-config.js"></script>
-
   <script>
-    Pi.init({
-      version: "2.0",
-      sandbox: window.APP_CONFIG.IS_SANDBOX
-    });
-
-    const PAYMENT_ENDPOINT = window.APP_CONFIG.ENDPOINTS.PAYMENT;
-    const SUPABASE_KEY = window.APP_CONFIG.SUPABASE_ANON_KEY;
+    // Init Pi SDK (sandbox untuk test)
+    Pi.init({ version: "2.0", sandbox: true });
   </script>
 </head>
 
@@ -32,74 +24,50 @@
 
   <script>
     async function pay() {
-
-      document.getElementById("status").innerText = "Login Pi...";
-
       try {
+
+        document.getElementById("status").innerText = "Login Pi...";
+
+        // LOGIN PI
         const auth = await Pi.authenticate(['username']);
 
-        document.getElementById("status").innerText = "Create payment...";
+        console.log("AUTH:", auth);
 
+        document.getElementById("status").innerText = "Membuat pembayaran...";
+
+        // PAYMENT PI
         Pi.createPayment({
           amount: 1,
-          memo: "WHS Credit Score Payment",
+          memo: "WHS Test Payment Step 10",
           metadata: {
-            user: auth.user.username,
-            app: "WHS"
+            user: auth.username
           }
         }, {
 
-          onReadyForServerApproval: async function(paymentId) {
-            console.log("Approval:", paymentId);
-
-            await fetch(PAYMENT_ENDPOINT, {
-              method: "POST",
-              headers: {
-                "Content-Type": "application/json",
-                "Authorization": `Bearer ${SUPABASE_KEY}`
-              },
-              body: JSON.stringify({
-                paymentId,
-                action: "approve",
-                app: "WHS"
-              })
-            });
+          onReadyForServerApproval: function(paymentId) {
+            console.log("APPROVAL:", paymentId);
           },
 
-          onReadyForServerCompletion: async function(paymentId, txid) {
-            console.log("Completed:", paymentId, txid);
-
+          onReadyForServerCompletion: function(paymentId, txid) {
+            console.log("COMPLETE:", paymentId, txid);
             document.getElementById("status").innerText = "Payment sukses ✔";
-
-            await fetch(PAYMENT_ENDPOINT, {
-              method: "POST",
-              headers: {
-                "Content-Type": "application/json",
-                "Authorization": `Bearer ${SUPABASE_KEY}`
-              },
-              body: JSON.stringify({
-                paymentId,
-                txid,
-                action: "complete",
-                app: "WHS"
-              })
-            });
           },
 
-          onCancel: function() {
-            document.getElementById("status").innerText = "Dibatalkan";
+          onCancel: function(paymentId) {
+            console.log("CANCEL:", paymentId);
+            document.getElementById("status").innerText = "Payment dibatalkan";
           },
 
-          onError: function(err) {
-            console.log(err);
-            document.getElementById("status").innerText = "Error";
+          onError: function(error) {
+            console.log("ERROR PAYMENT:", error);
+            document.getElementById("status").innerText = "Error payment (cek console)";
           }
 
         });
 
-      } catch (e) {
-        console.log(e);
-        document.getElementById("status").innerText = "Login gagal";
+      } catch (err) {
+        console.log("LOGIN ERROR:", err);
+        document.getElementById("status").innerText = "Login gagal (cek console)";
       }
     }
   </script>
