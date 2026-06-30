@@ -3,178 +3,176 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>WHS Payment</title>
+  <title>WHS Payment FIXED</title>
 
-  <!-- PI SDK -->
   <script src="https://sdk.minepi.com/pi-sdk.js"></script>
 
   <style>
     body { font-family: sans-serif; padding: 20px; }
-    button { padding: 15px 30px; font-size: 18px; cursor: pointer; margin: 10px 5px; border: none; border-radius: 10px; }
+    button { padding: 15px 30px; font-size: 18px; cursor: pointer; margin: 10px 5px; border-radius: 10px; border: none; }
     .btn-pay { background: #6B3FA0; color: white; }
-    .btn-pay:disabled { background: #ccc; cursor: not-allowed; }
-    #status { margin-top: 20px; font-size: 16px; font-weight: bold; }
-    .debug { background: #f0f0f0; padding: 10px; margin-top: 15px; font-family: monospace; font-size: 12px; white-space: pre-wrap; }
+    .btn-pay:disabled { background: #ccc; }
+    #status { margin-top: 20px; font-weight: bold; }
+    .debug { background: #eee; padding: 10px; margin-top: 10px; font-size: 12px; white-space: pre-wrap; }
   </style>
 </head>
+
 <body>
 
-  <h2>💳 WHS Payment</h2>
-  
-  <button class="btn-pay" id="payBtn" onclick="pay()" disabled>💰 Bayar 1 Pi</button>
-  
-  <p id="status">Menyiapkan...</p>
-  <div id="debug" class="debug" style="display:none;"></div>
+<h2>💳 WHS Payment FIX</h2>
 
-  <script>
-    // ==========================================
-    // 1. CONFIG & BACKEND URL
-    // ==========================================
-    // URL DIARAHKAN KE FOLDER API VERCEL YANG BARU KITA BUAT
-    const URL_BACKEND = "/api/pi-payment";
+<button class="btn-pay" id="payBtn" onclick="pay()" disabled>Bayar 1 Pi</button>
 
-    // ==========================================
-    // 2. PI SDK INIT
-    // ==========================================
-    let piReady = false;
-    
-    function initPiSDK() {
-      if (typeof Pi !== 'undefined') {
-        Pi.init({ version: "2.0", sandbox: true });
-        piReady = true;
-        console.log("✅ Pi SDK Ready!");
-        document.getElementById('status').innerText = "Siap membayar";
-        document.getElementById('payBtn').disabled = false;
-      } else {
-        setTimeout(initPiSDK, 100);
-      }
-    }
-    initPiSDK();
+<p id="status">Loading...</p>
+<div id="debug" class="debug"></div>
 
-    // ==========================================
-    // 3. DEBUG HELPER
-    // ==========================================
-    function dbg(msg) {
-      const el = document.getElementById('debug');
-      el.style.display = 'block';
-      el.innerText += msg + '\n';
-      console.log(msg);
-    }
+<script>
+const URL_BACKEND = "/api/approve"; // 🔥 FIX: HARUS SESUAI BACKEND
 
-    // ==========================================
-    // 4. FUNGSI KIRIM KE BACKEND VERCEL
-    // ==========================================
-    async function kirimKeBackend(action, paymentId, txid = null) {
-      dbg("🔄 Kirim ke Vercel API: " + action + "...");
-      
-      const bodyData = { action: action, paymentId: paymentId };
-      if (txid) bodyData.txid = txid;
+let piReady = false;
 
-      try {
-        const response = await fetch(URL_BACKEND, {
-          method: "POST",
-          headers: { 
-            "Content-Type": "application/json"
-          },
-          body: JSON.stringify(bodyData)
-        });
+// =========================
+// INIT PI SDK
+// =========================
+function initPi() {
+  if (typeof Pi !== "undefined") {
+    Pi.init({ version: "2.0", sandbox: true });
+    piReady = true;
+    document.getElementById("status").innerText = "Siap";
+    document.getElementById("payBtn").disabled = false;
+  } else {
+    setTimeout(initPi, 100);
+  }
+}
+initPi();
 
-        const data = await response.json();
-        dbg("✅ Backend jawab: " + JSON.stringify(data));
-        return data;
+// =========================
+// DEBUG
+// =========================
+function dbg(msg) {
+  document.getElementById("debug").innerText += msg + "\n";
+  console.log(msg);
+}
 
-      } catch (error) {
-        dbg("❌ Gagal hubungi backend: " + error.message);
-        return null;
-      }
+// =========================
+// BACKEND CALL SAFE
+// =========================
+async function kirimKeBackend(action, paymentId, txid = null) {
+  try {
+    dbg("➡️ Kirim: " + action);
+
+    const res = await fetch(URL_BACKEND, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        action,
+        paymentId,
+        txid
+      })
+    });
+
+    const text = await res.text();
+    dbg("⬅️ RAW RESPONSE: " + text);
+
+    let data;
+    try {
+      data = JSON.parse(text);
+    } catch (e) {
+      dbg("❌ JSON ERROR");
+      return null;
     }
 
-    // ==========================================
-    // 5. PAYMENT FUNCTION UTAMA
-    // ==========================================
-    async function pay() {
-      if (!piReady) {
-        alert("SDK belum siap!");
-        return;
+    return data;
+
+  } catch (err) {
+    dbg("❌ FETCH ERROR: " + err.message);
+    return null;
+  }
+}
+
+// =========================
+// MAIN PAYMENT
+// =========================
+async function pay() {
+  if (!piReady) return alert("SDK belum siap");
+
+  const status = document.getElementById("status");
+  document.getElementById("debug").innerText = "";
+
+  try {
+
+    dbg("🔐 Login...");
+    const auth = await Pi.authenticate(["username", "payments"]);
+    const username = auth.user.username;
+
+    dbg("User: " + username);
+
+    dbg("💰 Create Payment...");
+
+    await Pi.createPayment({
+      amount: "1.00",
+      memo: "WHS Payment",
+      metadata: { user: username }
+    }, {
+
+      // =====================
+      // APPROVAL
+      // =====================
+      onReadyForServerApproval: async function(paymentId) {
+        dbg("📡 APPROVAL request");
+
+        status.innerText = "Approve...";
+
+        const res = await kirimKeBackend("approve", paymentId);
+
+        if (res && res.status === "approved") {
+          dbg("✅ APPROVED");
+          status.innerText = "Approved";
+        } else {
+          dbg("❌ APPROVE FAIL");
+          status.innerText = "Approve gagal";
+        }
+      },
+
+      // =====================
+      // COMPLETE
+      // =====================
+      onReadyForServerCompletion: async function(paymentId, txid) {
+        dbg("📡 COMPLETE request");
+
+        status.innerText = "Complete...";
+
+        const res = await kirimKeBackend("complete", paymentId, txid);
+
+        if (res && res.status === "completed") {
+          dbg("🎉 SUCCESS");
+          status.innerText = "SUCCESS ✔";
+        } else {
+          dbg("❌ COMPLETE FAIL");
+          status.innerText = "Complete gagal";
+        }
+      },
+
+      onCancel: function(paymentId) {
+        dbg("❌ Cancel: " + paymentId);
+        status.innerText = "Canceled";
+      },
+
+      onError: function(err) {
+        dbg("❌ ERROR: " + (err.message || err));
+        status.innerText = "Error";
       }
 
-      const statusEl = document.getElementById('status');
-      document.getElementById('debug').innerText = '';
-      
-      try {
-        dbg("🔄 Authentikasi...");
-        statusEl.innerText = "Login...";
+    });
 
-        // LOGIN
-        const auth = await Pi.authenticate(['username', 'payments']);
-        const username = auth.user?.username || "unknown";
-        dbg("✅ Login sukses: " + username);
+    dbg("🚀 Flow started");
 
-        statusEl.innerText = "Membuka dialog...";
-
-        // CREATE PAYMENT
-        dbg("🔄 Create payment...");
-        
-        await Pi.createPayment({
-          amount: "1.00",
-          memo: "WHS Test Payment",
-          metadata: { user: username }
-        }, {
-
-          onReadyForServerApproval: async function(paymentId) {
-            dbg("📡 Pi minta approval ke server...");
-            statusEl.innerText = "Menghubungi server...";
-            
-            const hasil = await kirimKeBackend("approve", paymentId);
-            
-            if (hasil && hasil.status === "approved") {
-              dbg("✅ Server Approved!");
-              statusEl.innerText = "Disetujui, menunggu completion...";
-            } else {
-              dbg("❌ Server Gagal Approve!");
-              statusEl.innerText = "Server gagal approve";
-            }
-          },
-
-          onReadyForServerCompletion: async function(paymentId, txid) {
-            dbg("📡 Pi minta completion ke server...");
-            statusEl.innerText = "Finalisasi pembayaran...";
-            
-            const hasil = await kirimKeBackend("complete", paymentId, txid);
-            
-            if (hasil && hasil.status === "completed") {
-              dbg("🎉 PEMBAYARAN SUKSES TOTAL!");
-              statusEl.innerText = "Pembayaran BERHASIL! ✔";
-            } else {
-              dbg("❌ Server Gagal Complete!");
-              statusEl.innerText = "Gagal finalisasi";
-            }
-          },
-
-          onCancel: function(paymentId) {
-            dbg("❌ User cancel: " + paymentId);
-            statusEl.innerText = "Dibatalkan";
-          },
-
-          onError: function(error) {
-            let msg = error?.message || JSON.stringify(error);
-            dbg("❌ ERROR: " + msg);
-            statusEl.innerText = "Error!";
-            alert("PAYMENT ERROR:\n\n" + msg);
-          }
-
-        });
-
-        dbg("✅ Flow dimulai...");
-
-      } catch (err) {
-        let msg = err?.message || JSON.stringify(err);
-        dbg("❌ CATCH: " + msg);
-        statusEl.innerText = "Gagal!";
-        alert("ERROR:\n\n" + msg);
-      }
-    }
-  </script>
+  } catch (e) {
+    dbg("❌ CATCH: " + e.message);
+    status.innerText = "Failed";
+  }
+}
+</script>
 
 </body>
 </html>
