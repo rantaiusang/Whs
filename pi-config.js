@@ -9,22 +9,24 @@ const config = (function() {
     const IS_SANDBOX = true; // Ubah ke 'false' saat Production
 
     // --- KONEKSI BACKEND (SUPABASE) ---
-    const SUPABASE_BASE_URL = "https://dikapquhusbwjccbqcsb.supabase.co/functions/v1";
+    const SUPABASE_URL = "https://valpwlebldnkedrznaym.supabase.co";
+
+    const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZhbHB3bGVibGRua2VkcnpuYXltIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODI3Mzk3ODUsImV4cCI6MjA5ODMxNTc4NX0.G3BDRqiRBmcFwtBRtdiJI3CkptRrya9bxiVozcQZCSc";
 
     const ENDPOINTS = {
-        LOGIN: `${SUPABASE_BASE_URL}/verify-pi-login`,
-        PAYMENT: `${SUPABASE_BASE_URL}/verify-pi-payment`
+        LOGIN: `${SUPABASE_URL}/functions/v1/verify-pi-login`,
+        PAYMENT: `${SUPABASE_URL}/functions/v1/verify-pi-payment`
     };
-
-    const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRpa2FwcXVodXNid2pjY2JxY3NiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjkxNjQ1NTQsImV4cCI6MjA4NDc0MDU1NH0.X278oHDF0be7oa25484eliSukSYAYvDbJyU6ysz83zA";
 
     // Debugging Log hanya di Browser
     if (IS_SANDBOX && typeof window !== 'undefined') {
         console.log("[Config] Running in SANDBOX MODE");
+        console.log("[Config] Supabase URL:", SUPABASE_URL);
     }
 
     return {
         IS_SANDBOX,
+        SUPABASE_URL,
         SUPABASE_ANON_KEY,
         ENDPOINTS
     };
