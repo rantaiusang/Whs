@@ -1,7 +1,6 @@
 /**
  * ==========================================
- *  WHS APP - FINAL CONFIG
- *  Pi Network + Supabase Integration
+ *  WHS APP - FINAL CONFIG (FIXED RACE CONDITION)
  * ==========================================
  */
 (function () {
@@ -9,7 +8,7 @@
   // =========================
   // ENVIRONMENT
   // =========================
-  const IS_SANDBOX = true; // Ubah ke false saat mainnet
+  const IS_SANDBOX = true;
 
   // =========================
   // SUPABASE CONFIG
@@ -19,41 +18,39 @@
   const SUPABASE_ANON_KEY =
     "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZhbHB3bGVibGRua2VkcnpuYXltIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODI3Mzk3ODUsImV4cCI6MjA5ODMxNTc4NX0.G3BDRqiRBmcFwtBRtdiJI3CkptRrya9bxiVozcQZCSc";
 
-  // =========================
-  // ENDPOINTS
-  // =========================
   const ENDPOINTS = {
     LOGIN: `${SUPABASE_URL}/functions/v1/verify-pi-login`,
     PAYMENT: `${SUPABASE_URL}/functions/v1/verify-pi-payment`
   };
 
   // =========================
-  // PI SDK INIT
+  // PI SDK INIT (ANTI RACE CONDITION)
   // =========================
-  function initPi() {
-    try {
-      if (typeof window !== "undefined" && window.Pi) {
-        
-        // Init tanpa appId (SDK v2.0 deteksi otomatis via domain)
+  function waitAndInitPi() {
+    // Cek apakah SDK sudah ada
+    if (typeof window.Pi !== 'undefined') {
+      try {
         Pi.init({
           version: "2.0",
           sandbox: IS_SANDBOX
         });
-
         window.__PI_READY__ = true;
-        console.log("[Config] ✅ Pi SDK Ready (Sandbox:", IS_SANDBOX + ")");
-
-      } else {
-        console.warn("[Config] ⚠️ Pi SDK tidak ditemukan. Pastikan buka di Pi Browser.");
+        console.log("[Config] ✅ Pi SDK berhasil di-init!");
+        return; // Berhenti, tugas selesai
+      } catch (err) {
+        console.error("[Config] ❌ Gagal init:", err);
+        return;
       }
-    } catch (err) {
-      console.error("[Config] ❌ Gagal init Pi SDK:", err);
     }
+
+    // Kalau SDK belum ada, TUNGGU 100ms, lalu cek lagi
+    console.log("[Config] ⏳ Menunggu Pi SDK loading...");
+    setTimeout(waitAndInitPi, 100);
   }
 
-  // Init langsung saat script di-load
+  // Mulai proses penungguan
   if (typeof window !== "undefined") {
-    initPi();
+    waitAndInitPi();
   }
 
   // =========================
