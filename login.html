@@ -14,9 +14,13 @@
   <!-- Icons -->
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
 
+  <!-- Pi SDK -->
+  <script src="https://sdk.minepi.com/pi-sdk.js"></script>
+  <script src="pi-config.js"></script>
+
   <style>
     /* ========================================
-       CSS VARIABLES — konsisten dengan dashboard
+       CSS VARIABLES
     ======================================== */
     :root {
       --bg-primary: #060a13;
@@ -69,17 +73,13 @@
        RESET & BASE
     ======================================== */
     *, *::before, *::after {
-      margin: 0;
-      padding: 0;
-      box-sizing: border-box;
+      margin: 0; padding: 0; box-sizing: border-box;
     }
-
     html {
       scroll-behavior: smooth;
       -webkit-font-smoothing: antialiased;
       -moz-osx-font-smoothing: grayscale;
     }
-
     body {
       font-family: var(--font-body);
       background: var(--bg-primary);
@@ -88,64 +88,40 @@
       overflow-x: hidden;
       min-height: 100vh;
     }
-
-    a {
-      color: inherit;
-      text-decoration: none;
-      transition: color var(--transition-fast);
-    }
-
-    button {
-      font-family: var(--font-body);
-      cursor: pointer;
-      border: none;
-      outline: none;
-      background: none;
-    }
+    a { color: inherit; text-decoration: none; transition: color var(--transition-fast); }
+    button { font-family: var(--font-body); cursor: pointer; border: none; outline: none; background: none; }
 
     /* ========================================
-       BACKGROUND ATMOSPHERE (ringan untuk mobile)
+       BACKGROUND ATMOSPHERE
     ======================================== */
     .bg-atmosphere {
-      position: fixed;
-      top: 0; left: 0;
+      position: fixed; top: 0; left: 0;
       width: 100%; height: 100%;
-      pointer-events: none;
-      z-index: 0;
-      overflow: hidden;
+      pointer-events: none; z-index: 0; overflow: hidden;
     }
-
     .bg-atmosphere .orb {
-      position: absolute;
-      border-radius: 50%;
-      filter: blur(100px);
-      opacity: 0.18;
+      position: absolute; border-radius: 50%;
+      filter: blur(100px); opacity: 0.18;
       animation: orbFloat 25s ease-in-out infinite;
       will-change: transform;
     }
-
     .bg-atmosphere .orb-1 {
       width: 320px; height: 320px;
       background: radial-gradient(circle, rgba(45, 212, 191, 0.12) 0%, transparent 70%);
       top: -8%; left: -5%;
     }
-
     .bg-atmosphere .orb-2 {
       width: 260px; height: 260px;
       background: radial-gradient(circle, rgba(245, 158, 11, 0.06) 0%, transparent 70%);
       bottom: -8%; right: -5%;
-      animation-delay: -10s;
-      animation-duration: 28s;
+      animation-delay: -10s; animation-duration: 28s;
     }
-
     .bg-atmosphere .orb-3 {
       width: 200px; height: 200px;
       background: radial-gradient(circle, rgba(45, 212, 191, 0.05) 0%, transparent 70%);
       top: 45%; left: 55%;
-      animation-delay: -15s;
-      animation-duration: 22s;
+      animation-delay: -15s; animation-duration: 22s;
     }
-
     @keyframes orbFloat {
       0%, 100% { transform: translate(0, 0) scale(1); }
       25% { transform: translate(15px, -20px) scale(1.03); }
@@ -154,656 +130,350 @@
     }
 
     /* ========================================
-       TOPBAR — Sama persis dengan dashboard
+       TOPBAR
     ======================================== */
     .topbar {
-      height: var(--topbar-height);
-      padding: 0 16px;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
+      height: var(--topbar-height); padding: 0 16px;
+      display: flex; align-items: center;
       border-bottom: 1px solid var(--border-subtle);
       background: rgba(6, 10, 19, 0.85);
-      backdrop-filter: blur(16px);
-      -webkit-backdrop-filter: blur(16px);
-      position: sticky;
-      top: 0;
-      z-index: 40;
+      backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px);
+      position: sticky; top: 0; z-index: 40;
     }
-
     .topbar-left {
-      display: flex;
-      align-items: center;
-      gap: 12px;
-      min-width: 0;
-      flex: 1;
+      display: flex; align-items: center; gap: 12px;
+      min-width: 0; flex: 1;
     }
-
     .back-btn {
-      display: inline-flex;
-      align-items: center;
-      gap: 6px;
-      padding: 8px 14px;
-      font-size: 0.82rem;
-      font-weight: 600;
-      color: var(--accent);
-      border: 1px solid var(--border-color);
+      display: inline-flex; align-items: center; gap: 6px;
+      padding: 8px 14px; font-size: 0.82rem; font-weight: 600;
+      color: var(--accent); border: 1px solid var(--border-color);
       border-radius: var(--radius-full);
       transition: all var(--transition-fast);
-      white-space: nowrap;
-      flex-shrink: 0;
+      white-space: nowrap; flex-shrink: 0;
       background: var(--accent-dim);
     }
-
     .back-btn:hover {
       background: rgba(45, 212, 191, 0.18);
       border-color: var(--border-color-hover);
       box-shadow: 0 0 16px var(--accent-glow);
     }
-
-    .back-btn:active {
-      transform: scale(0.97);
-    }
-
-    .back-btn i {
-      font-size: 0.8rem;
-    }
-
+    .back-btn:active { transform: scale(0.97); }
+    .back-btn i { font-size: 0.8rem; }
     .topbar-title {
-      font-family: var(--font-display);
-      font-size: 1rem;
-      font-weight: 600;
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
-      min-width: 0;
-    }
-
-    .topbar-right {
-      display: flex;
-      align-items: center;
-      gap: 4px;
-      flex-shrink: 0;
-    }
-
-    .topbar-btn {
-      width: 36px; height: 36px;
-      border-radius: var(--radius-sm);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      color: var(--text-muted);
-      font-size: 0.9rem;
-      transition: all var(--transition-fast);
-      position: relative;
-    }
-
-    .topbar-btn:hover {
-      color: var(--text-primary);
-      background: rgba(255, 255, 255, 0.05);
+      font-family: var(--font-display); font-size: 1rem;
+      font-weight: 600; white-space: nowrap;
+      overflow: hidden; text-overflow: ellipsis; min-width: 0;
     }
 
     /* ========================================
        PAGE LAYOUT
     ======================================== */
     .page-wrapper {
-      position: relative;
-      z-index: 1;
-      min-height: 100vh;
-      display: flex;
-      flex-direction: column;
+      position: relative; z-index: 1;
+      min-height: 100vh; display: flex; flex-direction: column;
     }
 
     /* ========================================
-       LOGIN MAIN AREA
+       LOGIN MAIN
     ======================================== */
     .login-main {
-      flex: 1;
-      display: flex;
-      align-items: center;
-      justify-content: center;
+      flex: 1; display: flex; align-items: center; justify-content: center;
       padding: 24px 16px 40px;
     }
-
     .login-layout {
-      display: grid;
-      grid-template-columns: 1fr;
-      gap: 32px;
-      max-width: 440px;
-      width: 100%;
-      align-items: center;
+      display: grid; grid-template-columns: 1fr;
+      gap: 32px; max-width: 440px; width: 100%; align-items: center;
     }
 
     /* ----------------------------------------
-       ATAS: Branding Ringkas
+       BRANDING
     ---------------------------------------- */
     .login-branding {
       text-align: center;
       animation: fadeInUp 0.5s ease-out 0.1s both;
     }
-
     @keyframes fadeInUp {
       from { opacity: 0; transform: translateY(16px); }
       to { opacity: 1; transform: translateY(0); }
     }
-
     .branding-icon-large {
       width: 56px; height: 56px;
       background: linear-gradient(135deg, var(--accent), #0d9488);
       border-radius: var(--radius-lg);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 1.4rem;
-      color: var(--bg-primary);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 1.5rem; color: var(--bg-primary);
       margin: 0 auto 20px;
       box-shadow: 0 0 32px var(--accent-glow);
-      position: relative;
+      position: relative; font-family: var(--font-display); font-weight: 700;
     }
-
     .branding-icon-large::after {
-      content: '';
-      position: absolute;
-      inset: -6px;
-      border-radius: 18px;
-      border: 1px solid var(--accent-dim);
+      content: ''; position: absolute; inset: -6px;
+      border-radius: 18px; border: 1px solid var(--accent-dim);
       animation: pulseRing 3s ease-in-out infinite;
     }
-
     @keyframes pulseRing {
       0%, 100% { opacity: 0.5; transform: scale(1); }
       50% { opacity: 0.15; transform: scale(1.06); }
     }
-
     .branding-title {
-      font-family: var(--font-display);
-      font-size: 1.5rem;
-      font-weight: 700;
-      letter-spacing: -0.02em;
-      margin-bottom: 10px;
-      line-height: 1.2;
+      font-family: var(--font-display); font-size: 1.5rem;
+      font-weight: 700; letter-spacing: -0.02em;
+      margin-bottom: 10px; line-height: 1.2;
     }
-
     .branding-title .highlight {
       background: linear-gradient(135deg, var(--accent), #5eead4);
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
       background-clip: text;
     }
-
     .branding-desc {
-      font-size: 0.88rem;
-      color: var(--text-secondary);
-      line-height: 1.6;
-      margin-bottom: 0;
+      font-size: 0.88rem; color: var(--text-secondary);
+      line-height: 1.6; margin-bottom: 0;
     }
 
     /* ----------------------------------------
-       BAWAH: Login Card
+       LOGIN CARD
     ---------------------------------------- */
     .login-card-wrapper {
       animation: fadeInUp 0.5s ease-out 0.25s both;
     }
-
     .login-card {
       background: var(--bg-card);
       border: 1px solid var(--border-subtle);
       border-radius: var(--radius-lg);
       padding: 28px 22px;
       box-shadow: var(--shadow-card);
-      position: relative;
-      overflow: hidden;
-      backdrop-filter: blur(20px);
-      -webkit-backdrop-filter: blur(20px);
+      position: relative; overflow: hidden;
+      backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
     }
-
-    /* Garis aksen atas */
     .login-card::before {
-      content: '';
-      position: absolute;
-      top: 0; left: 20%; right: 20%;
-      height: 1px;
+      content: ''; position: absolute;
+      top: 0; left: 20%; right: 20%; height: 1px;
       background: linear-gradient(90deg, transparent, var(--accent), transparent);
     }
-
-    .card-header {
-      margin-bottom: 24px;
-      position: relative;
-    }
-
+    .card-header { margin-bottom: 24px; position: relative; }
     .card-title {
-      font-family: var(--font-display);
-      font-size: 1.15rem;
-      font-weight: 700;
-      margin-bottom: 6px;
-      letter-spacing: -0.01em;
+      font-family: var(--font-display); font-size: 1.15rem;
+      font-weight: 700; margin-bottom: 6px; letter-spacing: -0.01em;
     }
-
     .card-subtitle {
-      font-size: 0.82rem;
-      color: var(--text-muted);
-      line-height: 1.5;
+      font-size: 0.82rem; color: var(--text-muted); line-height: 1.5;
     }
 
     /* ----------------------------------------
-       FORM ELEMENTS
+       PI STATUS AREA
     ---------------------------------------- */
-    .form-group {
-      margin-bottom: 20px;
-      position: relative;
-    }
+    .pi-status-area { text-align: center; }
 
-    .form-label {
-      display: block;
-      font-size: 0.8rem;
-      font-weight: 600;
-      color: var(--text-secondary);
-      margin-bottom: 7px;
-      letter-spacing: 0.02em;
+    .pi-spinner-wrapper {
+      width: 72px; height: 72px;
+      margin: 0 auto 24px; position: relative;
+      display: flex; align-items: center; justify-content: center;
     }
-
-    .input-wrapper {
-      position: relative;
-      display: flex;
-      align-items: center;
-    }
-
-    .input-icon {
-      position: absolute;
-      left: 14px;
-      color: var(--text-muted);
-      font-size: 0.9rem;
-      transition: color var(--transition-fast);
-      pointer-events: none;
-      z-index: 1;
-    }
-
-    .form-input {
-      width: 100%;
-      padding: 13px 42px 13px 42px;
-      background: var(--bg-input);
-      border: 1.5px solid var(--border-subtle);
-      border-radius: var(--radius-md);
-      font-family: 'Space Grotesk', monospace;
-      font-size: 0.88rem;
-      color: var(--text-primary);
-      letter-spacing: 0.02em;
-      transition: all var(--transition-base);
-      outline: none;
-    }
-
-    .form-input::placeholder {
-      color: var(--text-muted);
-      font-family: var(--font-body);
-      letter-spacing: 0;
-      font-size: 0.84rem;
-    }
-
-    .form-input:hover {
-      border-color: rgba(255, 255, 255, 0.1);
-    }
-
-    .form-input:focus {
-      border-color: var(--border-focus);
-      box-shadow: var(--shadow-input-focus);
-      background: rgba(6, 10, 19, 0.8);
-    }
-
-    .form-input:focus ~ .input-icon {
-      color: var(--accent);
-    }
-
-    .form-input.valid {
-      border-color: rgba(34, 197, 94, 0.3);
-    }
-
-    .form-input.valid ~ .input-icon {
-      color: var(--success);
-    }
-
-    .form-input.invalid {
-      border-color: rgba(239, 68, 68, 0.3);
-    }
-
-    .form-input.invalid ~ .input-icon {
-      color: var(--danger);
-    }
-
-    .input-clear {
-      position: absolute;
-      right: 10px;
-      width: 28px; height: 28px;
+    .pi-spinner-ring {
+      width: 72px; height: 72px;
+      border: 3px solid rgba(45, 212, 191, 0.1);
+      border-top-color: var(--accent);
       border-radius: 50%;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      color: var(--text-muted);
-      font-size: 0.7rem;
-      transition: all var(--transition-fast);
-      opacity: 0;
-      pointer-events: none;
-      z-index: 1;
+      animation: spinRing 1s linear infinite;
+      transition: border-top-color 0.4s ease;
     }
-
-    .input-clear.visible {
-      opacity: 1;
-      pointer-events: all;
+    .pi-spinner-ring.success { border-top-color: var(--success); }
+    .pi-spinner-ring.error { border-top-color: var(--danger); animation: none; }
+    .pi-spinner-icon {
+      position: absolute;
+      font-family: var(--font-display); font-size: 1.6rem;
+      color: var(--accent); font-weight: 700;
+      transition: color 0.4s ease;
     }
+    .pi-spinner-icon.success { color: var(--success); }
+    .pi-spinner-icon.error { color: var(--danger); }
 
-    .input-clear:hover {
-      background: rgba(255, 255, 255, 0.08);
-      color: var(--text-secondary);
+    @keyframes spinRing { to { transform: rotate(360deg); } }
+
+    .pi-status-title {
+      font-family: var(--font-display); font-size: 1.1rem;
+      font-weight: 600; margin-bottom: 6px;
+      transition: color 0.3s ease;
     }
+    .pi-status-title.success { color: var(--success); }
+    .pi-status-title.error { color: var(--danger); }
 
-    .form-message {
-      font-size: 0.74rem;
-      margin-top: 7px;
-      min-height: 18px;
-      transition: all var(--transition-fast);
-      display: flex;
-      align-items: center;
-      gap: 5px;
-    }
-
-    .form-message.error { color: var(--danger); }
-    .form-message.success { color: var(--success); }
-    .form-message.hint { color: var(--text-muted); }
-
-    .form-message i {
-      font-size: 0.68rem;
-      flex-shrink: 0;
+    .pi-status-desc {
+      font-size: 0.84rem; color: var(--text-secondary);
+      line-height: 1.6; min-height: 42px;
+      margin-bottom: 0;
     }
 
     /* ----------------------------------------
-       DIVIDER
+       ERROR BOX
     ---------------------------------------- */
-    .form-divider {
-      display: flex;
-      align-items: center;
-      gap: 14px;
-      margin: 22px 0;
-    }
-
-    .form-divider::before,
-    .form-divider::after {
-      content: '';
-      flex: 1;
-      height: 1px;
-      background: var(--border-subtle);
-    }
-
-    .form-divider span {
-      font-size: 0.72rem;
-      color: var(--text-muted);
-      white-space: nowrap;
-      text-transform: uppercase;
-      letter-spacing: 0.08em;
-      font-weight: 500;
-    }
-
-    /* ----------------------------------------
-       QUICK WALLET BUTTONS
-    ---------------------------------------- */
-    .quick-wallets {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 8px;
-      margin-bottom: 22px;
-    }
-
-    .quick-wallet-btn {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      padding: 10px 12px;
-      background: rgba(255, 255, 255, 0.02);
-      border: 1px solid var(--border-subtle);
+    .pi-error-box {
+      display: none;
+      background: rgba(239, 68, 68, 0.08);
+      border: 1px solid rgba(239, 68, 68, 0.2);
       border-radius: var(--radius-sm);
-      color: var(--text-secondary);
-      font-size: 0.78rem;
-      font-weight: 500;
-      transition: all var(--transition-fast);
+      padding: 14px 16px; margin: 20px 0;
+      text-align: left;
     }
-
-    .quick-wallet-btn:hover {
-      border-color: var(--border-color);
-      background: var(--accent-dim);
-      color: var(--text-primary);
+    .pi-error-box.visible { display: block; animation: fadeInUp 0.3s ease-out; }
+    .pi-error-label {
+      font-size: 0.7rem; font-weight: 600;
+      color: #fca5a5; text-transform: uppercase;
+      letter-spacing: 0.08em; margin-bottom: 6px;
     }
-
-    .quick-wallet-btn:active {
-      transform: scale(0.97);
-    }
-
-    .quick-wallet-btn .qw-icon {
-      width: 26px; height: 26px;
-      border-radius: 6px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 0.78rem;
-      flex-shrink: 0;
-    }
-
-    .qw-icon.meta {
-      background: rgba(245, 158, 11, 0.15);
-      color: var(--accent-secondary);
-    }
-
-    .qw-icon.wallet {
-      background: var(--accent-dim);
-      color: var(--accent);
+    .pi-error-text {
+      font-size: 0.82rem; color: #e2e8f0;
+      word-break: break-word; line-height: 1.5;
     }
 
     /* ----------------------------------------
-       SUBMIT BUTTON
+       ACTION BUTTONS
     ---------------------------------------- */
-    .btn-login {
-      width: 100%;
-      padding: 14px 20px;
-      background: linear-gradient(135deg, var(--accent), #0d9488);
-      color: var(--bg-primary);
-      font-family: var(--font-body);
-      font-size: 0.9rem;
-      font-weight: 700;
+    .pi-actions {
+      display: none; flex-direction: column; gap: 10px;
+      margin-top: 20px;
+    }
+    .pi-actions.visible { display: flex; animation: fadeInUp 0.3s ease-out; }
+
+    .btn-pi-action {
+      width: 100%; padding: 13px 20px;
       border-radius: var(--radius-md);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 8px;
-      border: none;
-      cursor: pointer;
-      transition: all var(--transition-base);
-      box-shadow: 0 0 20px var(--accent-glow);
-      position: relative;
+      font-family: var(--font-body); font-size: 0.88rem;
+      font-weight: 600; display: flex;
+      align-items: center; justify-content: center; gap: 8px;
+      transition: all var(--transition-base); position: relative;
       overflow: hidden;
     }
-
-    .btn-login::before {
-      content: '';
-      position: absolute;
-      top: 0; left: -100%;
-      width: 100%; height: 100%;
-      background: linear-gradient(90deg, transparent, rgba(255,255,255,0.15), transparent);
+    .btn-pi-action::before {
+      content: ''; position: absolute;
+      top: 0; left: -100%; width: 100%; height: 100%;
+      background: linear-gradient(90deg, transparent, rgba(255,255,255,0.12), transparent);
       transition: left 0.5s ease;
     }
+    .btn-pi-action:hover::before { left: 100%; }
 
-    .btn-login:hover::before {
-      left: 100%;
+    .btn-pi-retry {
+      background: linear-gradient(135deg, var(--accent), #0d9488);
+      color: var(--bg-primary);
+      box-shadow: 0 0 20px var(--accent-glow);
     }
-
-    .btn-login:hover {
+    .btn-pi-retry:hover {
       transform: translateY(-1px);
       box-shadow: 0 0 32px var(--accent-glow), 0 4px 16px rgba(45, 212, 191, 0.2);
     }
+    .btn-pi-retry:active { transform: translateY(0); }
 
-    .btn-login:active {
-      transform: translateY(0);
+    .btn-pi-back {
+      background: transparent;
+      border: 1px solid var(--border-subtle);
+      color: var(--text-secondary);
     }
-
-    .btn-login:disabled {
-      opacity: 0.4;
-      cursor: not-allowed;
-      transform: none;
-      box-shadow: none;
-    }
-
-    .btn-login:disabled::before {
-      display: none;
-    }
-
-    .btn-login .btn-spinner {
-      display: none;
-      width: 16px; height: 16px;
-      border: 2px solid rgba(6, 10, 19, 0.3);
-      border-top-color: var(--bg-primary);
-      border-radius: 50%;
-      animation: spin 0.6s linear infinite;
-    }
-
-    .btn-login.loading .btn-spinner { display: block; }
-    .btn-login.loading .btn-text { display: none; }
-    .btn-login.loading .btn-loading-text { display: inline; }
-    .btn-loading-text { display: none; }
-
-    @keyframes spin {
-      to { transform: rotate(360deg); }
+    .btn-pi-back:hover {
+      border-color: rgba(255,255,255,0.15);
+      color: var(--text-primary);
+      background: rgba(255,255,255,0.03);
     }
 
     /* ----------------------------------------
        SESSION BANNER
     ---------------------------------------- */
     .session-banner {
-      display: none;
-      align-items: center;
-      gap: 10px;
+      display: none; align-items: center; gap: 10px;
       padding: 10px 14px;
       background: rgba(34, 197, 94, 0.08);
       border: 1px solid rgba(34, 197, 94, 0.2);
       border-radius: var(--radius-sm);
-      margin-bottom: 18px;
-      font-size: 0.78rem;
-      color: var(--success);
+      margin-bottom: 18px; font-size: 0.78rem; color: var(--success);
     }
-
+    .session-banner.visible { display: flex; }
     .session-banner i { font-size: 0.9rem; }
-
     .session-banner .wallet-preview {
       font-family: 'Space Grotesk', monospace;
-      font-weight: 600;
-      letter-spacing: 0.02em;
+      font-weight: 600; letter-spacing: 0.02em;
     }
-
     .session-banner .logout-link {
-      margin-left: auto;
-      color: var(--text-muted);
-      font-size: 0.74rem;
-      cursor: pointer;
+      margin-left: auto; color: var(--text-muted);
+      font-size: 0.74rem; cursor: pointer;
       transition: color var(--transition-fast);
-      background: none;
-      border: none;
-      font-family: var(--font-body);
+      background: none; border: none; font-family: var(--font-body);
     }
+    .session-banner .logout-link:hover { color: var(--danger); }
 
-    .session-banner .logout-link:hover {
-      color: var(--danger);
+    /* ----------------------------------------
+       DEBUG LOG
+    ---------------------------------------- */
+    .debug-log {
+      display: none; margin-top: 16px; padding: 10px 12px;
+      background: rgba(0, 0, 0, 0.5);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: var(--radius-sm);
+      font-family: 'Space Grotesk', monospace;
+      font-size: 0.7rem; color: var(--accent);
+      text-align: left; max-height: 130px; overflow-y: auto;
+      line-height: 1.7;
     }
+    .debug-log.visible { display: block; }
+    .debug-log p {
+      margin: 0; padding: 2px 0;
+      border-bottom: 1px solid rgba(255,255,255,0.03);
+    }
+    .debug-log p.err { color: var(--danger); }
 
     /* ----------------------------------------
        CARD FOOTER
     ---------------------------------------- */
     .card-footer {
-      margin-top: 18px;
-      text-align: center;
-      font-size: 0.74rem;
-      color: var(--text-muted);
-      line-height: 1.6;
+      margin-top: 20px; text-align: center;
+      font-size: 0.74rem; color: var(--text-muted); line-height: 1.7;
     }
-
-    .card-footer a {
-      color: var(--accent);
-      font-weight: 500;
-    }
-
-    .card-footer a:hover {
-      text-decoration: underline;
-    }
+    .card-footer a { color: var(--accent); font-weight: 500; }
+    .card-footer a:hover { text-decoration: underline; }
 
     /* ========================================
-       TRUST INDICATORS (di bawah card)
+       TRUST INDICATORS
     ======================================== */
     .trust-row {
-      display: flex;
-      justify-content: center;
-      gap: 20px;
+      display: flex; justify-content: center; gap: 12px;
       margin-top: 24px;
       animation: fadeInUp 0.5s ease-out 0.4s both;
+      flex-wrap: wrap;
     }
-
     .trust-chip {
-      display: inline-flex;
-      align-items: center;
-      gap: 6px;
+      display: inline-flex; align-items: center; gap: 6px;
       padding: 7px 14px;
       background: rgba(255, 255, 255, 0.02);
       border: 1px solid var(--border-subtle);
       border-radius: var(--radius-full);
-      font-size: 0.72rem;
-      font-weight: 500;
-      color: var(--text-muted);
-      white-space: nowrap;
+      font-size: 0.72rem; font-weight: 500;
+      color: var(--text-muted); white-space: nowrap;
     }
-
-    .trust-chip i {
-      font-size: 0.7rem;
-    }
-
+    .trust-chip i { font-size: 0.7rem; }
     .trust-chip .tc-teal { color: var(--accent); }
     .trust-chip .tc-amber { color: var(--accent-secondary); }
     .trust-chip .tc-green { color: var(--success); }
 
     /* ========================================
-       TOAST NOTIFICATIONS (mobile-friendly)
+       TOAST
     ======================================== */
     .toast-container {
-      position: fixed;
-      top: 68px;
-      left: 16px;
-      right: 16px;
-      z-index: 200;
-      display: flex;
-      flex-direction: column;
-      gap: 8px;
-      pointer-events: none;
+      position: fixed; top: 68px; left: 16px; right: 16px;
+      z-index: 200; display: flex; flex-direction: column;
+      gap: 8px; pointer-events: none;
     }
-
     .toast {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      padding: 12px 16px;
-      background: var(--bg-secondary);
+      display: flex; align-items: center; gap: 10px;
+      padding: 12px 16px; background: var(--bg-secondary);
       border: 1px solid var(--border-subtle);
       border-radius: var(--radius-md);
       box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
-      font-size: 0.82rem;
-      color: var(--text-primary);
-      transform: translateY(-20px);
-      opacity: 0;
+      font-size: 0.82rem; color: var(--text-primary);
+      transform: translateY(-20px); opacity: 0;
       transition: all var(--transition-base);
       pointer-events: auto;
     }
-
-    .toast.show {
-      transform: translateY(0);
-      opacity: 1;
-    }
-
-    .toast i {
-      font-size: 1rem;
-      flex-shrink: 0;
-    }
-
+    .toast.show { transform: translateY(0); opacity: 1; }
+    .toast i { font-size: 1rem; flex-shrink: 0; }
     .toast.success { border-left: 3px solid var(--success); }
     .toast.success i { color: var(--success); }
     .toast.error { border-left: 3px solid var(--danger); }
@@ -812,7 +482,7 @@
     .toast.info i { color: var(--info); }
 
     /* ========================================
-       RESPONSIVE — Tablet ke atas
+       RESPONSIVE
     ======================================== */
     @media (min-width: 640px) {
       .login-main { padding: 32px 24px 48px; }
@@ -820,7 +490,6 @@
       .login-card { padding: 32px 28px; }
       .branding-title { font-size: 1.7rem; }
       .card-title { font-size: 1.3rem; }
-      .form-input { font-size: 0.92rem; padding: 14px 46px 14px 44px; }
       .topbar { padding: 0 24px; }
       .topbar-title { font-size: 1.05rem; }
     }
@@ -828,65 +497,42 @@
     @media (min-width: 900px) {
       .login-layout {
         grid-template-columns: 1fr 1fr;
-        max-width: 820px;
-        gap: 48px;
-        align-items: center;
+        max-width: 820px; gap: 48px; align-items: center;
       }
-
       .login-branding {
         text-align: left;
-        display: flex;
-        flex-direction: column;
-        align-items: flex-start;
+        display: flex; flex-direction: column; align-items: flex-start;
       }
-
       .branding-icon-large { margin: 0 0 24px; }
-
       .branding-title { font-size: 2rem; line-height: 1.15; }
-
-      .branding-desc {
-        margin-bottom: 28px;
-        max-width: 360px;
-      }
-
+      .branding-desc { margin-bottom: 28px; max-width: 360px; }
       .trust-row { display: none; }
-
-      /* Tampilkan trust list vertikal di desktop */
       .trust-list {
         display: flex !important;
-        flex-direction: column;
-        gap: 14px;
+        flex-direction: column; gap: 14px;
       }
-
       .trust-item {
-        display: flex;
-        align-items: center;
-        gap: 12px;
-        font-size: 0.88rem;
-        color: var(--text-secondary);
+        display: flex; align-items: center; gap: 12px;
+        font-size: 0.88rem; color: var(--text-secondary);
       }
-
       .trust-icon {
-        width: 32px; height: 32px;
-        border-radius: var(--radius-sm);
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-size: 0.8rem;
-        flex-shrink: 0;
+        width: 32px; height: 32px; border-radius: var(--radius-sm);
+        display: flex; align-items: center; justify-content: center;
+        font-size: 0.8rem; flex-shrink: 0;
       }
-
       .trust-icon.teal { background: var(--accent-dim); color: var(--accent); }
       .trust-icon.amber { background: var(--accent-secondary-dim); color: var(--accent-secondary); }
       .trust-icon.green { background: rgba(34, 197, 94, 0.12); color: var(--success); }
-
       .login-card { padding: 36px 32px; border-radius: var(--radius-xl); }
     }
 
-    /* Trust list tersembunyi di mobile */
     .trust-list { display: none; }
 
-    /* Reduced motion */
+    @media (max-width: 360px) {
+      .login-card { padding: 22px 16px; }
+      .branding-icon-large { width: 48px; height: 48px; font-size: 1.3rem; }
+    }
+
     @media (prefers-reduced-motion: reduce) {
       *, *::before, *::after {
         animation-duration: 0.01ms !important;
@@ -910,7 +556,7 @@
   <!-- Page Wrapper -->
   <div class="page-wrapper">
 
-    <!-- Topbar — Sama dengan dashboard -->
+    <!-- Topbar -->
     <header class="topbar">
       <div class="topbar-left">
         <a href="index.html" class="back-btn" aria-label="Kembali ke beranda">
@@ -919,139 +565,104 @@
         </a>
         <h1 class="topbar-title">Masuk</h1>
       </div>
-      <div class="topbar-right">
-        <!-- Opsional: tombol refresh tidak relevan di login, tapi tetap ada placeholder agar layout konsisten -->
-        <a href="index.html" class="topbar-btn" aria-label="Beranda" title="Beranda">
-          <i class="fa-solid fa-house"></i>
-        </a>
-      </div>
     </header>
 
     <!-- Login Main -->
     <main class="login-main">
       <div class="login-layout">
 
-        <!-- Kiri/Atas: Branding -->
+        <!-- Branding -->
         <div class="login-branding">
-          <div class="branding-icon-large" aria-hidden="true">
-            <i class="fa-solid fa-fingerprint"></i>
-          </div>
+          <div class="branding-icon-large" aria-hidden="true">&pi;</div>
           <h1 class="branding-title">
-            Masuk dengan<br><span class="highlight">Wallet Address</span>
+            Masuk dengan<br><span class="highlight">Pi Network</span>
           </h1>
           <p class="branding-desc">
-            Tidak perlu password. Cukup masukkan alamat wallet Ethereum Anda untuk mengakses dashboard credit score dan analitik lengkap.
+            Hubungkan akun Pi Anda untuk mengakses dashboard credit score dan analitik wallet lengkap. Tanpa password, tanpa private key.
           </p>
 
-          <!-- Trust list: hanya tampil di desktop (≥900px) -->
+          <!-- Trust list: desktop saja -->
           <div class="trust-list">
             <div class="trust-item">
               <div class="trust-icon teal"><i class="fa-solid fa-lock"></i></div>
-              <span>Tanpa private key — hanya alamat publik</span>
+              <span>Otentikasi resmi via Pi SDK</span>
             </div>
             <div class="trust-item">
               <div class="trust-icon amber"><i class="fa-solid fa-bolt"></i></div>
-              <span>Login instan, tanpa verifikasi email</span>
+              <span>Login instan — satu ketukan</span>
             </div>
             <div class="trust-item">
               <div class="trust-icon green"><i class="fa-solid fa-shield-halved"></i></div>
-              <span>Data simulasi — tidak ada risiko keamanan</span>
+              <span>Data on-chain, tidak ada risiko keamanan</span>
             </div>
           </div>
         </div>
 
-        <!-- Kanan/Bawah: Login Card -->
+        <!-- Login Card -->
         <div class="login-card-wrapper">
           <div class="login-card">
+
             <div class="card-header">
               <h2 class="card-title">Masuk ke Dashboard</h2>
-              <p class="card-subtitle">Masukkan alamat wallet Ethereum Anda untuk melanjutkan.</p>
+              <p class="card-subtitle">Menghubungkan melalui Pi Network...</p>
             </div>
 
-            <!-- Banner jika sudah pernah login -->
+            <!-- Banner sesi sebelumnya -->
             <div class="session-banner" id="sessionBanner">
               <i class="fa-solid fa-circle-check"></i>
-              <span>Sesi: <span class="wallet-preview" id="sessionWallet"></span></span>
+              <span>Sesi: <span class="wallet-preview" id="sessionUser"></span></span>
               <button class="logout-link" id="logoutBtn" aria-label="Hapus sesi">Ganti</button>
             </div>
 
-            <!-- Form -->
-            <form id="loginForm" novalidate>
-              <div class="form-group">
-                <label class="form-label" for="walletAddress">Alamat Wallet</label>
-                <div class="input-wrapper">
-                  <i class="fa-solid fa-wallet input-icon"></i>
-                  <input
-                    type="text"
-                    class="form-input"
-                    id="walletAddress"
-                    placeholder="0x..."
-                    maxlength="42"
-                    spellcheck="false"
-                    autocomplete="off"
-                    autocapitalize="off"
-                    aria-describedby="inputMessage"
-                    required
-                  />
-                  <button type="button" class="input-clear" id="inputClear" aria-label="Hapus input">
-                    <i class="fa-solid fa-xmark"></i>
-                  </button>
-                </div>
-                <div class="form-message hint" id="inputMessage">
-                  <i class="fa-solid fa-circle-info"></i>
-                  <span>Format: 0x + 40 karakter hex</span>
-                </div>
+            <!-- Pi Status Area -->
+            <div class="pi-status-area" id="piStatusArea">
+              <div class="pi-spinner-wrapper" id="spinnerWrapper">
+                <div class="pi-spinner-ring" id="spinnerRing"></div>
+                <div class="pi-spinner-icon" id="spinnerIcon">&pi;</div>
               </div>
 
-              <!-- Submit -->
-              <button type="submit" class="btn-login" id="loginBtn" disabled>
-                <span class="btn-text"><i class="fa-solid fa-arrow-right-to-bracket"></i> Masuk</span>
-                <span class="btn-loading-text">Menghubungkan...</span>
-                <div class="btn-spinner"></div>
-              </button>
-            </form>
+              <div class="pi-status-title" id="statusTitle">Menghubungkan...</div>
+              <div class="pi-status-desc" id="statusDesc">Menyiapkan koneksi aman ke Pi Network</div>
 
-            <!-- Divider -->
-            <div class="form-divider">
-              <span>atau cepat</span>
-            </div>
+              <!-- Error Box -->
+              <div class="pi-error-box" id="errorBox">
+                <div class="pi-error-label">Kesalahan Sistem</div>
+                <div class="pi-error-text" id="errorText">-</div>
+              </div>
 
-            <!-- Quick Wallet Buttons -->
-            <div class="quick-wallets">
-              <button type="button" class="quick-wallet-btn" data-wallet="0x742d35Cc6634C0532925a3b844Bc9e7595f2bD18">
-                <span class="qw-icon meta"><i class="fa-brands fa-ethereum"></i></span>
-                <span>Demo A</span>
-              </button>
-              <button type="button" class="quick-wallet-btn" data-wallet="0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045">
-                <span class="qw-icon wallet"><i class="fa-solid fa-user"></i></span>
-                <span>Demo B</span>
-              </button>
-              <button type="button" class="quick-wallet-btn" data-wallet="0xAb5801a7D398351b8bE11C439e05C5B3259aeC9B">
-                <span class="qw-icon meta"><i class="fa-brands fa-ethereum"></i></span>
-                <span>Demo C</span>
-              </button>
-              <button type="button" class="quick-wallet-btn" data-wallet="0x000000000000000000000000000000000000dEaD">
-                <span class="qw-icon wallet"><i class="fa-solid fa-skull"></i></span>
-                <span>Dead Addr</span>
-              </button>
+              <!-- Action Buttons -->
+              <div class="pi-actions" id="actionButtons">
+                <button class="btn-pi-action btn-pi-retry" id="btnRetry">
+                  <i class="fa-solid fa-rotate-right"></i>
+                  <span>Coba Lagi</span>
+                </button>
+                <button class="btn-pi-action btn-pi-back" id="btnBack">
+                  <i class="fa-solid fa-arrow-left"></i>
+                  <span>Kembali ke Beranda</span>
+                </button>
+              </div>
+
+              <!-- Debug Log -->
+              <div class="debug-log" id="debugLog"></div>
             </div>
 
             <!-- Footer -->
             <div class="card-footer">
-              Simulasi login — tidak ada koneksi blockchain nyata.<br>
-              Belum punya akun? <a href="index.html">Mulai dari beranda</a>
+              Login aman via Pi SDK v2.0 — tidak ada data sensitif yang disimpan.<br>
+              Bukan pengguna Pi? <a href="index.html">Kembali ke beranda</a>
             </div>
+
           </div>
 
-          <!-- Trust chips: tampil di mobile/tablet, tersembunyi di desktop -->
+          <!-- Trust chips: mobile/tablet -->
           <div class="trust-row">
             <div class="trust-chip">
               <i class="fa-solid fa-lock tc-teal"></i>
-              <span>Tanpa private key</span>
+              <span>Pi SDK Resmi</span>
             </div>
             <div class="trust-chip">
               <i class="fa-solid fa-bolt tc-amber"></i>
-              <span>Login instan</span>
+              <span>Login Instan</span>
             </div>
             <div class="trust-chip">
               <i class="fa-solid fa-shield-halved tc-green"></i>
@@ -1067,10 +678,18 @@
 
   <script>
     /* ========================================
+       KONFIGURASI
+    ======================================== */
+    var urlParams = new URLSearchParams(window.location.search);
+    var IS_DEBUG = urlParams.get('debug') === 'true'
+      || window.location.hostname === 'localhost'
+      || window.location.hostname === '127.0.0.1';
+
+    var TIMEOUT_MS = 15000;
+
+    /* ========================================
        UTILITAS
     ======================================== */
-    var ethAddressRegex = /^0x[0-9a-fA-F]{40}$/;
-
     function showToast(message, type, duration) {
       type = type || 'info';
       duration = duration || 3500;
@@ -1093,226 +712,223 @@
       }, duration);
     }
 
-    function shortAddress(addr) {
-      if (!addr || addr.length < 10) return addr;
-      return addr.slice(0, 6) + '...' + addr.slice(-4);
+    function logDebug(msg, isError) {
+      console.log(isError ? '[ERROR] ' + msg : '[PI] ' + msg);
+      if (!IS_DEBUG) return;
+      var box = document.getElementById('debugLog');
+      if (!box) return;
+      box.classList.add('visible');
+      var p = document.createElement('p');
+      if (isError) p.className = 'err';
+      p.textContent = '> ' + msg;
+      box.appendChild(p);
+      box.scrollTop = box.scrollHeight;
+    }
+
+    function withTimeout(promise, ms, errorMsg) {
+      return Promise.race([
+        promise,
+        new Promise(function(_, reject) {
+          setTimeout(function() { reject(new Error(errorMsg)); }, ms);
+        })
+      ]);
+    }
+
+    function clearPiAuth() {
+      localStorage.removeItem('whs_pi_user');
+      localStorage.removeItem('whs_pi_token');
+      localStorage.removeItem('pi_user');
+      localStorage.removeItem('pi_auth');
+      sessionStorage.removeItem('whs_pi_user');
     }
 
     /* ========================================
        ELEMEN DOM
     ======================================== */
-    var form = document.getElementById('loginForm');
-    var input = document.getElementById('walletAddress');
-    var clearBtn = document.getElementById('inputClear');
-    var messageEl = document.getElementById('inputMessage');
-    var loginBtn = document.getElementById('loginBtn');
-    var sessionBanner = document.getElementById('sessionBanner');
-    var sessionWallet = document.getElementById('sessionWallet');
-    var logoutBtn = document.getElementById('logoutBtn');
+    var spinnerWrapper = document.getElementById('spinnerWrapper');
+    var spinnerRing    = document.getElementById('spinnerRing');
+    var spinnerIcon    = document.getElementById('spinnerIcon');
+    var statusTitle    = document.getElementById('statusTitle');
+    var statusDesc     = document.getElementById('statusDesc');
+    var errorBox       = document.getElementById('errorBox');
+    var errorText      = document.getElementById('errorText');
+    var actionButtons  = document.getElementById('actionButtons');
+    var btnRetry       = document.getElementById('btnRetry');
+    var btnBack        = document.getElementById('btnBack');
+    var sessionBanner  = document.getElementById('sessionBanner');
+    var sessionUser    = document.getElementById('sessionUser');
+    var logoutBtn      = document.getElementById('logoutBtn');
+    var cardSubtitle   = document.querySelector('.card-subtitle');
 
     /* ========================================
-       CEK SESI SEBELUMNYA
+       CEK SESI PI SEBELUMNYA
     ======================================== */
     function checkExistingSession() {
-      var saved = localStorage.getItem('whs_wallet');
-      if (saved && ethAddressRegex.test(saved)) {
-        sessionBanner.style.display = 'flex';
-        sessionWallet.textContent = shortAddress(saved);
-        input.value = saved;
-        validateInput(saved);
-        clearBtn.classList.add('visible');
-      }
-    }
-
-    checkExistingSession();
-
-    /* Logout: hapus sesi */
-    logoutBtn.addEventListener('click', function() {
-      localStorage.removeItem('whs_wallet');
-      localStorage.removeItem('whs_login_time');
-      sessionStorage.removeItem('currentWallet');
-      sessionStorage.removeItem('walletData');
-      sessionBanner.style.display = 'none';
-      input.value = '';
-      validateInput('');
-      clearBtn.classList.remove('visible');
-      setMessage('hint', 'fa-circle-info', 'Format: 0x + 40 karakter hex');
-      showToast('Sesi sebelumnya dihapus', 'info', 2500);
-      input.focus();
-    });
-
-    /* ========================================
-       VALIDASI INPUT REAL-TIME
-    ======================================== */
-    function validateInput(val) {
-      var trimmed = val.trim();
-      input.classList.remove('valid', 'invalid');
-
-      if (trimmed.length > 0) {
-        clearBtn.classList.add('visible');
-      } else {
-        clearBtn.classList.remove('visible');
-      }
-
-      if (trimmed.length === 0) {
-        loginBtn.disabled = true;
-        return false;
-      }
-
-      if (!trimmed.startsWith('0x')) {
-        input.classList.add('invalid');
-        setMessage('error', 'fa-circle-xmark', 'Alamat harus dimulai dengan 0x');
-        loginBtn.disabled = true;
-        return false;
-      }
-
-      if (trimmed.length < 42) {
-        var remaining = 42 - trimmed.length;
-        setMessage('hint', 'fa-circle-info', remaining + ' karakter lagi (' + trimmed.length + '/42)');
-        loginBtn.disabled = true;
-        return false;
-      }
-
-      if (trimmed.length > 42) {
-        input.classList.add('invalid');
-        setMessage('error', 'fa-circle-xmark', 'Alamat terlalu panjang (maks 42 karakter)');
-        loginBtn.disabled = true;
-        return false;
-      }
-
-      if (ethAddressRegex.test(trimmed)) {
-        input.classList.add('valid');
-        setMessage('success', 'fa-circle-check', 'Alamat valid — siap masuk');
-        loginBtn.disabled = false;
-        return true;
-      } else {
-        input.classList.add('invalid');
-        setMessage('error', 'fa-circle-xmark', 'Karakter tidak valid. Gunakan 0-9 dan a-f saja.');
-        loginBtn.disabled = true;
-        return false;
-      }
-    }
-
-    function setMessage(type, icon, text) {
-      messageEl.className = 'form-message ' + type;
-      messageEl.innerHTML = '<i class="fa-solid ' + icon + '"></i><span>' + text + '</span>';
-    }
-
-    /* Event: input */
-    input.addEventListener('input', function() {
-      validateInput(input.value);
-    });
-
-    /* Event: paste — bersihkan spasi */
-    input.addEventListener('paste', function(e) {
-      e.preventDefault();
-      var pasted = (e.clipboardData || window.clipboardData).getData('text').trim();
-      input.value = pasted;
-      validateInput(pasted);
-    });
-
-    /* Event: clear button */
-    clearBtn.addEventListener('click', function() {
-      input.value = '';
-      validateInput('');
-      setMessage('hint', 'fa-circle-info', 'Format: 0x + 40 karakter hex');
-      input.focus();
-    });
-
-    /* Event: Enter */
-    input.addEventListener('keydown', function(e) {
-      if (e.key === 'Enter') {
-        e.preventDefault();
-        if (!loginBtn.disabled) {
-          form.dispatchEvent(new Event('submit', { cancelable: true }));
-        }
-      }
-    });
-
-    /* ========================================
-       QUICK WALLET BUTTONS
-    ======================================== */
-    var qwBtns = document.querySelectorAll('.quick-wallet-btn');
-    for (var i = 0; i < qwBtns.length; i++) {
-      qwBtns[i].addEventListener('click', function() {
-        var wallet = this.getAttribute('data-wallet');
-        input.value = wallet;
-        validateInput(wallet);
-
-        var btn = this;
-        btn.style.transform = 'scale(0.96)';
-        setTimeout(function() { btn.style.transform = ''; }, 120);
-
-        setTimeout(function() {
-          if (!loginBtn.disabled) {
-            form.dispatchEvent(new Event('submit', { cancelable: true }));
+      try {
+        var saved = localStorage.getItem('whs_pi_user');
+        if (saved) {
+          var user = JSON.parse(saved);
+          if (user && user.username) {
+            sessionBanner.classList.add('visible');
+            sessionUser.textContent = '@' + user.username;
+            return true;
           }
-        }, 300);
-      });
+        }
+      } catch (e) {}
+      return false;
     }
 
-    /* ========================================
-       FORM SUBMIT — LOGIN LOGIC
-    ======================================== */
-    form.addEventListener('submit', function(e) {
-      e.preventDefault();
-
-      var address = input.value.trim();
-
-      if (!validateInput(address)) {
-        showToast('Masukkan alamat wallet yang valid', 'error');
-        return;
-      }
-
-      /* Cek burn/dead address */
-      var deadAddresses = [
-        '0x0000000000000000000000000000000000000000',
-        '0x0000000000000000000000000000000000000001',
-        '0x000000000000000000000000000000000000dead'
-      ];
-      var isDead = false;
-      for (var d = 0; d < deadAddresses.length; d++) {
-        if (address.toLowerCase() === deadAddresses[d]) {
-          isDead = true;
-          break;
-        }
-      }
-
-      if (isDead) {
-        showToast('Burn/dead address tidak bisa login', 'error', 4000);
-        input.classList.add('invalid');
-        setMessage('error', 'fa-circle-xmark', 'Burn address tidak memiliki aktivitas on-chain');
-        loginBtn.disabled = true;
-        return;
-      }
-
-      /* Loading state */
-      loginBtn.classList.add('loading');
-      loginBtn.disabled = true;
-      input.disabled = true;
-
-      /* Simulasi delay */
+    if (checkExistingSession()) {
+      statusTitle.textContent = 'Sesi ditemukan';
+      statusDesc.textContent = 'Mengalihkan ke dashboard...';
+      spinnerRing.classList.add('success');
+      spinnerIcon.classList.add('success');
       setTimeout(function() {
-        localStorage.setItem('whs_wallet', address);
-        localStorage.setItem('whs_login_time', new Date().toISOString());
-        sessionStorage.setItem('currentWallet', address);
+        window.location.href = 'dashboard.html';
+      }, 1000);
+    } else {
+      window.addEventListener('load', runPiLogin);
+    }
 
-        showToast('Berhasil masuk sebagai ' + shortAddress(address), 'success', 2500);
+    logoutBtn.addEventListener('click', function() {
+      clearPiAuth();
+      sessionBanner.classList.remove('visible');
+      showToast('Sesi Pi dihapus', 'info', 2000);
+      runPiLogin();
+    });
+
+    /* ========================================
+       TOMBOL AKSI
+    ======================================== */
+    btnRetry.addEventListener('click', function() {
+      clearPiAuth();
+      window.location.href = window.location.pathname + '?retry=true';
+    });
+
+    btnBack.addEventListener('click', function() {
+      window.location.href = 'index.html';
+    });
+
+    /* ========================================
+       PROSES LOGIN PI NETWORK
+    ======================================== */
+    async function runPiLogin() {
+      if (urlParams.get('retry') === 'true') {
+        logDebug('Deteksi retry=true — membersihkan sesi auth lama');
+        clearPiAuth();
+        window.history.replaceState({}, document.title, window.location.pathname);
+      }
+
+      spinnerWrapper.style.display = 'flex';
+      spinnerRing.className = 'pi-spinner-ring';
+      spinnerIcon.className = 'pi-spinner-icon';
+      statusTitle.className = 'pi-status-title';
+      statusTitle.textContent = 'Menghubungkan...';
+      statusDesc.textContent = 'Menyiapkan koneksi aman ke Pi Network';
+      cardSubtitle.textContent = 'Menghubungkan melalui Pi Network...';
+      errorBox.classList.remove('visible');
+      actionButtons.classList.remove('visible');
+
+      try {
+        logDebug('Mendeteksi environment...');
+        var ua = navigator.userAgent || '';
+
+        if (typeof Pi === 'undefined') {
+          if (!ua.includes('PiBrowser') && !ua.includes('piebrowser')) {
+            throw new Error(
+              'Halaman ini harus dibuka di dalam Pi Browser. ' +
+              'Buka aplikasi Pi di ponsel Anda, lalu akses URL ini dari sana.'
+            );
+          } else {
+            throw new Error(
+              'Pi SDK tidak terdeteksi. Pastikan koneksi internet stabil dan coba lagi.'
+            );
+          }
+        }
+
+        logDebug('Memulai Pi.init()...');
+        statusTitle.textContent = 'Inisialisasi...';
+        statusDesc.textContent = 'Menghubungkan ke Pi Network';
+
+        var isSandbox = (typeof window.APP_CONFIG !== 'undefined')
+          ? window.APP_CONFIG.sandbox
+          : true;
+
+        await withTimeout(
+          Pi.init({ version: '2.0', sandbox: isSandbox }),
+          TIMEOUT_MS,
+          'Pi.init() timeout — koneksi ke Pi Network terlalu lama. Periksa jaringan Anda.'
+        );
+        logDebug('Pi.init() berhasil (sandbox=' + isSandbox + ')');
+
+        logDebug('Memulai Pi.authenticate()...');
+        statusTitle.textContent = 'Autentikasi...';
+        statusDesc.textContent = 'Mohon izinkan akses akun Pi Anda di popup yang muncul';
+        cardSubtitle.textContent = 'Menunggu persetujuan Anda...';
+
+        var scopes = (typeof window.APP_CONFIG !== 'undefined' && window.APP_CONFIG.authScopes)
+          ? window.APP_CONFIG.authScopes
+          : ['username', 'payments'];
+
+        var onIncompletePaymentFound = function(payment) {
+          logDebug('Incomplete payment ditemukan: ' + payment.identifier);
+          if (payment && payment.identifier) {
+            localStorage.setItem('whs_incomplete_payment', payment.identifier);
+          }
+        };
+
+        var auth = await withTimeout(
+          Pi.authenticate(scopes, onIncompletePaymentFound),
+          TIMEOUT_MS * 2,
+          'Autentikasi timeout — Anda tidak menyetujui dalam waktu yang ditentukan. Coba lagi.'
+        );
+
+        if (!auth || !auth.user || !auth.user.username) {
+          throw new Error('Respons autentikasi tidak valid: data user kosong.');
+        }
+
+        if (!auth.accessToken) {
+          throw new Error('Autentikasi berhasil tetapi access token tidak diterima.');
+        }
+
+        logDebug('Auth berhasil! User: @' + auth.user.username);
+
+        localStorage.setItem('whs_pi_user', JSON.stringify(auth.user));
+        localStorage.setItem('whs_pi_token', auth.accessToken);
+        sessionStorage.setItem('whs_pi_user', JSON.stringify(auth.user));
+
+        spinnerRing.classList.add('success');
+        spinnerIcon.classList.add('success');
+        statusTitle.classList.add('success');
+        statusTitle.textContent = 'Berhasil!';
+        statusDesc.textContent = 'Selamat datang, @' + auth.user.username;
+        cardSubtitle.textContent = 'Login berhasil';
+
+        showToast('Login berhasil sebagai @' + auth.user.username, 'success', 2500);
 
         setTimeout(function() {
           window.location.href = 'dashboard.html';
-        }, 800);
-      }, 1500);
-    });
+        }, 1500);
 
-    /* ========================================
-       FOCUS OTOMATIS
-    ======================================== */
-    setTimeout(function() {
-      if (!sessionBanner.style.display || sessionBanner.style.display === 'none') {
-        input.focus();
+      } catch (err) {
+        logDebug(err.message, true);
+
+        spinnerRing.classList.add('error');
+        spinnerIcon.classList.add('error');
+        statusTitle.classList.add('error');
+        statusTitle.textContent = 'Login Gagal';
+        statusDesc.textContent = 'Terjadi kendala saat menyambungkan ke Pi Network.';
+        cardSubtitle.textContent = 'Koneksi gagal';
+
+        errorText.textContent = err.message;
+        errorBox.classList.add('visible');
+        actionButtons.classList.add('visible');
+
+        spinnerWrapper.style.display = 'none';
+
+        showToast('Login gagal: ' + err.message, 'error', 4500);
       }
-    }, 700);
+    }
   </script>
 
 </body>
