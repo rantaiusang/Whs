@@ -3,128 +3,68 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>WHS Payment Test</title>
-
-  <!-- 1. PI SDK (WAJIB PERTAMA) -->
-  <script src="https://sdk.minepi.com/pi-sdk.js"></script>
-
-  <!-- 2. CONFIG (KEDUA) -->
-  <script src="config.js"></script>
+  <title>WHS Debug</title>
 
   <style>
-    body { font-family: sans-serif; padding: 20px; }
-    button { padding: 12px 24px; font-size: 16px; cursor: pointer; margin: 5px; }
-    #status { margin-top: 20px; font-weight: bold; color: #333; }
-    .debug-box { background: #f4f4f4; padding: 10px; margin-top: 10px; font-family: monospace; font-size: 12px; white-space: pre-wrap; word-wrap: break-word; }
+    body { font-family: monospace; padding: 20px; font-size: 14px; }
+    .box { background: #222; color: #0f0; padding: 15px; margin: 10px 0; border-radius: 8px; white-space: pre-wrap; word-wrap: break-word; }
   </style>
 </head>
 <body>
 
-  <h2>💳 WHS Payment Test</h2>
+  <h2>🔧 Deep Debug Mode</h2>
+  <div id="log" class="box">Memulai pengecekan...\n</div>
 
-  <div>
-    <button onclick="cekSDK()">🔍 Cek SDK</button>
-    <button onclick="pay()" style="background: #6B3FA0; color: white; border: none; border-radius: 8px;">
-      💰 Bayar 1 Pi
-    </button>
-  </div>
+  <!-- 1. LOAD SDK -->
+  <script src="https://sdk.minepi.com/pi-sdk.js" 
+          onload="document.getElementById('log').innerText += '✅ pi-sdk.js SUKSES DI-LOAD\n'" 
+          onerror="document.getElementById('log').innerText += '❌ pi-sdk.js GAGAL DI-LOAD!\n'"></script>
 
-  <p id="status">Ready</p>
-  
-  <div id="debugBox" class="debug-box" style="display:none;"></div>
+  <!-- 2. LOAD CONFIG -->
+  <script src="config.js"></script>
 
+  <!-- 3. DEBUG SCRIPT -->
   <script>
-    // Helper untuk tampilkan debug di layar HP
-    function showDebug(msg) {
-      const box = document.getElementById('debugBox');
-      box.style.display = 'block';
-      box.innerText += msg + '\n';
+    const logEl = document.getElementById('log');
+    
+    function log(msg) {
+      logEl.innerText += msg + "\n";
       console.log(msg);
     }
 
-    // Fungsi cek SDK
-    function cekSDK() {
-      const data = {
-        'Pi SDK Ada': typeof Pi !== 'undefined',
-        'Config Ready': window.APP_CONFIG?.isPiReady(),
-        'Sandbox': window.APP_CONFIG?.IS_SANDBOX,
-        'URL': window.location.href
-      };
-      showDebug("=== CEK SDK ===\n" + JSON.stringify(data, null, 2));
-      alert(JSON.stringify(data, null, 2));
-    }
-
-    // Fungsi Payment Utama
-    async function pay() {
-      const statusEl = document.getElementById('status');
-      const debugEl = document.getElementById('debugBox');
-      debugEl.style.display = 'block';
-      debugEl.innerText = ''; // Reset debug
-
-      try {
-        showDebug("🔄 Mulai proses payment...");
-        statusEl.innerText = "Mengautentikasi...";
-
-        // 1. AUTHENTICATE (WAJIB: scope 'payments')
-        const auth = await Pi.authenticate(['username', 'payments']);
-        showDebug("✅ Auth sukses. User: " + (auth.user?.username || 'unknown'));
-        
-        const username = auth.user?.username || "unknown";
-        statusEl.innerText = "Membuka dialog payment...";
-
-        // 2. CREATE PAYMENT
-        showDebug("🔄 Memanggil Pi.createPayment...");
-        
-        await Pi.createPayment({
-          amount: "1.00", // WAJIB STRING
-          memo: "WHS Test Payment",
-          metadata: { user: username }
-        }, {
-          
-          onReadyForServerApproval: function(paymentId) {
-            showDebug("✅ onReadyForServerApproval: " + paymentId);
-            statusEl.innerText = "Menunggu approval...";
-            // TODO: Kirim paymentId ke Supabase ENDPOINTS.PAYMENT
-          },
-
-          onReadyForServerCompletion: function(paymentId, txid) {
-            showDebug("✅ onReadyForServerCompletion: " + paymentId + " | TXID: " + txid);
-            statusEl.innerText = "Payment BERHASIL ✔";
-            // TODO: Kirim txid ke Supabase untuk finalisasi
-          },
-
-          onCancel: function(paymentId) {
-            showDebug("❌ onCancel: " + paymentId);
-            statusEl.innerText = "Dibatalkan user.";
-          },
-
-          onError: function(error) {
-            // 🔥 INI YANG PENTING!
-            let pesan = "Unknown error";
-            if (error && error.message) {
-              pesan = error.message;
-            } else if (typeof error === 'string') {
-              pesan = error;
-            } else {
-              pesan = JSON.stringify(error);
-            }
-            
-            showDebug("❌❌❌ PAYMENT onError: " + pesan);
-            statusEl.innerText = "Payment Error!";
-            alert("ERROR PAYMENT:\n\n" + pesan);
-          }
-
-        });
-
-        showDebug("✅ createPayment dipanggil tanpa error blocking.");
-
-      } catch (err) {
-        let pesan = err.message || JSON.stringify(err);
-        showDebug("❌❌❌ CATCH ERROR: " + pesan);
-        statusEl.innerText = "Gagal: " + pesan;
-        alert("FATAL ERROR:\n\n" + pesan);
+    // Tunggu halaman siap total
+    window.addEventListener('load', function() {
+      log("=================================");
+      log("HALAMAN SUDAH 100% LOADED");
+      log("=================================");
+      
+      log("Cek window.Pi: " + typeof window.Pi);
+      log("Cek __PI_READY__: " + window.__PI_READY__);
+      
+      // Jika Pi ada, cek isinya apa saja
+      if (typeof window.Pi !== 'undefined') {
+        log("Isi Pi: " + Object.keys(window.Pi).join(", "));
+      } else {
+        log("⚠️ PERINGATAN: Object Pi TIDAK ADA!");
+        log("Cek navigator.userAgent: " + navigator.userAgent);
       }
-    }
+
+      // Tombol manual testing
+      const btn = document.createElement('button');
+      btn.innerText = "COBA PI.INIT() MANUAL";
+      btn.style.marginTop = "20px";
+      btn.style.padding = "15px";
+      btn.onclick = function() {
+        try {
+          log("Memanggil Pi.init()...");
+          Pi.init({ version: "2.0", sandbox: true });
+          log("✅ Pi.init() SUKSES!");
+        } catch(e) {
+          log("❌ Pi.init() ERROR: " + e.message);
+        }
+      };
+      document.body.appendChild(btn);
+    });
   </script>
 
 </body>
