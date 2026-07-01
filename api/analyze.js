@@ -1,31 +1,42 @@
-// api/analyze.js
-import { fetchRealOnChainData, analyzeWallet } from '../lib/blockchain';
-
 export default async function handler(req, res) {
-  if (req.method !== 'GET') return res.status(405).json({ error: 'Method not allowed' });
+  if (req.method !== 'GET') {
+    return res.status(405).json({ error: 'Method not allowed' });
+  }
 
   const wallet = req.query.wallet;
-  if (!wallet || !wallet.startsWith('0x')) {
-    return res.status(400).json({ error: 'Valid EVM wallet address required' });
+
+  if (!wallet || !wallet.startsWith('0x') || wallet.length !== 42) {
+    return res.status(400).json({ error: 'Alamat EVM tidak valid' });
+  }
+
+  const BSC_API_KEY = process.env.BSC_API_KEY;
+
+  if (!BSC_API_KEY) {
+    return res.status(500).json({ error: "API key belum diset di Vercel" });
   }
 
   try {
-    // 1. HUBUNGI BLOCKCHAIN EXPLORER (BSC Scan)
-    const rawTxs = await fetchRealOnChainData(wallet);
+    const safeWallet = encodeURIComponent(wallet);
 
-    // 2. JALANKAN SCORING ENGINE
-    const analysis = analyzeWallet(rawTxs);
+    const url = `https://api.bscscan.com/api?module=account&action=txlist&address=${safeWallet}&startblock=0&endblock=99999999&sort=asc&apikey=${BSC_API_KEY}`;
 
-    // 3. KIRIM KE FRONTEND
-    res.status(200).json({
-      source: 'bsc_blockchain_real', // Bukti ini bukan fallback
-      wallet: wallet,
-      analyzedAt: new Date().toISOString(),
-      ...analysis
-    });
+    const response = await fetch(url);
+    const data = await response.json();
+
+    if (data.status === '0' && data.message === 'No transactions found') {
+      return res.status(200).json({ txs: [] });
+    }
+
+    if (!data || data.status !== '1') {
+      return res.status(500).json({
+        error: "BscScan error",
+        detail: data
+      });
+    }
+
+    return res.status(200).json({ txs: data.result });
 
   } catch (error) {
-    console.error('[API Error]', error.message);
-    res.status(500).json({ error: 'Gagal menganalisis on-chain data: ' + error.message });
+    return res.status(500).json({ error: error.message });
   }
 }
