@@ -1,0 +1,1374 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0" />
+  <title>Dashboard — Wallet Health Score</title>
+  <meta name="robots" content="noindex, nofollow" />
+
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=DM+Sans:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
+
+  <style>
+    :root {
+      --bg-primary: #060a13;
+      --bg-secondary: #0c1222;
+      --bg-card: rgba(14, 22, 42, 0.65);
+      --bg-card-hover: rgba(20, 32, 58, 0.75);
+      --bg-input: rgba(6, 10, 19, 0.6);
+      --border-color: rgba(45, 212, 191, 0.12);
+      --border-color-hover: rgba(45, 212, 191, 0.3);
+      --border-subtle: rgba(255, 255, 255, 0.06);
+      --accent: #2dd4bf;
+      --accent-dim: rgba(45, 212, 191, 0.12);
+      --accent-glow: rgba(45, 212, 191, 0.2);
+      --accent-secondary: #f59e0b;
+      --accent-secondary-dim: rgba(245, 158, 11, 0.12);
+      --text-primary: #f1f5f9;
+      --text-secondary: #94a3b8;
+      --text-muted: #475569;
+      --text-accent: #2dd4bf;
+      --success: #22c55e;
+      --warning: #f59e0b;
+      --danger: #ef4444;
+      --info: #3b82f6;
+      --radius-sm: 8px;
+      --radius-md: 12px;
+      --radius-lg: 16px;
+      --radius-xl: 24px;
+      --radius-full: 9999px;
+      --font-display: 'Space Grotesk', sans-serif;
+      --font-body: 'DM Sans', sans-serif;
+      --shadow-card: 0 4px 24px rgba(0, 0, 0, 0.3);
+      --shadow-glow: 0 0 40px rgba(45, 212, 191, 0.06);
+      --topbar-height: 56px;
+      --transition-fast: 150ms cubic-bezier(0.4, 0, 0.2, 1);
+      --transition-base: 250ms cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+    html { scroll-behavior: smooth; -webkit-font-smoothing: antialiased; }
+    body {
+      font-family: var(--font-body);
+      background: var(--bg-primary);
+      color: var(--text-primary);
+      line-height: 1.6;
+      overflow-x: hidden;
+      min-height: 100vh;
+    }
+    a { color: inherit; text-decoration: none; transition: color var(--transition-fast); }
+    button { font-family: var(--font-body); cursor: pointer; border: none; outline: none; background: none; }
+
+    .bg-atmosphere {
+      position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+      pointer-events: none; z-index: 0; overflow: hidden;
+    }
+    .bg-atmosphere .orb {
+      position: absolute; border-radius: 50%; filter: blur(100px); opacity: 0.18;
+      animation: orbFloat 25s ease-in-out infinite;
+      will-change: transform;
+    }
+    .bg-atmosphere .orb-1 {
+      width: 320px; height: 320px;
+      background: radial-gradient(circle, rgba(45, 212, 191, 0.12) 0%, transparent 70%);
+      top: -8%; left: -5%;
+    }
+    .bg-atmosphere .orb-2 {
+      width: 260px; height: 260px;
+      background: radial-gradient(circle, rgba(245, 158, 11, 0.06) 0%, transparent 70%);
+      bottom: -8%; right: -5%;
+      animation-delay: -10s; animation-duration: 28s;
+    }
+    @keyframes orbFloat {
+      0%, 100% { transform: translate(0, 0) scale(1); }
+      33% { transform: translate(15px, -20px) scale(1.03); }
+      66% { transform: translate(-10px, 10px) scale(0.97); }
+    }
+
+    .topbar {
+      height: var(--topbar-height);
+      padding: 0 16px;
+      display: flex; align-items: center; justify-content: space-between;
+      border-bottom: 1px solid var(--border-subtle);
+      background: rgba(6, 10, 19, 0.85);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      position: sticky; top: 0; z-index: 40;
+    }
+    .topbar-left {
+      display: flex; align-items: center; gap: 12px;
+      min-width: 0; flex: 1;
+    }
+    .back-btn {
+      display: inline-flex; align-items: center; gap: 6px;
+      padding: 8px 14px;
+      font-size: 0.82rem; font-weight: 600;
+      color: var(--accent);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-full);
+      transition: all var(--transition-fast);
+      white-space: nowrap;
+      flex-shrink: 0;
+      background: var(--accent-dim);
+    }
+    .back-btn:hover {
+      background: rgba(45, 212, 191, 0.18);
+      border-color: var(--border-color-hover);
+      box-shadow: 0 0 16px var(--accent-glow);
+    }
+    .back-btn:active { transform: scale(0.97); }
+    .back-btn i { font-size: 0.8rem; }
+    .topbar-title {
+      font-family: var(--font-display);
+      font-size: 1rem; font-weight: 600;
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+      min-width: 0;
+    }
+    .topbar-right {
+      display: flex; align-items: center; gap: 4px;
+      flex-shrink: 0;
+    }
+    .topbar-btn {
+      width: 36px; height: 36px;
+      border-radius: var(--radius-sm);
+      display: flex; align-items: center; justify-content: center;
+      color: var(--text-muted);
+      font-size: 0.9rem;
+      transition: all var(--transition-fast);
+      position: relative;
+    }
+    .topbar-btn:hover {
+      color: var(--text-primary);
+      background: rgba(255, 255, 255, 0.05);
+    }
+    .topbar-btn .notif-dot {
+      position: absolute; top: 5px; right: 5px;
+      width: 6px; height: 6px;
+      background: var(--danger);
+      border-radius: 50%;
+      border: 1.5px solid var(--bg-primary);
+    }
+    .btn-logout {
+      display: inline-flex; align-items: center; gap: 4px;
+      padding: 6px 10px;
+      font-size: 0.78rem; font-weight: 500;
+      color: var(--text-muted);
+      border-radius: var(--radius-full);
+      transition: all var(--transition-fast);
+      white-space: nowrap;
+    }
+    .btn-logout:hover {
+      color: var(--danger);
+      background: rgba(239, 68, 68, 0.08);
+    }
+    .btn-logout .logout-text { display: none; }
+
+    .page-content {
+      padding: 20px 16px 32px;
+      position: relative; z-index: 1;
+    }
+    .wallet-header {
+      display: flex; flex-direction: column;
+      gap: 14px;
+      margin-bottom: 20px;
+    }
+    .wallet-header-top {
+      display: flex; align-items: center; gap: 12px;
+    }
+    .wallet-avatar-lg {
+      width: 44px; height: 44px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, var(--accent), #0d9488);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 0.95rem; color: var(--bg-primary);
+      font-family: var(--font-display); font-weight: 700;
+      box-shadow: 0 0 20px var(--accent-glow);
+      flex-shrink: 0;
+    }
+    .wallet-header-info { flex: 1; min-width: 0; }
+    .wallet-header-info h2 {
+      font-family: var(--font-display);
+      font-size: 0.92rem; font-weight: 600;
+      letter-spacing: 0.02em;
+      word-break: break-all;
+      line-height: 1.35;
+    }
+    .wallet-header-meta {
+      display: flex; flex-wrap: wrap; align-items: center; gap: 10px;
+      margin-top: 4px; font-size: 0.75rem; color: var(--text-muted);
+    }
+    .wallet-header-meta span {
+      display: inline-flex; align-items: center; gap: 4px;
+    }
+    .wallet-header-meta i { font-size: 0.7rem; }
+    .wallet-header-bottom {
+      display: flex; align-items: center; gap: 10px;
+      flex-wrap: wrap;
+    }
+    .copy-btn {
+      display: inline-flex; align-items: center; gap: 5px;
+      padding: 6px 12px;
+      font-size: 0.75rem; font-weight: 500;
+      color: var(--text-muted);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-full);
+      transition: all var(--transition-fast);
+    }
+    .copy-btn:hover {
+      color: var(--accent);
+      border-color: var(--border-color);
+      background: var(--accent-dim);
+    }
+    .sim-badge {
+      display: inline-flex; align-items: center; gap: 5px;
+      padding: 5px 12px;
+      font-size: 0.7rem; font-weight: 500;
+      color: var(--text-muted);
+      background: rgba(255, 255, 255, 0.03);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-full);
+    }
+    .sim-badge i { font-size: 0.65rem; }
+    .status-badge {
+      display: inline-flex; align-items: center; gap: 6px;
+      padding: 6px 14px;
+      border-radius: var(--radius-full);
+      font-size: 0.78rem; font-weight: 600;
+      letter-spacing: 0.02em;
+    }
+    .status-badge i { font-size: 0.7rem; }
+
+    .stats-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+      margin-bottom: 20px;
+    }
+    .stat-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-md);
+      padding: 16px;
+      position: relative; overflow: hidden;
+      transition: all var(--transition-base);
+    }
+    .stat-card::before {
+      content: '';
+      position: absolute; top: 0; left: 0; right: 0;
+      height: 2px;
+      opacity: 0; transition: opacity var(--transition-base);
+    }
+    .stat-card:active {
+      border-color: var(--border-color);
+      box-shadow: var(--shadow-card);
+    }
+    .stat-card:active::before { opacity: 1; }
+    .stat-card.accent::before { background: linear-gradient(90deg, var(--accent), transparent); }
+    .stat-card.green::before { background: linear-gradient(90deg, var(--success), transparent); }
+    .stat-card.amber::before { background: linear-gradient(90deg, var(--warning), transparent); }
+    .stat-card.red::before { background: linear-gradient(90deg, var(--danger), transparent); }
+    .stat-card-header {
+      display: flex; align-items: center; justify-content: space-between;
+      margin-bottom: 12px;
+    }
+    .stat-card-label {
+      font-size: 0.75rem; font-weight: 500;
+      color: var(--text-muted);
+    }
+    .stat-card-icon {
+      width: 30px; height: 30px;
+      border-radius: var(--radius-sm);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 0.78rem;
+    }
+    .stat-card.accent .stat-card-icon { background: var(--accent-dim); color: var(--accent); }
+    .stat-card.green .stat-card-icon { background: rgba(34,197,94,0.12); color: var(--success); }
+    .stat-card.amber .stat-card-icon { background: var(--accent-secondary-dim); color: var(--warning); }
+    .stat-card.red .stat-card-icon { background: rgba(239,68,68,0.12); color: var(--danger); }
+    .stat-card-value {
+      font-family: var(--font-display);
+      font-size: 1.5rem; font-weight: 700;
+      line-height: 1; margin-bottom: 6px;
+    }
+    .stat-card.accent .stat-card-value { color: var(--accent); }
+    .stat-card-change {
+      display: inline-flex; align-items: center; gap: 3px;
+      font-size: 0.7rem; font-weight: 600;
+      padding: 2px 7px; border-radius: var(--radius-full);
+    }
+    .stat-card-change.up { color: var(--success); background: rgba(34, 197, 94, 0.1); }
+    .stat-card-change.down { color: var(--danger); background: rgba(239, 68, 68, 0.1); }
+    .stat-card-change i { font-size: 0.55rem; }
+    .stat-card-sub {
+      font-size: 0.7rem; color: var(--text-muted);
+      margin-top: 5px;
+      line-height: 1.4;
+    }
+
+    .bottom-grid {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 16px;
+    }
+    .card {
+      background: var(--bg-card);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-lg);
+      overflow: hidden;
+    }
+    .card-header {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 16px 18px;
+      border-bottom: 1px solid var(--border-subtle);
+    }
+    .card-title {
+      font-family: var(--font-display);
+      font-size: 0.9rem; font-weight: 600;
+    }
+    .card-action {
+      font-size: 0.78rem; font-weight: 500;
+      color: var(--accent);
+      display: flex; align-items: center; gap: 4px;
+      transition: all var(--transition-fast);
+    }
+    .card-action:hover { gap: 6px; }
+    .card-body { padding: 18px; }
+
+    .breakdown-list { display: flex; flex-direction: column; gap: 18px; }
+    .breakdown-item-label {
+      display: flex; align-items: center; justify-content: space-between;
+      margin-bottom: 7px;
+    }
+    .breakdown-label-text {
+      font-size: 0.8rem; font-weight: 500;
+      color: var(--text-secondary);
+    }
+    .breakdown-label-value {
+      font-family: var(--font-display);
+      font-size: 0.78rem; font-weight: 600;
+    }
+    .breakdown-label-value span {
+      color: var(--text-muted); font-weight: 400; font-size: 0.7rem;
+    }
+    .breakdown-bar {
+      height: 6px;
+      background: rgba(255, 255, 255, 0.04);
+      border-radius: var(--radius-full);
+      overflow: hidden;
+    }
+    .breakdown-bar-fill {
+      height: 100%;
+      border-radius: var(--radius-full);
+      transition: width 1.2s cubic-bezier(0.4, 0, 0.2, 1);
+      width: 0;
+    }
+    .breakdown-bar-fill.teal { background: linear-gradient(90deg, var(--accent), #5eead4); }
+    .breakdown-bar-fill.green { background: linear-gradient(90deg, #16a34a, #4ade80); }
+    .breakdown-bar-fill.amber { background: linear-gradient(90deg, #d97706, #fbbf24); }
+    .breakdown-bar-fill.red { background: linear-gradient(90deg, #dc2626, #f87171); }
+
+    .risk-flags-mini {
+      margin-top: 20px;
+      padding-top: 16px;
+      border-top: 1px solid var(--border-subtle);
+    }
+    .risk-flags-mini-title {
+      font-size: 0.75rem; font-weight: 600;
+      color: var(--text-muted); margin-bottom: 10px;
+      text-transform: uppercase; letter-spacing: 0.06em;
+      display: flex; align-items: center; gap: 6px;
+    }
+    .risk-flags-mini-title i { font-size: 0.7rem; }
+    .risk-flag-item {
+      display: flex; align-items: flex-start; gap: 8px;
+      padding: 10px;
+      background: rgba(239, 68, 68, 0.04);
+      border: 1px solid rgba(239, 68, 68, 0.1);
+      border-radius: var(--radius-sm);
+      margin-bottom: 8px;
+      font-size: 0.78rem;
+      color: var(--text-secondary);
+      line-height: 1.45;
+    }
+    .risk-flag-item i {
+      color: var(--danger);
+      margin-top: 2px; flex-shrink: 0;
+      font-size: 0.7rem;
+    }
+    .risk-flag-severity {
+      display: inline-block;
+      padding: 1px 6px;
+      font-size: 0.6rem; font-weight: 600;
+      text-transform: uppercase; letter-spacing: 0.05em;
+      border-radius: 4px;
+      margin-left: 6px; vertical-align: middle;
+    }
+    .risk-flag-severity.critical { background: rgba(239,68,68,0.2); color: #f87171; }
+    .risk-flag-severity.high { background: rgba(249,115,22,0.2); color: #fb923c; }
+    .risk-flag-severity.medium { background: rgba(245,158,11,0.2); color: #fbbf24; }
+    .risk-flag-severity.low { background: rgba(59,130,246,0.2); color: #60a5fa; }
+    .no-flags {
+      display: flex; align-items: center; gap: 8px;
+      padding: 12px 14px;
+      background: rgba(34, 197, 94, 0.05);
+      border: 1px solid rgba(34, 197, 94, 0.12);
+      border-radius: var(--radius-sm);
+      font-size: 0.8rem; color: var(--success);
+    }
+    .no-flags i { font-size: 0.85rem; }
+
+    .tx-list { display: flex; flex-direction: column; gap: 2px; }
+    .tx-item {
+      display: flex; align-items: center; gap: 12px;
+      padding: 12px 0;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.03);
+    }
+    .tx-item:last-child { border-bottom: none; }
+    .tx-type-badge {
+      display: inline-flex; align-items: center; justify-content: center;
+      width: 34px; height: 34px;
+      border-radius: var(--radius-sm);
+      font-size: 0.75rem;
+      flex-shrink: 0;
+    }
+    .tx-type-badge.send { background: rgba(239,68,68,0.1); color: #f87171; }
+    .tx-type-badge.receive { background: rgba(34,197,94,0.1); color: #4ade80; }
+    .tx-type-badge.swap { background: rgba(168,85,247,0.1); color: #c084fc; }
+    .tx-type-badge.approve { background: rgba(59,130,246,0.1); color: #60a5fa; }
+    .tx-type-badge.stake { background: var(--accent-dim); color: var(--accent); }
+    .tx-type-badge.unstake { background: var(--accent-secondary-dim); color: var(--accent-secondary); }
+    .tx-type-badge.bridge { background: rgba(236,72,153,0.1); color: #f472b6; }
+    .tx-type-badge.mint { background: rgba(34,197,94,0.1); color: #4ade80; }
+    .tx-type-badge.burn { background: rgba(239,68,68,0.1); color: #f87171; }
+    .tx-info { flex: 1; min-width: 0; }
+    .tx-type-label {
+      font-size: 0.8rem; font-weight: 600;
+      text-transform: capitalize;
+    }
+    .tx-addr {
+      font-family: 'Space Grotesk', monospace;
+      font-size: 0.7rem; color: var(--text-muted);
+      margin-top: 1px;
+    }
+    .tx-right { text-align: right; flex-shrink: 0; }
+    .tx-amount {
+      font-family: var(--font-display);
+      font-weight: 600; font-size: 0.82rem;
+      display: block;
+    }
+    .tx-amount.negative { color: #f87171; }
+    .tx-amount.positive { color: #4ade80; }
+    .tx-status-time {
+      display: flex; align-items: center; gap: 6px;
+      justify-content: flex-end;
+      margin-top: 2px;
+    }
+    .tx-status {
+      display: inline-flex; align-items: center; gap: 3px;
+      font-size: 0.68rem; font-weight: 500;
+    }
+    .tx-status.success { color: var(--success); }
+    .tx-status.failed { color: var(--danger); }
+    .tx-status i { font-size: 0.55rem; }
+    .tx-time {
+      font-size: 0.68rem; color: var(--text-muted);
+      white-space: nowrap;
+    }
+    .empty-state {
+      text-align: center; padding: 36px 20px;
+      color: var(--text-muted);
+    }
+    .empty-state i { font-size: 1.8rem; margin-bottom: 10px; opacity: 0.4; display: block; }
+    .empty-state p { font-size: 0.85rem; }
+
+    .toast-container {
+      position: fixed; top: 68px; left: 16px; right: 16px;
+      z-index: 200; display: flex; flex-direction: column; gap: 8px;
+      pointer-events: none;
+    }
+    .toast {
+      display: flex; align-items: center; gap: 10px;
+      padding: 12px 16px;
+      background: var(--bg-secondary);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-md);
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+      font-size: 0.82rem; color: var(--text-primary);
+      transform: translateY(-20px);
+      opacity: 0;
+      transition: all var(--transition-base);
+      pointer-events: auto;
+    }
+    .toast.show { transform: translateY(0); opacity: 1; }
+    .toast i { font-size: 1rem; flex-shrink: 0; }
+    .toast.success { border-left: 3px solid var(--success); }
+    .toast.success i { color: var(--success); }
+    .toast.error { border-left: 3px solid var(--danger); }
+    .toast.error i { color: var(--danger); }
+    .toast.info { border-left: 3px solid var(--info); }
+    .toast.info i { color: var(--info); }
+
+    .guard-screen {
+      display: none;
+      position: fixed; inset: 0; z-index: 500;
+      background: var(--bg-primary);
+      flex-direction: column; align-items: center; justify-content: center;
+      gap: 20px; text-align: center; padding: 24px;
+    }
+    .guard-screen.active { display: flex; }
+    .guard-screen i { font-size: 2.2rem; color: var(--text-muted); opacity: 0.4; }
+    .guard-screen h2 {
+      font-family: var(--font-display);
+      font-size: 1.3rem; font-weight: 600;
+    }
+    .guard-screen p { font-size: 0.9rem; color: var(--text-muted); max-width: 320px; line-height: 1.5; }
+
+    .btn {
+      display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+      font-family: var(--font-body); font-weight: 600; font-size: 0.88rem;
+      padding: 12px 28px; border-radius: var(--radius-full);
+      transition: all var(--transition-base);
+    }
+    .btn-primary {
+      color: var(--bg-primary);
+      background: linear-gradient(135deg, var(--accent), #0d9488);
+      box-shadow: 0 0 20px var(--accent-glow);
+    }
+    .btn-primary:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 0 30px var(--accent-glow), 0 4px 16px rgba(45, 212, 191, 0.2);
+    }
+    .guard-divider {
+      display: flex; align-items: center; gap: 12px;
+      color: var(--text-muted); font-size: 0.75rem; width: 100%; max-width: 280px;
+    }
+    .guard-divider::before, .guard-divider::after {
+      content: ''; flex: 1; height: 1px; background: var(--border-subtle);
+    }
+
+    @media (min-width: 640px) {
+      .page-content { padding: 24px 24px 40px; }
+      .stats-grid { gap: 16px; }
+      .stat-card { padding: 20px; }
+      .stat-card-value { font-size: 1.7rem; }
+      .wallet-header-info h2 { font-size: 1.05rem; word-break: normal; }
+      .wallet-header-top { align-items: center; }
+      .bottom-grid { grid-template-columns: 1fr 1fr; gap: 20px; }
+      .card-body { padding: 22px; }
+      .btn-logout .logout-text { display: inline; }
+      .topbar { padding: 0 24px; }
+    }
+
+    @media (min-width: 900px) {
+      .topbar-title { font-size: 1.15rem; }
+      .stat-card-value { font-size: 1.9rem; }
+      .stats-grid { grid-template-columns: repeat(4, 1fr); }
+    }
+
+    .menu-toggle {
+      width: 36px; height: 36px;
+      border-radius: var(--radius-sm);
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center; gap: 4px;
+      color: var(--text-muted);
+      font-size: 0;
+      transition: all var(--transition-fast);
+    }
+    .menu-toggle:hover {
+      color: var(--text-primary);
+      background: rgba(255, 255, 255, 0.05);
+    }
+    .menu-toggle span {
+      display: block;
+      width: 18px; height: 2px;
+      background: currentColor;
+      border-radius: 2px;
+      transition: all 0.35s cubic-bezier(0.77, 0, 0.175, 1);
+      transform-origin: center;
+    }
+    .menu-toggle.open span:nth-child(1) {
+      transform: translateY(6px) rotate(45deg);
+      background: var(--accent);
+    }
+    .menu-toggle.open span:nth-child(2) {
+      opacity: 0;
+      transform: scaleX(0);
+    }
+    .menu-toggle.open span:nth-child(3) {
+      transform: translateY(-6px) rotate(-45deg);
+      background: var(--accent);
+    }
+
+    .menu-backdrop {
+      position: fixed; inset: 0;
+      background: rgba(0, 0, 0, 0);
+      backdrop-filter: blur(0px);
+      -webkit-backdrop-filter: blur(0px);
+      z-index: 150;
+      pointer-events: none;
+      transition: all 0.45s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    .menu-backdrop.visible {
+      background: rgba(6, 10, 19, 0.85);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      pointer-events: all;
+    }
+
+    .menu-panel {
+      position: fixed;
+      top: 0; right: 0; bottom: 0;
+      width: 280px;
+      max-width: 80vw;
+      background: var(--bg-secondary);
+      border-left: 1px solid var(--border-subtle);
+      z-index: 160;
+      transform: translateX(100%);
+      transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+      display: flex;
+      flex-direction: column;
+      overflow-y: auto;
+      -webkit-overflow-scrolling: touch;
+    }
+    .menu-panel.open {
+      transform: translateX(0);
+    }
+
+    .menu-panel-header {
+      padding: 20px 18px 16px;
+      border-bottom: 1px solid var(--border-subtle);
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      flex-shrink: 0;
+    }
+    .menu-panel-avatar {
+      width: 38px; height: 38px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, var(--accent), #0d9488);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 0.85rem; font-weight: 700;
+      color: var(--bg-primary);
+      font-family: var(--font-display);
+      flex-shrink: 0;
+    }
+    .menu-panel-user { flex: 1; min-width: 0; }
+    .menu-panel-username {
+      font-family: var(--font-display);
+      font-size: 0.9rem; font-weight: 600;
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    }
+    .menu-panel-wallet {
+      font-family: 'Space Grotesk', monospace;
+      font-size: 0.7rem; color: var(--text-muted);
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+      margin-top: 1px;
+    }
+
+    .menu-panel-nav {
+      list-style: none;
+      padding: 12px 10px;
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+    .menu-panel-nav li {
+      opacity: 0;
+      transform: translateX(20px);
+    }
+    .menu-panel.open .menu-panel-nav li {
+      opacity: 1;
+      transform: translateX(0);
+    }
+    .menu-panel.open .menu-panel-nav li:nth-child(1) { transition: opacity 0.3s ease 0.1s, transform 0.3s cubic-bezier(0.4,0,0.2,1) 0.1s; }
+    .menu-panel.open .menu-panel-nav li:nth-child(2) { transition: opacity 0.3s ease 0.14s, transform 0.3s cubic-bezier(0.4,0,0.2,1) 0.14s; }
+    .menu-panel.open .menu-panel-nav li:nth-child(3) { transition: opacity 0.3s ease 0.18s, transform 0.3s cubic-bezier(0.4,0,0.2,1) 0.18s; }
+    .menu-panel.open .menu-panel-nav li:nth-child(4) { transition: opacity 0.3s ease 0.22s, transform 0.3s cubic-bezier(0.4,0,0.2,1) 0.22s; }
+    .menu-panel.open .menu-panel-nav li:nth-child(5) { transition: opacity 0.3s ease 0.26s, transform 0.3s cubic-bezier(0.4,0,0.2,1) 0.26s; }
+    .menu-panel.open .menu-panel-nav li:nth-child(6) { transition: opacity 0.3s ease 0.3s, transform 0.3s cubic-bezier(0.4,0,0.2,1) 0.3s; }
+
+    .menu-panel-nav a {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 11px 14px;
+      font-size: 0.88rem;
+      font-weight: 500;
+      color: var(--text-secondary);
+      border-radius: var(--radius-sm);
+      transition: all 0.2s ease;
+      position: relative;
+      overflow: hidden;
+    }
+    .menu-panel-nav a .m-icon {
+      width: 22px;
+      text-align: center;
+      font-size: 0.9rem;
+      flex-shrink: 0;
+      transition: color 0.2s ease, transform 0.2s ease;
+    }
+    .menu-panel-nav a .m-text {
+      flex: 1;
+    }
+    .menu-panel-nav a .m-arrow {
+      font-size: 0.7rem;
+      color: var(--text-muted);
+      opacity: 0;
+      transform: translateX(-6px);
+      transition: all 0.2s ease;
+    }
+    .menu-panel-nav a:hover,
+    .menu-panel-nav a.active {
+      color: var(--text-primary);
+      background: rgba(255, 255, 255, 0.04);
+    }
+    .menu-panel-nav a:hover .m-icon,
+    .menu-panel-nav a.active .m-icon {
+      color: var(--accent);
+      transform: scale(1.1);
+    }
+    .menu-panel-nav a:hover .m-arrow,
+    .menu-panel-nav a.active .m-arrow {
+      opacity: 1;
+      transform: translateX(0);
+      color: var(--accent);
+    }
+    .menu-panel-nav a.active::before {
+      content: '';
+      position: absolute;
+      left: 0; top: 50%;
+      transform: translateY(-50%) scaleY(0);
+      width: 3px; height: 55%;
+      background: var(--accent);
+      border-radius: 0 3px 3px 0;
+      transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    .menu-panel-nav a.active::before {
+      transform: translateY(-50%) scaleY(1);
+    }
+
+    .menu-panel-divider {
+      height: 1px;
+      margin: 4px 18px 8px;
+      background: linear-gradient(90deg, transparent, var(--border-color), transparent);
+      opacity: 0;
+      transform: scaleX(0);
+      transition: opacity 0.3s ease 0.32s, transform 0.35s cubic-bezier(0.4,0,0.2,1) 0.32s;
+    }
+    .menu-panel.open .menu-panel-divider {
+      opacity: 1;
+      transform: scaleX(1);
+    }
+
+    .menu-panel-footer {
+      padding: 12px 10px 20px;
+      opacity: 0;
+      transform: translateY(12px);
+      transition: opacity 0.3s ease 0.35s, transform 0.3s cubic-bezier(0.4,0,0.2,1) 0.35s;
+      flex-shrink: 0;
+    }
+    .menu-panel.open .menu-panel-footer {
+      opacity: 1;
+      transform: translateY(0);
+    }
+    .menu-panel-footer .btn-logout-panel {
+      display: flex;
+      align-items: center,
+      gap: 10px;
+      width: 100%;
+      padding: 11px 14px;
+      font-size: 0.85rem;
+      font-weight: 500;
+      color: var(--text-muted);
+      border-radius: var(--radius-sm);
+      transition: all 0.2s ease;
+    }
+    .menu-panel-footer .btn-logout-panel:hover {
+      color: var(--danger);
+      background: rgba(239, 68, 68, 0.08);
+    }
+    .menu-panel-footer .btn-logout-panel i {
+      width: 22px;
+      text-align: center;
+      font-size: 0.9rem;
+    }
+    .menu-panel-footer-text {
+      text-align: center;
+      font-size: 0.68rem;
+      color: var(--text-muted);
+      margin-top: 14px;
+      opacity: 0.6;
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after {
+        animation-duration: 0.01ms !important;
+        transition-duration: 0.01ms !important;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <div class="bg-atmosphere" aria-hidden="true">
+    <div class="orb orb-1"></div>
+    <div class="orb orb-2"></div>
+  </div>
+
+  <!-- Guard Screen -->
+  <div class="guard-screen" id="guardScreen">
+    <i class="fa-solid fa-lock"></i>
+    <h2>Belum Masuk</h2>
+    <p id="guardText">Anda harus login terlebih dahulu untuk mengakses dashboard.</p>
+    <a href="login.html" class="btn btn-primary" id="btnGuardManual">
+      <i class="fa-solid fa-arrow-right-to-bracket"></i> Masuk Sekarang
+    </a>
+  </div>
+
+  <div class="toast-container" id="toastContainer" aria-live="polite"></div>
+
+  <div id="mainWrapper" style="display:none;">
+    <header class="topbar">
+      <div class="topbar-left">
+        <a href="index.html" class="back-btn" aria-label="Kembali ke beranda">
+          <i class="fa-solid fa-arrow-left"></i>
+          <span>Kembali</span>
+        </a>
+        <h1 class="topbar-title">Dashboard</h1>
+      </div>
+      <div class="topbar-right">
+        <button class="topbar-btn" aria-label="Notifikasi">
+          <i class="fa-solid fa-bell"></i>
+          <span class="notif-dot"></span>
+        </button>
+        <button class="topbar-btn" id="refreshBtn" aria-label="Refresh data" title="Refresh">
+          <i class="fa-solid fa-arrows-rotate"></i>
+        </button>
+        <button class="menu-toggle" id="menuToggle" aria-label="Buka menu" aria-expanded="false">
+          <span></span><span></span><span></span>
+        </button>
+        <button class="btn-logout" id="logoutBtn">
+          <i class="fa-solid fa-right-from-bracket"></i>
+          <span class="logout-text">Keluar</span>
+        </button>
+      </div>
+    </header>
+
+    <div class="menu-backdrop" id="menuBackdrop"></div>
+
+    <nav class="menu-panel" id="menuPanel" aria-label="Menu navigasi">
+      <div class="menu-panel-header">
+        <div class="menu-panel-avatar" id="menuAvatar">U</div>
+        <div class="menu-panel-user">
+          <div class="menu-panel-username" id="menuUsername">User</div>
+          <div class="menu-panel-wallet" id="menuWallet">0x0000...0000</div>
+        </div>
+      </div>
+      <ul class="menu-panel-nav">
+        <li><a href="index.html"><i class="fa-solid fa-house m-icon"></i><span class="m-text">Beranda</span><i class="fa-solid fa-arrow-right m-arrow"></i></a></li>
+        <li><a href="dashboard.html" class="active"><i class="fa-solid fa-table-columns m-icon"></i><span class="m-text">Dashboard</span><i class="fa-solid fa-arrow-right m-arrow"></i></a></li>
+        <li><a href="wallet.html"><i class="fa-solid fa-wallet m-icon"></i><span class="m-text">Wallet</span><i class="fa-solid fa-arrow-right m-arrow"></i></a></li>
+        <li><a href="analytics.html"><i class="fa-solid fa-chart-line m-icon"></i><span class="m-text">Analitik</span><i class="fa-solid fa-arrow-right m-arrow"></i></a></li>
+        <li><a href="history.html"><i class="fa-solid fa-clock-rotate-left m-icon"></i><span class="m-text">Riwayat</span><i class="fa-solid fa-arrow-right m-arrow"></i></a></li>
+        <li><a href="payment.html"><i class="fa-solid fa-gear m-icon"></i><span class="m-text">Pay</span><i class="fa-solid fa-arrow-right m-arrow"></i></a></li>
+      </ul>
+      <div class="menu-panel-divider"></div>
+      <div class="menu-panel-footer">
+        <button class="btn-logout-panel" id="menuLogoutBtn">
+          <i class="fa-solid fa-right-from-bracket"></i>
+          <span>Keluar dari Akun</span>
+        </button>
+        <div class="menu-panel-footer-text">WalletScore v1.0 &middot; Pi Network</div>
+      </div>
+    </nav>
+
+    <main class="page-content" id="pageContent"></main>
+  </div>
+
+  <script src="js/data.js"></script>
+
+  <script>
+    /* ========================================
+       UTILITAS
+    ======================================== */
+    function showToast(message, type, duration) {
+      type = type || 'info';
+      duration = duration || 3000;
+      var container = document.getElementById('toastContainer');
+      var toast = document.createElement('div');
+      toast.className = 'toast ' + type;
+      var icons = {
+        success: 'fa-solid fa-circle-check',
+        error: 'fa-solid fa-circle-xmark',
+        info: 'fa-solid fa-circle-info'
+      };
+      toast.innerHTML = '<i class="' + (icons[type] || icons.info) + '"></i><span>' + message + '</span>';
+      container.appendChild(toast);
+      requestAnimationFrame(function() {
+        requestAnimationFrame(function() { toast.classList.add('show'); });
+      });
+      setTimeout(function() {
+        toast.classList.remove('show');
+        setTimeout(function() { toast.remove(); }, 300);
+      }, duration);
+    }
+
+    function shortAddress(addr) {
+      if (!addr || addr.length < 12) return addr || '—';
+      return addr.slice(0, 6) + '...' + addr.slice(-4);
+    }
+
+    function formatETH(val) {
+      if (val === undefined || val === null) return '0';
+      if (val >= 1) return val.toFixed(3);
+      if (val >= 0.001) return val.toFixed(5);
+      return val.toFixed(8);
+    }
+
+    function formatNumber(n) {
+      return n.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+    }
+
+    function formatTimestamp(ts) {
+      var d = new Date(ts);
+      var now = new Date();
+      var diff = now - d;
+      if (diff < 60000) return 'Baru saja';
+      if (diff < 3600000) return Math.floor(diff / 60000) + 'm lalu';
+      if (diff < 86400000) return Math.floor(diff / 3600000) + 'j lalu';
+      if (diff < 604800000) return Math.floor(diff / 86400000) + 'h lalu';
+      return d.getDate() + '/' + (d.getMonth() + 1) + '/' + d.getFullYear();
+    }
+
+    function copyAddress(addr) {
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(addr).then(function() {
+          showToast('Alamat disalin', 'success', 2000);
+        }).catch(function() {
+          showToast('Gagal menyalin', 'error');
+        });
+      } else {
+        var ta = document.createElement('textarea');
+        ta.value = addr;
+        ta.style.position = 'fixed';
+        ta.style.left = '-9999px';
+        document.body.appendChild(ta);
+        ta.select();
+        try {
+          document.execCommand('copy');
+          showToast('Alamat disalin', 'success', 2000);
+        } catch(e) {
+          showToast('Gagal menyalin', 'error');
+        }
+        document.body.removeChild(ta);
+      }
+    }
+
+    /* ========================================
+       FIX UTAMA: AUTH GUARD UNIVERSAL
+       Membaca data dari whs_pi_user (dari login.html)
+       ==================================================== */
+    var guardScreen = document.getElementById('guardScreen');
+    var mainWrapper = document.getElementById('mainWrapper');
+    var walletAddress = null;
+    var activeUser = null;
+
+    function getActiveUser() {
+      try {
+        var piUserStr = localStorage.getItem('whs_pi_user');
+        var walletStr = localStorage.getItem('whs_wallet');
+        var loginTimeStr = localStorage.getItem('whs_login_time');
+        
+        // Validasi sesi (konsisten dengan index.html & login.html)
+        if (piUserStr && loginTimeStr) {
+          var piUser = JSON.parse(piUserStr);
+          var loginTime = parseInt(loginTimeStr, 10);
+          
+          if (piUser && piUser.username) {
+            var age = Date.now() - loginTime;
+            if (!isNaN(age) && age <= 86400000) { // 24 jam
+              return {
+                type: 'pi_network',
+                id: piUser.uid || piUser.username,
+                address: walletStr || piUser.username, // Pakai wallet kalau ada, kalau tidak pakai username
+                displayName: '@' + piUser.username
+              };
+            }
+          }
+        }
+      } catch (e) {
+        console.error('Error parsing auth data:', e);
+      }
+      return null;
+    }
+
+    activeUser = getActiveUser();
+
+    if (!activeUser) {
+      guardScreen.classList.add('active');
+    } else {
+      walletAddress = activeUser.address;
+      mainWrapper.style.display = 'block';
+      initDashboard(walletAddress);
+    }
+
+    /* ========================================
+       LOGOUT (Membersihkan semua cache)
+       ======================================== */
+    function doLogout() {
+      var keys = ['whs_wallet','whs_pi_user','whs_pi_token','whs_login_time','whs_auth_type','whs_pi_uid','whs_db_user_id','whs_incomplete_payment','pi_user','pi_auth'];
+      keys.forEach(function(k) { try { localStorage.removeItem(k); } catch(e) {} });
+      var sKeys = ['whs_pi_user','currentWallet','walletData'];
+      sKeys.forEach(function(k) { try { sessionStorage.removeItem(k); } catch(e) {} });
+      
+      showToast('Berhasil keluar', 'info', 2000);
+      setTimeout(function() { window.location.href = 'index.html'; }, 600);
+    }
+
+    document.getElementById('logoutBtn').addEventListener('click', doLogout);
+    document.getElementById('menuLogoutBtn').addEventListener('click', function() {
+      closeMenu();
+      doLogout();
+    });
+
+    /* ========================================
+       REFRESH
+       ======================================== */
+    document.getElementById('refreshBtn').addEventListener('click', function() {
+      if (walletAddress) {
+        var icon = document.querySelector('#refreshBtn i');
+        icon.style.animation = 'spin 0.6s linear';
+        setTimeout(function() { icon.style.animation = ''; }, 600);
+        initDashboard(walletAddress);
+        showToast('Data diperbarui', 'success', 2000);
+      }
+    });
+
+    (function() {
+      var style = document.createElement('style');
+      style.textContent = '@keyframes spin { to { transform: rotate(360deg); } }';
+      document.head.appendChild(style);
+    })();
+
+    /* ========================================
+       MENU PANEL
+       ======================================== */
+    var menuToggle = document.getElementById('menuToggle');
+    var menuBackdrop = document.getElementById('menuBackdrop');
+    var menuPanel = document.getElementById('menuPanel');
+
+    function openMenu() {
+      menuToggle.classList.add('open');
+      menuToggle.setAttribute('aria-expanded', 'true');
+      menuBackdrop.classList.add('visible');
+      menuPanel.classList.add('open');
+      document.body.style.overflow = 'hidden';
+    }
+
+    function closeMenu() {
+      menuToggle.classList.remove('open');
+      menuToggle.setAttribute('aria-expanded', 'false');
+      menuBackdrop.classList.remove('visible');
+      menuPanel.classList.remove('open');
+      document.body.style.overflow = '';
+    }
+
+    menuToggle.addEventListener('click', function() {
+      if (menuPanel.classList.contains('open')) {
+        closeMenu();
+      } else {
+        openMenu();
+      }
+    });
+
+    menuBackdrop.addEventListener('click', closeMenu);
+
+    var menuLinks = menuPanel.querySelectorAll('.menu-panel-nav a');
+    for (var i = 0; i < menuLinks.length; i++) {
+      menuLinks[i].addEventListener('click', function() {
+        closeMenu();
+      });
+    }
+
+    /* ========================================
+       INIT DASHBOARD
+       ======================================== */
+    function initDashboard(address) {
+      if (typeof calculateCreditScore === 'undefined') {
+        console.error('data.js tidak ditemukan!');
+        document.getElementById('pageContent').innerHTML = '<div class="empty-state" style="padding-top:80px;"><i class="fa-solid fa-triangle-exclamation"></i><p>File data.js tidak ditemukan. Pastikan file sudah diupload.</p></div>';
+        return;
+      }
+      
+      var data = calculateCreditScore(address);
+      sessionStorage.setItem('walletData', JSON.stringify(data));
+
+      var menuAvatar = document.getElementById('menuAvatar');
+      var menuUsername = document.getElementById('menuUsername');
+      var menuWallet = document.getElementById('menuWallet');
+      
+      if (menuAvatar) menuAvatar.textContent = address.slice(0, 2).toUpperCase();
+      if (menuUsername && activeUser) menuUsername.textContent = activeUser.displayName || 'User';
+      if (menuWallet && activeUser) {
+        var walletLabel = (activeUser.type === 'pi_network' && activeUser.address !== activeUser.displayName) 
+          ? shortAddress(activeUser.address) + ' (Pi)' 
+          : shortAddress(activeUser.address);
+        menuWallet.textContent = walletLabel;
+      }
+
+      renderPage(data);
+    }
+
+    /* ========================================
+       RENDER PAGE
+       ======================================== */
+    function getTxIcon(type) {
+      var icons = {
+        send: 'fa-paper-plane', receive: 'fa-arrow-down', swap: 'fa-arrows-rotate',
+        approve: 'fa-check-double', stake: 'fa-lock', unstake: 'fa-lock-open',
+        bridge: 'fa-bridge', mint: 'fa-coins', burn: 'fa-fire'
+      };
+      return icons[type] || 'fa-circle';
+    }
+
+    function renderBreakdownItem(item, colorClass, val, unit) {
+      if (!item) return '';
+      var safeVal = (val !== undefined && val !== null) ? val : 0;
+      var safeUnit = unit || '';
+      return '<div>'
+        + '<div class="breakdown-item-label">'
+        + '  <span class="breakdown-label-text">' + (item.label || '-') + '</span>'
+        + '  <span class="breakdown-label-value">' + safeVal + safeUnit + ' <span>(' + (item.score !== undefined ? item.score : 0) + ' pt)</span></span>'
+        + '</div>'
+        + '<div class="breakdown-bar">'
+        + '  <div class="breakdown-bar-fill ' + colorClass + '" data-width="' + (item.percentage !== undefined ? item.percentage : 0) + '"></div>'
+        + '</div>'
+        + '</div>';
+    }
+
+    function renderPage(data) {
+      if (!data) return;
+      
+      var pageContent = document.getElementById('pageContent');
+      var isPi = (activeUser && activeUser.type === 'pi_network');
+
+      var ageText;
+      var wDays = data.walletAgeDays || 0;
+      if (wDays >= 365) {
+        var y = Math.floor(wDays / 365);
+        var m = Math.floor((wDays % 365) / 30);
+        ageText = y + ' tahun' + (m > 0 ? ' ' + m + ' bulan' : '');
+      } else if (wDays >= 30) {
+        ageText = Math.floor(wDays / 30) + ' bulan';
+      } else {
+        ageText = wDays + ' hari';
+      }
+
+      var scoreChange = data.scoreChange || 0;
+      var changeClass = scoreChange >= 0 ? 'up' : 'down';
+      var changeIcon = scoreChange >= 0 ? 'fa-arrow-up' : 'fa-arrow-down';
+      var changeText = scoreChange >= 0 ? '+' + scoreChange : '' + scoreChange;
+
+      var txData = data.transactions || {};
+      var recentTx = (txData.list || []).slice(0, 5);
+      var networkIcon = isPi ? 'fa-solid fa-circle-nodes' : 'fa-brands fa-ethereum';
+      var networkBadge = isPi ? '<span class="sim-badge" style="color:var(--accent); border-color:var(--border-color);"><i class="fa-solid fa-circle-nodes"></i> Pi Network</span>' : '<span class="sim-badge"><i class="fa-solid fa-flask"></i> Data Simulasi</span>';
+
+      var txHtml = '';
+      if (recentTx.length === 0) {
+        txHtml = '<div class="empty-state"><i class="fa-solid fa-inbox"></i><p>Belum ada transaksi tercatat</p></div>';
+      } else {
+        txHtml = '<div class="tx-list">';
+        for (var i = 0; i < recentTx.length; i++) {
+          var tx = recentTx[i];
+          var amt = (tx.amount !== undefined && tx.amount !== null) ? tx.amount : 0;
+          var amtClass = amt >= 0 ? 'positive' : 'negative';
+          var amtPrefix = amt >= 0 ? '+' : '';
+          var stClass = tx.status === 'success' ? 'success' : 'failed';
+          var stIcon = tx.status === 'success' ? 'fa-circle-check' : 'fa-circle-xmark';
+          
+          txHtml += '<div class="tx-item">'
+            + '<div class="tx-type-badge ' + (tx.type || 'send') + '"><i class="fa-solid ' + getTxIcon(tx.type) + '"></i></div>'
+            + '<div class="tx-info">'
+            + '  <div class="tx-type-label">' + (tx.type || 'tx') + '</div>'
+            + '  <div class="tx-addr">' + shortAddress(tx.to || tx.from || '') + '</div>'
+            + '</div>'
+            + '<div class="tx-right">'
+            + '  <span class="tx-amount ' + amtClass + '">' + amtPrefix + formatETH(amt) + ' Pi</span>'
+            + '  <div class="tx-status-time">'
+            + '    <span class="tx-status ' + stClass + '"><i class="fa-solid ' + stIcon + '"></i></span>'
+            + '    <span class="tx-time">' + formatTimestamp(tx.timestamp) + '</span>'
+            + '  </div>'
+            + '</div>'
+            + '</div>';
+        }
+        txHtml += '</div>';
+      }
+
+      var flags = data.riskFlags || [];
+      var flagsHtml = '';
+      if (flags.length === 0) {
+        flagsHtml = '<div class="no-flags"><i class="fa-solid fa-shield-halved"></i><span>Tidak ada flag risiko terdeteksi</span></div>';
+      } else {
+        flagsHtml = '<div class="risk-flags-mini">'
+          + '<div class="risk-flags-mini-title"><i class="fa-solid fa-triangle-exclamation"></i> Risk Flags (' + flags.length + ')</div>';
+        for (var j = 0; j < flags.length; j++) {
+          var flag = flags[j];
+          flagsHtml += '<div class="risk-flag-item">'
+            + '<i class="fa-solid fa-circle-exclamation"></i>'
+            + '<div>' + (flag.description || 'Unknown flag') + '<span class="risk-flag-severity ' + (flag.severity || 'low') + '">' + (flag.severity || 'low') + '</span></div>'
+            + '</div>';
+        }
+        flagsHtml += '</div>';
+      }
+
+      var bd = data.breakdown || {};
+      var successRate = (txData.successRate !== undefined) ? txData.successRate : 0;
+      var totalVol = (txData.totalVolumeETH !== undefined) ? txData.totalVolumeETH : 0;
+      var consistencyScore = (data.consistencyScore !== undefined) ? data.consistencyScore : 0;
+
+      /* FIX SYNTAX: Mengubah === menjadi ==="..." agar tidak crash */
+      var critCount = flags.filter(function(f){return f.severity==="critical"}).length;
+      var highCount = flags.filter(function(f){return f.severity==="high"}).length;
+
+      pageContent.innerHTML = ''
+
+        + '<div class="wallet-header">'
+        +   '<div class="wallet-header-top">'
+        +     '<div class="wallet-avatar-lg">' + (data.walletAddress || '??').slice(0, 2).toUpperCase() + '</div>'
+        +     '<div class="wallet-header-info">'
+        +       '<h2>' + (activeUser ? activeUser.displayName : (data.walletAddress || 'Unknown')) + '</h2>'
+        +       '<div class="wallet-header-meta">'
+        +         '<span><i class="fa-regular fa-clock"></i> ' + ageText + '</span>'
+        +         '<span><i class="fa-solid fa-gas-pump"></i> ' + formatETH(txData.totalGasETH) + ' gas</span>'
+        +         '<span><i class="' + networkIcon + '"></i> ' + formatETH(data.estimatedBalance) + '</span>'
+        +       '</div>'
+        +     '</div>'
+        +   '</div>'
+        +   '<div class="wallet-header-bottom">'
+        +     '<button class="copy-btn" onclick="copyAddress(\'' + (data.walletAddress || '') + '\')">'
+        +       '<i class="fa-regular fa-copy"></i> Salin'
+        +     '</button>'
+        +     networkBadge
+        +     '<span class="status-badge" style="color:' + (data.statusColor || '#fff') + '; background:' + (data.statusBg || 'transparent') + ';">'
+        +       '<i class="fa-solid ' + (data.statusIcon || 'fa-circle') + '"></i> ' + (data.status || 'N/A')
+        +     '</span>'
+        +   '</div>'
+        + '</div>'
+
+        + '<div class="stats-grid">'
+        +   '<div class="stat-card accent">'
+        +     '<div class="stat-card-header">'
+        +       '<span class="stat-card-label">Credit Score</span>'
+        +       '<div class="stat-card-icon"><i class="fa-solid fa-shield-halved"></i></div>'
+        +     '</div>'
+        +     '<div class="stat-card-value" id="animScore">0</div>'
+        +     '<span class="stat-card-change ' + changeClass + '">'
+        +       '<i class="fa-solid ' + changeIcon + '"></i> ' + changeText + ' dari bulan lalu'
+        +     '</span>'
+        +     '<div class="stat-card-sub">Top ' + (data.percentile || 0) + '% wallet</div>'
+        +   '</div>'
+        +   '<div class="stat-card green">'
+        +     '<div class="stat-card-header">'
+        +       '<span class="stat-card-label">Total Transaksi</span>'
+        +       '<div class="stat-card-icon"><i class="fa-solid fa-arrow-right-arrow-left"></i></div>'
+        +     '</div>'
+        +     '<div class="stat-card-value" id="animTx">0</div>'
+        +     '<span class="stat-card-change up">'
+        +       '<i class="fa-solid fa-arrow-up"></i> ' + (txData.recentWeek || 0) + ' minggu ini'
+        +     '</span>'
+        +     '<div class="stat-card-sub">' + formatNumber(txData.success || 0) + ' berhasil, ' + (txData.failed || 0) + ' gagal</div>'
+        +   '</div>'
+        +   '<div class="stat-card amber">'
+        +     '<div class="stat-card-header">'
+        +       '<span class="stat-card-label">Success Rate</span>'
+        +       '<div class="stat-card-icon"><i class="fa-solid fa-circle-check"></i></div>'
+        +     '</div>'
+        +     '<div class="stat-card-value" id="animRate">0%</div>'
+        +     '<span class="stat-card-change ' + (successRate >= 95 ? 'up' : 'down') + '">'
+        +       '<i class="fa-solid ' + (successRate >= 95 ? 'fa-arrow-up' : 'fa-arrow-down') + '"></i> '
+        +       (successRate >= 95 ? 'Di atas rata-rata' : 'Di bawah rata-rata')
+        +     '</span>'
+        +     '<div class="stat-card-sub">Network avg: ~94%</div>'
+        +   '</div>'
+        +   '<div class="stat-card ' + (flags.length === 0 ? 'green' : 'red') + '">'
+        +     '<div class="stat-card-header">'
+        +       '<span class="stat-card-label">Risk Flags</span>'
+        +       '<div class="stat-card-icon"><i class="fa-solid ' + (flags.length === 0 ? 'fa-shield' : 'fa-triangle-exclamation') + '"></i></div>'
+        +     '</div>'
+        +     '<div class="stat-card-value">' + flags.length + '</div>'
+        +     '<span class="stat-card-change ' + (flags.length === 0 ? 'up' : 'down') + '">'
+        +       '<i class="fa-solid ' + (flags.length === 0 ? 'fa-check' : 'fa-exclamation') + '"></i> '
+        +       (flags.length === 0 ? 'Aman' : 'Perlu perhatian')
+        +     '</span>'
+        +     '<div class="stat-card-sub">' + critCount + ' critical, ' + highCount + ' high</div>'
+        +   '</div>'
+        + '</div>'
+
+        + '<div class="bottom-grid">'
+        +   '<div class="card">'
+        +     '<div class="card-header">'
+        +       '<h3 class="card-title">Breakdown Skor</h3>'
+        +       '<a href="wallet.html" class="card-action">Detail <i class="fa-solid fa-arrow-right"></i></a>'
+        +     '</div>'
+        +     '<div class="card-body">'
+        +       '<div class="breakdown-list">'
+        +         renderBreakdownItem(bd.successRate, 'teal', successRate, '%')
+        +         renderBreakdownItem(bd.volume, 'green', totalVol, ' ETH')
+        +         renderBreakdownItem(bd.age, 'amber', wDays, ' hari')
+        +         renderBreakdownItem(bd.consistency, 'teal', consistencyScore, ' pt')
+        +       '</div>'
+        +       flagsHtml
+        +     '</div>'
+        +   '</div>'
+        +   '<div class="card">'
+        +     '<div class="card-header">'
+        +       '<h3 class="card-title">Transaksi Terakhir</h3>'
+        +       '<a href="history.html" class="card-action">Semua <i class="fa-solid fa-arrow-right"></i></a>'
+        +     '</div>'
+        +     '<div class="card-body">'
+        +       txHtml
+        +     '</div>'
+        +   '</div>'
+        + '</div>';
+
+      // Animasi angka naik
+      setTimeout(function() {
+        var scoreEl = document.getElementById('animScore');
+        var txEl = document.getElementById('animTx');
+        var rateEl = document.getElementById('animRate');
+        
+        if(scoreEl) animateValue(scoreEl, 0, data.creditScore || 0, 1000, '');
+        if(txEl) animateValue(txEl, 0, txData.total || 0, 800, '');
+        if(rateEl) animateValue(rateEl, 0, successRate, 800, '%');
+
+        // Animasi bar
+        var bars = document.querySelectorAll('.breakdown-bar-fill[data-width]');
+        for(var b=0; b<bars.length; b++) {
+          bars[b].style.width = bars[b].getAttribute('data-width') + '%';
+        }
+      }, 100);
+    }
+
+    function animateValue(elem, start, end, duration, suffix) {
+      var range = end - start;
+      var current = start;
+      var increment = end > start ? 1 : -1;
+      var stepTime = Math.abs(Math.floor(duration / range));
+      stepTime = Math.max(stepTime, 10);
+      
+      var timer = setInterval(function() {
+        current += increment;
+        if ((increment > 0 && current >= end) || (increment < 0 && current <= end)) {
+          current = end;
+          clearInterval(timer);
+        }
+        elem.textContent = current + (suffix || '');
+      }, stepTime);
+    }
+  </script>
+</body>
+</html>
