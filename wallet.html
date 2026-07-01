@@ -94,7 +94,7 @@
     .identity-actions { display: flex; gap: 8px; flex-shrink: 0; }
     .btn-sm { display: inline-flex; align-items: center; gap: 5px; padding: 7px 12px; font-size: 0.75rem; font-weight: 500; border-radius: var(--radius-full); transition: all var(--transition-fast); border: 1px solid var(--border-subtle); color: var(--text-secondary); }
     .btn-sm:hover { border-color: var(--border-color); color: var(--accent); background: var(--accent-dim); }
-    .score-est-badge { display: inline-flex; align-items: center; gap: 4px; padding: 2px 8px; background: rgba(34,197,94,0.1); border: 1px solid rgba(34,197,94,0.2); border-radius: var(--radius-full); font-size: 0.6rem; font-weight: 600; color: var(--success); margin-left: 6px; }
+    .score-est-badge { display: inline-flex; align-items: center; gap: 4px; padding: 2px 8px; background: rgba(59,130,246,0.12); border: 1px solid rgba(59,130,246,0.2); border-radius: var(--radius-full); font-size: 0.6rem; font-weight: 600; color: var(--info); margin-left: 6px; }
 
     .identity-stats-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-top: 18px; padding-top: 16px; border-top: 1px solid var(--border-subtle); position: relative; z-index: 1; }
     .identity-stat { text-align: center; }
@@ -181,18 +181,6 @@
     .no-flags-full h4 { font-family: var(--font-display); font-size: 0.95rem; font-weight: 600; margin-bottom: 4px; }
     .no-flags-full p { font-size: 0.82rem; color: var(--text-muted); max-width: 360px; margin: 0 auto; }
 
-    /* CSS TAMBAHAN HANYA UNTUK BUKTI ON-CHAIN (Proof Table) */
-    .proof-table { width: 100%; border-collapse: collapse; font-size: 0.75rem; }
-    .proof-table th { padding: 12px; text-align: left; color: var(--text-muted); font-weight: 600; border-bottom: 1px solid var(--border-subtle); }
-    .proof-table td { padding: 10px 12px; border-bottom: 1px solid var(--border-subtle); }
-    .tx-hash { color: var(--info); font-family: monospace; text-decoration: underline; text-underline-offset: 2px; }
-    .tx-hash:hover { color: var(--accent); }
-    .mono { font-family: 'Space Grotesk', monospace; color: var(--text-secondary); font-size: 0.7rem; }
-    .val { text-align: right; font-family: var(--font-display); font-weight: 600; }
-    .status-badge { padding: 2px 8px; border-radius: var(--radius-full); font-size: 0.65rem; font-weight: 700; }
-    .status-badge.success { color: var(--success); background: rgba(34,197,94,0.1); }
-    .status-badge.failed { color: var(--danger); background: rgba(239,68,68,0.1); }
-
     .guard-screen { display: none; position: fixed; inset: 0; z-index: 500; background: var(--bg-primary); flex-direction: column; align-items: center; justify-content: center; gap: 20px; text-align: center; padding: 24px; }
     .guard-screen.active { display: flex; }
     .guard-screen i { font-size: 2.2rem; color: var(--text-muted); opacity: 0.4; }
@@ -271,7 +259,7 @@
       <div class="loading-screen" id="loadingScreen">
         <div class="loading-spinner"></div>
         <p>Menganalisis On-Chain Data...</p>
-        <p class="loading-sub">Menghubungi Node Blockchain via Backend API</p>
+        <p class="loading-sub">Mengambil transaksi dari Pi Blockchain</p>
       </div>
     </main>
   </div>
@@ -279,10 +267,9 @@
   <script>
     /* ╔════════════════════════════════════════════════════════════════╗
        ║  KONFIGURASI BACKEND API                                     ║
-       ║  TIDAK ADA API KEY DI SINI (AMAN)                            ║
-       ║  Kita memanggil /api/analyze yang ada di Vercel Serverless    ║
+       ║  Endpoint ini yang HUBUNGI ke Blockchain Explorer/API         ║
        ╚════════════════════════════════════════════════════════════════╝ */
-    var API_BASE = '/api/analyze'; 
+    var API_BASE = '/api/pi-chain'; 
 
     /* ╔════════════════════════════════════════════════════════════════╗
        ║  UTILITAS UMUM                                               ║
@@ -314,6 +301,8 @@
 
     /* ╔════════════════════════════════════════════════════════════════╗
        ║  VERIFY SESSION (MENGAMBIL WALLET ASLI DARI PI SDK)         ║
+       ║  Sekarang kita ambil 'wallet_address' dari hasil auth Pi,    ║
+       ║  BUKAN cuma uid/username.                                    ║
        ╚════════════════════════════════════════════════════════════════╝ */
 
     function verifySession() {
@@ -325,19 +314,20 @@
         return { ok: false, reason: 'no_local_data' };
       }
 
-      // PRIORITY: Wallet address asli dari Pi SDK Auth result
+      // PRIORITY 1: Wallet address asli dari Pi SDK Auth result
       var walletAddress = localUser.wallet_address || localUser.uid || localUser.username;
       
       return { 
         ok: true, 
         uid: localUser.uid || localUser.username, 
         username: localUser.username,
-        wallet: walletAddress 
+        wallet: walletAddress // INI YANG PENTING: Alamat blockchain asli
       };
     }
 
     /* ╔════════════════════════════════════════════════════════════════╗
-       ║  FETCH REAL ON-CHAIN DATA VIA BACKEND                       ║
+       ║  FETCH REAL ON-CHAIN DATA                                    ║
+       ║  Memanggil Backend API yang langsung query ke Pi Blockchain   ║
        ╚════════════════════════════════════════════════════════════════╝ */
 
     async function fetchOnChainData(walletAddress) {
@@ -352,29 +342,43 @@
     }
 
     /* ╔════════════════════════════════════════════════════════════════╗
-       ║  HITUNG SKOR DARI DATA ON-CHAIN YANG SUDAH DIVALIDASI       ║
+       ║  HITUNG SKOR DARI ON-CHAIN DATA (REAL SCORING MODEL)        ║
+       ║  TIDAK ADA LAGI DATA FAKE DARI DB                            ║
        ╚════════════════════════════════════════════════════════════════╝ */
 
     function calculateRealScore(chainData) {
       var m = chainData.metrics;
       var r = chainData.risk;
 
+      // 1. Success Rate Score (0-250)
+      // Dihitung dari persentase tx yang benar-benar confirmed di blockchain
       var srScore = Math.min(250, Math.round((m.success_rate / 100) * 250));
+
+      // 2. Volume Score (0-250)
+      // Diubah: 1 tx = 5 poin (menghargai aktivitas nyata)
       var volScore = Math.min(250, Math.round(m.tx_total * 5));
 
+      // 3. Account Age Score (0-250)
+      // Diambil dari first transaction on-chain, bukan created_at di DB
       var ageDays = m.age_days_on_chain;
-      var ageScore = 0; // Jika 0 tx, age juga 0 (bukan 50 seperti fake data)
+      var ageScore = 50; // Default untuk wallet yang belum punya tx
       if (ageDays >= 365) ageScore = 250;
       else if (ageDays >= 180) ageScore = 220;
       else if (ageDays >= 90) ageScore = 180;
       else if (ageDays >= 30) ageScore = 100;
 
+      // 4. Risk Score (0-250)
+      // Penalty langsung dari analisa on-chain (wash trading, failure rate, dll)
       var riskScore = Math.max(0, 250 - r.penalty);
+
+      // Total Score
       var totalScore = srScore + volScore + ageScore + riskScore;
 
+      // Network Avg (Asumsi dummy, idealnya dihitung dari aggregate semua wallet)
       var networkAvg = 580; 
       var vsNetwork = totalScore - networkAvg;
 
+      // Status
       var status, statusColor;
       if (totalScore >= 800)      { status = 'Excellent'; statusColor = 'var(--success)'; }
       else if (totalScore >= 600) { status = 'Good'; statusColor = 'var(--accent)'; }
@@ -382,7 +386,11 @@
       else                   { status = 'Poor'; statusColor = 'var(--danger)'; }
 
       return {
-        score: totalScore, networkAvg: networkAvg, vsNetwork: vsNetwork, status: status, statusColor: statusColor,
+        score: totalScore,
+        networkAvg: networkAvg,
+        vsNetwork: vsNetwork,
+        status: status,
+        statusColor: statusColor,
         breakdown: {
           successRate: { label: 'Success Rate', score: srScore, max: 250 },
           volume:       { label: 'Volume', score: volScore, max: 250, value: m.tx_total },
@@ -417,7 +425,10 @@
       verifiedUser = authResult;
 
       try {
+        // LANGSUNG QUERY BLOCKCHAIN VIA BACKEND API
         var chainData = await fetchOnChainData(verifiedUser.wallet);
+        
+        // HITUNG SKOR BERDASARKAN DATA ON-CHAIN
         var scoreData = calculateRealScore(chainData);
 
         mainWrapper.style.display = 'flex';
@@ -426,12 +437,15 @@
         render({
           walletAddress: verifiedUser.wallet,
           username: verifiedUser.username,
-          source: chainData.source || 'evm_blockchain',
-          scoreData: scoreData,
-          proofTxs: chainData.proofTxs || [] // Data Tx Hash Asli dari Backend
+          source: chainData.source,
+          scoreData: scoreData
         });
 
-        showToast('Data On-Chain berhasil dianalisis', 'success', 3000);
+        if (chainData.source === 'pi_blockchain') {
+          showToast('Data On-Chain berhasil dianalisis', 'success', 3000);
+        } else {
+          showToast('Menggunakan data fallback (API unreachable)', 'warning', 4000);
+        }
 
       } catch (e) {
         console.error('[CHAIN] Fatal error:', e);
@@ -441,7 +455,7 @@
           '<div style="text-align:center;padding:60px 20px;">' +
             '<i class="fa-solid fa-link-slash" style="font-size:2rem;color:var(--danger);opacity:0.5;margin-bottom:12px;display:block;"></i>' +
             '<h3 style="font-family:var(--font-display);margin-bottom:8px;">Gagal Terhubung ke Blockchain</h3>' +
-            '<p style="color:var(--text-muted);font-size:0.82rem;max-width:320px;margin:0 auto 20px;line-height:1.6;">Tidak bisa mengambil data on-chain. Pastikan file /api/analyze.js sudah benar dan API Key BSC valid.</p>' +
+            '<p style="color:var(--text-muted);font-size:0.82rem;max-width:320px;margin:0 auto 20px;line-height:1.6;">Tidak bisa mengambil data on-chain dari Pi Network. Pastikan backend API berjalan.</p>' +
             '<button class="btn-primary" onclick="location.reload()" style="font-size:0.82rem;padding:10px 24px;"><i class="fa-solid fa-arrows-rotate"></i> Coba Lagi</button>' +
             '<p style="color:var(--text-muted);font-size:0.7rem;margin-top:16px;opacity:0.5;">' + escapeHtml(e.message) + '</p>' +
           '</div>';
@@ -449,7 +463,7 @@
     }
 
     /* ╔════════════════════════════════════════════════════════════════╗
-       ║  RENDER UI (STRUKTUR HTML TIDAK BERUBAH)                     ║
+       ║  RENDER UI                                                   ║
        ╚════════════════════════════════════════════════════════════════╝ */
 
     function render(data) {
@@ -473,12 +487,12 @@
       var html = '';
       
       // Identity Card
-      html += '<div class="identity-card"><div class="identity-top"><div class="identity-left"><div class="identity-avatar">&pi;</div><div class="identity-info"><h1>' + escapeHtml('@' + data.username) + '<span class="score-est-badge"><i class="fa-solid fa-link"></i> On-Chain</span></h1><div class="identity-uid-row"><span class="identity-uid-badge"><i class="fa-solid fa-fingerprint"></i> Wallet</span><span class="identity-uid-text">' + safeAddr + '</span></div><div class="identity-meta"><span><i class="fa-solid fa-shield-halved" style="color:' + sd.statusColor + '"></i> <b style="color:' + sd.statusColor + '">' + sd.status + '</b></span><span><i class="fa-regular fa-clock"></i> ' + ageDisplay + ' on-chain</span><span><i class="fa-solid fa-cubes" style="color:var(--info)"></i> Sumber: ' + escapeHtml(data.source) + '</span></div></div></div><div class="identity-actions"><button class="btn-sm" id="copyUidBtn"><i class="fa-regular fa-copy"></i> Salin</button></div></div>';
+      html += '<div class="identity-card"><div class="identity-top"><div class="identity-left"><div class="identity-avatar">&pi;</div><div class="identity-info"><h1>' + escapeHtml('@' + data.username) + '<span class="score-est-badge"><i class="fa-solid fa-link"></i> On-Chain</span></h1><div class="identity-uid-row"><span class="identity-uid-badge"><i class="fa-solid fa-fingerprint"></i> Wallet</span><span class="identity-uid-text">' + safeAddr + '</span></div><div class="identity-meta"><span><i class="fa-solid fa-shield-halved" style="color:' + sd.statusColor + '"></i> <b style="color:' + sd.statusColor + '">' + sd.status + '</b></span><span><i class="fa-regular fa-clock"></i> ' + ageDisplay + ' on-chain</span><span><i class="fa-solid fa-database" style="color:var(--info)"></i> Sumber: ' + escapeHtml(data.source) + '</span></div></div></div><div class="identity-actions"><button class="btn-sm" id="copyUidBtn"><i class="fa-regular fa-copy"></i> Salin</button></div></div>';
       
       html += '<div class="identity-stats-row"><div class="identity-stat"><div class="identity-stat-value" style="color:var(--accent);" id="animScore">0</div><div class="identity-stat-label">Health Score</div></div><div class="identity-stat"><div class="identity-stat-value" id="animTx">0</div><div class="identity-stat-label">Total Tx</div></div><div class="identity-stat"><div class="identity-stat-value" id="animRate">0%</div><div class="identity-stat-label">Success Rate</div></div><div class="identity-stat"><div class="identity-stat-value" style="color:' + (sd.riskFlags.length > 0 ? 'var(--danger)' : 'var(--success)') + ';">' + sd.riskFlags.length + '</div><div class="identity-stat-label">Risk Flags</div></div><div class="identity-stat"><div class="identity-stat-value" style="' + vsClass + '">' + vsText + '</div><div class="identity-stat-label">vs Network Avg</div></div></div></div>';
 
       // Breakdown
-      html += '<div class="section"><div class="section-header"><div class="section-icon teal"><i class="fa-solid fa-chart-bar"></i></div><h2 class="section-title">Breakdown Skor On-Chain</h2><span class="section-subtitle">Maks 250 poin/kategori</span></div><div class="card"><div class="card-body"><div class="score-detail-grid"><div class="breakdown-list">' + renderBreakdown(sd.breakdown.successRate, 'teal', 'fa-circle-check', m.success_rate + '%', 'Persentase transaksi yang berhasil di verifikasi blockchain.', networkAvgPct) + renderBreakdown(sd.breakdown.volume, 'green', 'fa-arrow-right-arrow-left', formatNumber(m.tx_total) + ' tx', 'Total volume transaksi nyata di blockchain.', networkAvgPct) + '</div><div class="breakdown-list">' + renderBreakdown(sd.breakdown.age, 'amber', 'fa-clock', ageDisplay, 'Usia wallet dihitung dari transaksi pertama kali di blockchain.', networkAvgPct) + renderBreakdownRisk(sd.breakdown.risk, networkAvgPct) + '</div></div></div></div></div>';
+      html += '<div class="section"><div class="section-header"><div class="section-icon teal"><i class="fa-solid fa-chart-bar"></i></div><h2 class="section-title">Breakdown Skor On-Chain</h2><span class="section-subtitle">Maks 250 poin/kategori</span></div><div class="card"><div class="card-body"><div class="score-detail-grid"><div class="breakdown-list">' + renderBreakdown(sd.breakdown.successRate, 'teal', 'fa-circle-check', m.success_rate + '%', 'Persentase transaksi yang berhasil di verifikasi blockchain.', networkAvgPct) + renderBreakdown(sd.breakdown.volume, 'green', 'fa-arrow-right-arrow-left', formatNumber(m.tx_total) + ' tx', 'Total volume transaksi nyata di Pi Network.', networkAvgPct) + '</div><div class="breakdown-list">' + renderBreakdown(sd.breakdown.age, 'amber', 'fa-clock', ageDisplay, 'Usia wallet dihitung dari transaksi pertama kali di blockchain.', networkAvgPct) + renderBreakdownRisk(sd.breakdown.risk, networkAvgPct) + '</div></div></div></div></div>';
 
       // Why
       html += '<div class="section"><div class="section-header"><div class="section-icon blue"><i class="fa-solid fa-lightbulb"></i></div><h2 class="section-title">Mengapa Skor Ini?</h2></div><div class="why-grid">' + generateWhyCards(sd, m) + '</div></div>';
@@ -500,23 +514,6 @@
         html += '</div>';
       }
       html += '</div></div></div>';
-
-      // PROOF OF ON-CHAIN (Tabel Bukti Fisik Blockchain)
-      if (data.proofTxs && data.proofTxs.length > 0) {
-        html += '<div class="section"><div class="section-header"><div class="section-icon green"><i class="fa-solid fa-link"></i></div><h2 class="section-title">Proof of On-Chain</h2><span class="section-subtitle">Klik hash untuk verifikasi</span></div><div class="card"><div class="card-body" style="padding:0; overflow-x:auto;">';
-        html += '<table class="proof-table"><thead><tr><th>Tx Hash</th><th>Block</th><th>Dari / Ke</th><th class="val">Value</th><th style="text-align:center">Status</th></tr></thead><tbody>';
-        for (var p = 0; p < data.proofTxs.length; p++) {
-          var tx = data.proofTxs[p];
-          html += '<tr>';
-          html += '<td><a href="https://bscscan.com/tx/' + tx.hash + '" target="_blank" class="tx-hash">' + tx.hash.substring(0, 8) + '... <i class="fa-solid fa-arrow-up-right-from-square" style="font-size:0.6rem;opacity:0.4;"></i></a></td>';
-          html += '<td style="color:var(--text-muted)">' + tx.block + '</td>';
-          html += '<td class="mono">' + tx.from.substring(0, 6) + '... → ' + tx.to.substring(0, 6) + '...</td>';
-          html += '<td class="val">' + tx.value + ' BNB</td>';
-          html += '<td style="text-align:center"><span class="status-badge ' + (tx.status === 'SUCCESS' ? 'success' : 'failed') + '">' + tx.status + '</span></td>';
-          html += '</tr>';
-        }
-        html += '</tbody></table></div></div></div>';
-      }
       
       pc.innerHTML = html;
 
@@ -559,7 +556,7 @@
       var cards = [];
       
       if (m.tx_total === 0) {
-        cards.push({ icon: 'fa-hourglass-start', type: 'neutral', title: 'Belum Ada Transaksi On-Chain', text: 'Wallet ini belum memiliki riwayat transaksi di blockchain. Skor akan meningkat otomatis saat ada aktivitas.', impact: '0 / 500 poin (SR + Vol)', impactType: 'neutral' });
+        cards.push({ icon: 'fa-hourglass-start', type: 'neutral', title: 'Belum Ada Transaksi On-Chain', text: 'Wallet ini belum memiliki riwayat transaksi di Pi Blockchain. Skor akan meningkat otomatis saat ada aktivitas.', impact: '0 / 500 poin (SR + Vol)', impactType: 'neutral' });
       } else {
         if (m.success_rate >= 90) cards.push({ icon: 'fa-circle-check', type: 'positive', title: 'Tingkat Keberhasilan Tinggi', text: m.success_rate + '% dari ' + m.tx_total + ' transaksi berhasil dikonfirmasi blockchain.', impact: '+' + sd.breakdown.successRate.score + ' poin', impactType: 'positive' });
         else if (m.success_rate < 50 && m.tx_total > 5) cards.push({ icon: 'fa-circle-xmark', type: 'negative', title: 'Banyak Transaksi Gagal', text: 'Terdapat ' + m.tx_failed + ' transaksi gagal dari total ' + m.tx_total + '.', impact: '+' + sd.breakdown.successRate.score + ' poin', impactType: 'negative' });
@@ -606,7 +603,7 @@
       var btn = this; var icon = btn.querySelector('i'); icon.classList.add('fa-spin'); btn.disabled = true;
       fetchOnChainData(verifiedUser.wallet).then(function(chainData) {
         var scoreData = calculateRealScore(chainData);
-        render({ walletAddress: verifiedUser.wallet, username: verifiedUser.username, source: chainData.source, scoreData: scoreData, proofTxs: chainData.proofTxs || [] });
+        render({ walletAddress: verifiedUser.wallet, username: verifiedUser.username, source: chainData.source, scoreData: scoreData });
         showToast('Data On-Chain diperbarui', 'success');
       }).catch(function(e) { showToast('Gagal fetch on-chain: ' + e.message, 'error'); }).finally(function() { icon.classList.remove('fa-spin'); btn.disabled = false; });
     });
