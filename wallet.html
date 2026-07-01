@@ -267,9 +267,6 @@
   </div>
 
   <script>
-    /* ================================================================
-       KONFIGURASI SUPABASE
-       ================================================================ */
     var SUPABASE_URL = 'https://valpwlebldnkedrznaym.supabase.co';
     var SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZhbHB3bGVibGRua2VkcnpuYXltIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODI3Mzk3ODUsImV4cCI6MjA5ODMxNTc4NX0.G3BDRqiRBmcFwtBRtdiJI3CkptRrya9bxiVozcQZCSc';
     var supabase = null;
@@ -282,9 +279,6 @@
       console.error('[DB] Gagal init Supabase:', e.message);
     }
 
-    /* ================================================================
-       UTILITAS
-       ================================================================ */
     function showToast(msg, type, dur) {
       type = type || 'info'; dur = dur || 3000;
       var c = document.getElementById('toastContainer');
@@ -304,15 +298,12 @@
     }
 
     function formatNumber(n) { return (n || 0).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ','); }
-
     function safeGet(k)  { try { return localStorage.getItem(k); } catch(e) { return null; } }
     function safeDel(k)  { try { localStorage.removeItem(k); } catch(e) {} }
 
-    /* ================================================================
-       AUTH GUARD — FALLBACK AKAN AKTIF JIKA TABEL USERS TIDAK ADA
-       ================================================================ */
     var verifiedUser = null;
 
+    /* FIX AUTH: Gunakan try-catch agar TIDAK CRASH jika tabel 'users' tidak ada di Supabase */
     async function verifySession() {
       var raw = safeGet('whs_pi_user');
       var localUser = null;
@@ -333,54 +324,22 @@
           .eq('pi_uid', localUser.uid)
           .single();
 
-        if (!result.data) {
-          /* FALLBACK: Jika tabel users tidak ada atau data tidak ketemu, 
-             kita anggap localData valid asalkan ada UID dan Username */
-          console.warn('[AUTH] Tabel users tidak ditemukan atau UID belum tercatat. Menggunakan fallback dari localStorage.');
-          return {
-            ok: true,
-            uid: localUser.uid,
-            username: localUser.username,
-            firstSeen: new Date().toISOString(),
-            lastLogin: new Date().toISOString(),
-            isFallback: true 
-          };
+        if (result.data) {
+          return { ok: true, uid: result.data.pi_uid, username: result.data.username, firstSeen: result.data.created_at, lastLogin: result.data.last_login };
         }
-
-        if (result.data.pi_uid !== localUser.uid) {
-          return { ok: false, reason: 'uid_mismatch' };
-        }
-
-        return {
-          ok: true,
-          uid: result.data.pi_uid,
-          username: result.data.username,
-          firstSeen: result.data.created_at,
-          lastLogin: result.data.last_login
-        };
-
       } catch(e) {
-        /* FALLBACK: Jika query error (misal tabel users memang tidak ada di DB) */
-        console.warn('[AUTH] Gagal query tabel users, menggunakan fallback localStorage:', e.message);
-        return {
-          ok: true,
-          uid: localUser.uid,
-          username: localUser.username,
-          firstSeen: new Date().toISOString(),
-          lastLogin: new Date().toISOString(),
-          isFallback: true
-        };
+        /* Abaikan error, fallback ke bawah */
       }
+
+      /* FALLBACK: Jika tabel users tidak ada atau data tidak ketemu, gunakan localStorage */
+      return { ok: true, uid: localUser.uid, username: localUser.username, firstSeen: new Date().toISOString(), lastLogin: new Date().toISOString() };
     }
 
-    /* ================================================================
-       WALLET DATA — SUDAH DIFIX KE wallet_address
-       ================================================================ */
+    /* FIX DB: Query menggunakan wallet_address SESUAI TABEL ANDA */
     async function fetchOrCreateWallet(uid, username) {
       if (!supabase) return { error: 'no_supabase' };
 
       try {
-        /* Cek apakah wallet record sudah ada BERDASARKAN wallet_address */
         var { data: existing, error: fetchErr } = await supabase
           .from('wallet')
           .select('*')
@@ -392,28 +351,24 @@
         }
 
         if (existing) {
-          /* Update last_login BERDASARKAN wallet_address */
           await supabase.from('wallet')
             .update({ last_login: new Date().toISOString() })
             .eq('wallet_address', uid);
-
           return { data: existing, isNew: false };
         }
 
-        /* Wallet belum ada — buat record baru */
-        var initial = calculateInitialScore(uid, username);
-
+        /* Jika belum ada, buat record baru */
         var { data: created, error: insertErr } = await supabase
           .from('wallet')
           .insert({
-            user_id:          uid, /* Asumsi user_id diisi UID Pi jika tidak punya tabel users terpisah */
+            user_id:          uid,
             wallet_address:   uid, 
-            score:            initial.score,
-            success_rate:     initial.successRate,
-            tx_total:         initial.txTotal,
-            risk_flags:       initial.riskFlags,
-            risk_penalty:     initial.riskPenalty,
-            wallet_age_days:  initial.walletAgeDays,
+            score:            0, /* Skor awal 0, akan dihitung real-time di frontend */
+            success_rate:     0,
+            tx_total:         0,
+            risk_flags:       [],
+            risk_penalty:     0,
+            wallet_age_days:  0,
             last_login:       new Date().toISOString()
           })
           .select()
@@ -430,56 +385,6 @@
       }
     }
 
-    /* ================================================================
-       SKOR AWAL
-       ================================================================ */
-    function calculateInitialScore(uid, username) {
-      var accountAgeDays = 0;
-      try {
-        var lt = safeGet('whs_login_time');
-        if (lt) {
-          var firstLogin = parseInt(lt, 10);
-          if (!isNaN(firstLogin)) {
-            accountAgeDays = Math.max(0, Math.floor((Date.now() - firstLogin) / 86400000));
-          }
-        }
-      } catch(e) {}
-
-      var score;
-      if (accountAgeDays >= 365)      score = 720;
-      else if (accountAgeDays >= 90) score = 650;
-      else if (accountAgeDays >= 31) score = 550;
-      else                           score = 450;
-
-      var ageScore;
-      if (accountAgeDays >= 365)      ageScore = 200;
-      else if (accountAgeDays >= 90) ageScore = 150;
-      else if (accountAgeDays >= 31) ageScore = 100;
-      else                           ageScore = 50;
-
-      var srScore = 0;
-      var volScore = 0;
-      var riskScore = 250;
-
-      return {
-        score: score,
-        successRate: 0,
-        txTotal: 0,
-        riskFlags: [],
-        riskPenalty: 0,
-        walletAgeDays: accountAgeDays,
-        breakdown: {
-          successRate: { label: 'Success Rate', score: srScore, max: 250 },
-          volume:       { label: 'Volume', score: volScore, max: 250, value: 0 },
-          age:          { label: 'Account Age', score: ageScore, max: 250 },
-          risk:         { label: 'Risk Assessment', score: riskScore, max: 250, penalty: 0 }
-        }
-      };
-    }
-
-    /* ================================================================
-       INIT
-       ================================================================ */
     async function initApp() {
       var guardScreen = document.getElementById('guardScreen');
       var mainWrapper = document.getElementById('mainWrapper');
@@ -492,15 +397,11 @@
         mainWrapper.style.display = 'none';
         guardScreen.classList.add('active');
         loadingScreen.style.display = 'none';
-
         var reasons = {
           no_local_data:  null,
           no_supabase:   'Backend tidak tersedia. Muat ulang halaman.',
-          uid_not_in_db:  'Sesi lokal ditemukan tapi tidak valid di server. Silakan login ulang.',
-          uid_mismatch:   'Data sesi tidak cocok dengan server. Kemungkinan data dimanipulasi.',
-          db_error:       'Gagal terhubung ke server: ' + (authResult.detail || '')
+          uid_mismatch:   'Data sesi tidak cocok dengan server.'
         };
-
         guardDetail.textContent = reasons[authResult.reason] || '';
         return;
       }
@@ -514,16 +415,10 @@
           console.error('[DB] ' + walletResult.error + ': ' + (walletResult.detail || ''));
           mainWrapper.style.display = 'flex';
           loadingScreen.style.display = 'none';
-
           if (walletResult.error === 'no_supabase') {
-            document.getElementById('pageContent').innerHTML =
-              '<div style="text-align:center;padding:60px 20px;">'
-              + '<i class="fa-solid fa-database" style="font-size:2rem;color:var(--danger);opacity:0.5;margin-bottom:12px;display:block;"></i>'
-              + '<h3 style="font-family:var(--font-display);margin-bottom:8px;">Backend Tidak Tersedia</h3>'
-              + '<p style="color:var(--text-muted);font-size:0.88rem;max-width:320px;margin:0 auto;">Supabase tidak dapat dijangkau. Pastikan koneksi internet aktif dan coba lagi.</p>'
-              + '</div>';
+            document.getElementById('pageContent').innerHTML = '<div style="text-align:center;padding:60px 20px;"><i class="fa-solid fa-database" style="font-size:2rem;color:var(--danger);opacity:0.5;margin-bottom:12px;display:block;"></i><h3 style="font-family:var(--font-display);margin-bottom:8px;">Backend Tidak Tersedia</h3><p style="color:var(--text-muted);font-size:0.88rem;max-width:320px;margin:0 auto;">Supabase tidak dapat dijangkau.</p></div>';
           } else {
-            showToast('Gagal memuat data: ' + (walletResult.detail || 'Error tidak diketahui'), 'warning', 5000);
+            showToast('Gagal memuat data: ' + (walletResult.detail || 'Error'), 'warning', 5000);
           }
           return;
         }
@@ -531,78 +426,92 @@
         mainWrapper.style.display = 'flex';
         loadingScreen.style.display = 'none';
 
-        var data = normalizeWalletData(walletResult.data, walletResult.isNew);
+        /* FIX UTAMA: Gunakan verifiedUser.username */
+        var data = normalizeWalletData(walletResult.data, walletResult.isNew, verifiedUser.username);
         render(data);
 
         if (walletResult.isNew) {
-          showToast('Wallet terdaftar di sistem', 'success', 3000);
+          showToast('Wallet berhasil didaftarkan', 'success', 3000);
         }
 
       } catch(e) {
         console.error('[INIT] Fatal error:', e);
         mainWrapper.style.display = 'flex';
         loadingScreen.style.display = 'none';
-        document.getElementById('pageContent').innerHTML =
-          '<div style="text-align:center;padding:60px 20px;">'
-          + '<p style="color:var(--danger);">Error: ' + escapeHtml(e.message) + '</p>'
-          + '</div>';
+        document.getElementById('pageContent').innerHTML = '<div style="text-align:center;padding:60px 20px;"><p style="color:var(--danger);">Error: ' + escapeHtml(e.message) + '</p></div>';
       }
     }
 
-    /* ================================================================
-       NORMALIZE — SUDAH DIFIX KE wallet_address
-       ================================================================ */
-    function normalizeWalletData(dbRow, isNew) {
+    /* ====================================================================
+       FIX NORMALIZE: SKOR DIHITUNG REAL-TIME, UMUR DARI created_at
+       ==================================================================== */
+    function normalizeWalletData(dbRow, isNew, realUsername) {
       var riskFlags = [];
       try { riskFlags = (typeof dbRow.risk_flags === 'string') ? JSON.parse(dbRow.risk_flags) : (dbRow.risk_flags || []); } catch(e) { riskFlags = []; }
 
-      var score = dbRow.score || 0;
+      var successRate = dbRow.success_rate || 0;
+      var txTotal = dbRow.tx_total || 0;
+      var riskPenalty = dbRow.risk_penalty || 0;
+
+      /* 1. Hitung Usia Wallet Real-time dari created_at */
+      var ageDays = 0;
+      if (dbRow.created_at) {
+        ageDays = Math.max(0, Math.floor((Date.now() - new Date(dbRow.created_at).getTime()) / 86400000));
+      }
+
+      /* 2. Hitung Skor Per Kategori (Maks 250) */
+      var srScore = Math.min(250, Math.round((successRate / 100) * 250));
+      var volScore = Math.min(250, Math.round(txTotal * 2.5)); 
+      
+      var ageScore = 50;
+      if (ageDays >= 365) ageScore = 250;
+      else if (ageDays >= 90) ageScore = 180;
+      else if (ageDays >= 30) ageScore = 100;
+
+      var riskScore = Math.max(0, 250 - riskPenalty);
+
+      /* 3. Total Skor = Jumlah Breakdown (Selalu Sinkron) */
+      var totalScore = srScore + volScore + ageScore + riskScore;
+
       var networkAvg = 580; 
-      var vsNetwork = score - networkAvg;
+      var vsNetwork = totalScore - networkAvg;
       var vsText = vsNetwork >= 0 ? '+' + vsNetwork : '' + vsNetwork;
       var vsClass = vsNetwork >= 0 ? 'color:var(--success)' : 'color:var(--danger)';
 
       var status, statusColor;
-      if (score >= 800)      { status = 'Excellent'; statusColor = 'var(--success)'; }
-      else if (score >= 600) { status = 'Good'; statusColor = 'var(--accent)'; }
-      else if (score >= 400) { status = 'Fair'; statusColor = 'var(--warning)'; }
+      if (totalScore >= 800)      { status = 'Excellent'; statusColor = 'var(--success)'; }
+      else if (totalScore >= 600) { status = 'Good'; statusColor = 'var(--accent)'; }
+      else if (totalScore >= 400) { status = 'Fair'; statusColor = 'var(--warning)'; }
       else                   { status = 'Poor'; statusColor = 'var(--danger)'; }
 
-      var ageDays = dbRow.wallet_age_days || 0;
-      var ageText;
-      if (ageDays >= 730) { var y = Math.floor(ageDays/365); var m = Math.floor((ageDays%365)/30); ageText = y+' tahun'+(m>0?' '+m+' bulan':''); }
-      else if (ageDays >= 30) { ageText = Math.floor(ageDays/30)+' bulan'; }
-      else { ageText = ageDays+' hari'; }
-
       return {
-        walletAddress: dbRow.wallet_address, // DIFIX
-        username: 'Pi User', // Karena tabel wallet asli tidak ada kolom username
-        uid: dbRow.wallet_address, // DIFIX
-        score: score,
+        walletAddress: dbRow.wallet_address,
+        username: realUsername || 'Pi User', // FIX USERNAME
+        uid: dbRow.wallet_address,
+        score: totalScore, // Skor Sekarang Dinamis
         networkAvg: networkAvg,
         status: status,
         statusColor: statusColor,
-        walletAgeDays: ageDays,
+        walletAgeDays: ageDays, // Umur Sekarang Dinamis
         isNew: isNew,
         transactions: {
-          total: dbRow.tx_total || 0,
-          successRate: dbRow.success_rate || 0,
-          failed: Math.round((dbRow.tx_total || 0) * (100 - (dbRow.success_rate || 0)) / 100),
-          totalGasETH: 0
+          total: txTotal,
+          successRate: successRate,
+          failed: Math.round(txTotal * (100 - successRate) / 100),
         },
         breakdown: {
-          successRate: { label: 'Success Rate', score: 0, max: 250 },
-          volume:       { label: 'Volume', score: 0, max: 250, value: dbRow.tx_total || 0 },
-          age:          { label: 'Account Age', score: 0, max: 250 },
-          risk:         { label: 'Risk Assessment', score: 250 - (dbRow.risk_penalty || 0), max: 250, penalty: dbRow.risk_penalty || 0 }
+          successRate: { label: 'Success Rate', score: srScore, max: 250 },
+          volume:       { label: 'Volume', score: volScore, max: 250, value: txTotal },
+          age:          { label: 'Account Age', score: ageScore, max: 250 },
+          risk:         { label: 'Risk Assessment', score: riskScore, max: 250, penalty: riskPenalty }
         },
         riskFlags: riskFlags
       };
     }
 
-    /* ================================================================
-       RENDER
-       ================================================================ */
+    /* ====================================================================
+       RENDER UI
+       ==================================================================== */
     function render(data) {
       var pc = document.getElementById('pageContent');
       var safeAddr = escapeHtml(data.walletAddress);
@@ -621,7 +530,6 @@
 
       var html = '';
 
-      /* Identity Card */
       html += '<div class="identity-card">'
         + '<div class="identity-top">'
         +   '<div class="identity-left">'
@@ -635,7 +543,7 @@
         +       '<div class="identity-meta">'
         +         '<span><i class="fa-solid fa-shield-halved" style="color:' + data.statusColor + '"></i> <b style="color:' + data.statusColor + '">' + data.status + '</b></span>'
         +         '<span><i class="fa-regular fa-clock"></i> ' + (data.walletAgeDays >= 30 ? Math.floor(data.walletAgeDays/30) + ' bulan' : data.walletAgeDays + ' hari') + ' di sistem</span>'
-        +         '<span><i class="fa-solid fa-database" style="color:var(--accent)"></i> Live from Supabase</span>'
+        +         '<span><i class="fa-solid fa-chart-line" style="color:var(--accent)"></i> Live Calculated</span>'
         +       '</div>'
         +     '</div>'
         +   '</div>'
@@ -661,8 +569,8 @@
         + '</div>'
         + '<div class="card"><div class="card-body"><div class="score-detail-grid">'
         + '<div class="breakdown-list">'
-        + renderBreakdown(data.breakdown.successRate, 'teal', 'fa-circle-check', (data.transactions.successRate||0) + '%', 'Belum ada data transaksi. Skor akan meningkat seiring penggunaan.', networkAvgPct)
-        + renderBreakdown(data.breakdown.volume, 'green', 'fa-arrow-right-arrow-left', formatNumber(data.breakdown.volume.value||0) + ' tx', 'Belum ada data transaksi.', networkAvgPct)
+        + renderBreakdown(data.breakdown.successRate, 'teal', 'fa-circle-check', (data.transactions.successRate||0) + '%', 'Skor berdasarkan persentase transaksi yang berhasil.', networkAvgPct)
+        + renderBreakdown(data.breakdown.volume, 'green', 'fa-arrow-right-arrow-left', formatNumber(data.breakdown.volume.value||0) + ' tx', 'Skor berdasarkan total volume transaksi on-chain.', networkAvgPct)
         + '</div>'
         + '<div class="breakdown-list">'
         + renderBreakdown(data.breakdown.age, 'amber', 'fa-clock', Math.floor(data.walletAgeDays/30) + ' bulan', getAgeExplain(data.walletAgeDays), networkAvgPct)
@@ -717,18 +625,15 @@
       html += '</div></div></div>';
       pc.innerHTML = html;
 
-      /* Bind copy */
       var copyBtn = document.getElementById('copyUidBtn');
       if (copyBtn) {
         copyBtn.addEventListener('click', function() {
-          var uid = data.uid;
           if (navigator.clipboard && navigator.clipboard.writeText) {
-            navigator.clipboard.writeText(uid).then(function() { showToast('Wallet Address disalin', 'success', 2000); }).catch(function() { fallbackCopy(uid); });
-          } else { fallbackCopy(uid); }
+            navigator.clipboard.writeText(data.uid).then(function() { showToast('Wallet Address disalin', 'success', 2000); }).catch(function() { fallbackCopy(data.uid); });
+          } else { fallbackCopy(data.uid); }
         });
       }
 
-      /* Animasi */
       requestAnimationFrame(function() {
         animateCounter('animScore', 0, data.score, 1200);
         animateCounter('animTx', 0, data.transactions.total, 1000);
@@ -742,9 +647,6 @@
       });
     }
 
-    /* ================================================================
-       RENDER HELPERS
-       ================================================================ */
     function renderBreakdown(item, colorClass, icon, displayVal, explain, avgPct) {
       var pct = Math.round((item.score / item.max) * 100);
       var markerPct = Math.min(100, Math.max(0, avgPct));
@@ -783,29 +685,29 @@
     function generateWhyCards(data) {
       var cards = [];
       if (data.isNew) {
-        cards.push({ icon: 'fa-seedling', type: 'neutral', title: 'Wallet Baru Terdaftar', text: 'Ini adalah kunjungan pertama. Skor awal ' + data.score + ' berdasarkan umur akun. Skor akan meningkat seiring penggunaan dan akumulasi data.', impact: '+' + data.score + ' poin (awal)', impactType: 'neutral' });
+        cards.push({ icon: 'fa-seedling', type: 'neutral', title: 'Wallet Baru Terdaftar', text: 'Ini adalah kunjungan pertama. Skor dihitung secara real-time berdasarkan data on-chain.', impact: 'Dimulai dari ' + data.score + ' poin', impactType: 'neutral' });
       }
       
       if (data.transactions.total === 0) {
-        cards.push({ icon: 'fa-hourglass-start', type: 'neutral', title: 'Belum Ada Transaksi', text: 'Volume dan success rate masih 0 karena belum ada aktivitas on-chain yang tercatat.', impact: '0 / 500 poin', impactType: 'neutral' });
+        cards.push({ icon: 'fa-hourglass-start', type: 'neutral', title: 'Belum Ada Transaksi', text: 'Volume dan success rate masih 0 karena belum ada aktivitas on-chain yang tercatat di wallet ini.', impact: '0 / 500 poin', impactType: 'neutral' });
       } else {
         if (data.transactions.successRate >= 90) {
-          cards.push({ icon: 'fa-circle-check', type: 'positive', title: 'Tingkat Keberhasilan Tinggi', text: 'Lebih dari 90% transaksi Anda berhasil tanpa error.', impact: '+' + data.breakdown.successRate.score + ' poin', impactType: 'positive' });
+          cards.push({ icon: 'fa-circle-check', type: 'positive', title: 'Tingkat Keberhasilan Tinggi', text: 'Lebih dari 90% transaksi Anda berhasil.', impact: '+' + data.breakdown.successRate.score + ' poin', impactType: 'positive' });
         } else if (data.transactions.successRate < 50 && data.transactions.total > 5) {
-          cards.push({ icon: 'fa-circle-xmark', type: 'negative', title: 'Banyak Transaksi Gagal', text: 'Sebagian besar transaksi mengalami kegagalan. Ini menurunkan skor secara signifikan.', impact: '+' + data.breakdown.successRate.score + ' poin', impactType: 'negative' });
+          cards.push({ icon: 'fa-circle-xmark', type: 'negative', title: 'Banyak Transaksi Gagal', text: 'Sebagian besar transaksi mengalami kegagalan.', impact: '+' + data.breakdown.successRate.score + ' poin', impactType: 'negative' });
         }
       }
 
       if (data.walletAgeDays >= 365) {
         cards.push({ icon: 'fa-calendar-check', type: 'positive', title: 'Akun Mapan', text: 'Usia akun lebih dari 1 tahun menunjukkan komitmen jangka panjang.', impact: '+' + data.breakdown.age.score + ' poin', impactType: 'positive' });
       } else if (data.walletAgeDays < 30) {
-        cards.push({ icon: 'fa-clock', type: 'negative', title: 'Akun Sangat Baru', text: 'Usia akun kurang dari 30 hari. Sistem belum memiliki cukup data untuk memberikan kepercayaan penuh.', impact: '+' + data.breakdown.age.score + ' poin', impactType: 'negative' });
+        cards.push({ icon: 'fa-clock', type: 'negative', title: 'Akun Sangat Baru', text: 'Usia akun kurang dari 30 hari. Skor akan meningkat seiring waktu.', impact: '+' + data.breakdown.age.score + ' poin', impactType: 'negative' });
       }
 
       if (data.riskFlags.length === 0) {
-        cards.push({ icon: 'fa-shield-halved', type: 'positive', title: 'Profil Risiko Bersih', text: 'Tidak ditemukan indikasi aktivitas mencurigakan, bot, atau manipulasi.', impact: 'Penuh (250/250)', impactType: 'positive' });
+        cards.push({ icon: 'fa-shield-halved', type: 'positive', title: 'Profil Risiko Bersih', text: 'Tidak ditemukan indikasi aktivitas mencurigakan.', impact: 'Penuh (250/250)', impactType: 'positive' });
       } else {
-        cards.push({ icon: 'fa-triangle-exclamation', type: 'negative', title: 'Terdapat Risk Flags', text: 'Ditemukan ' + data.riskFlags.length + ' tanda bahaya yang mengurangi skor risiko Anda.', impact: '-' + data.breakdown.risk.penalty + ' poin penalty', impactType: 'negative' });
+        cards.push({ icon: 'fa-triangle-exclamation', type: 'negative', title: 'Terdapat Risk Flags', text: 'Ditemukan ' + data.riskFlags.length + ' tanda bahaya.', impact: '-' + data.breakdown.risk.penalty + ' poin penalty', impactType: 'negative' });
       }
 
       var html = '';
@@ -823,31 +725,21 @@
       return html;
     }
 
-    /* ================================================================
-       ANIMASI & UTILITAS AKSI
-       ================================================================ */
     function animateCounter(id, start, end, duration, suffix, decimals) {
       suffix = suffix || '';
       decimals = decimals || 0;
       var el = document.getElementById(id);
       if (!el) return;
-      
       var range = end - start;
       var startTime = null;
-      
       function step(timestamp) {
         if (!startTime) startTime = timestamp;
         var progress = Math.min((timestamp - startTime) / duration, 1);
         var ease = 1 - Math.pow(1 - progress, 3);
         var current = start + (range * ease);
-        
         el.textContent = (decimals > 0 ? current.toFixed(decimals) : Math.floor(current)) + suffix;
-        
-        if (progress < 1) {
-          requestAnimationFrame(step);
-        } else {
-          el.textContent = (decimals > 0 ? end.toFixed(decimals) : end) + suffix;
-        }
+        if (progress < 1) { requestAnimationFrame(step); } 
+        else { el.textContent = (decimals > 0 ? end.toFixed(decimals) : end) + suffix; }
       }
       requestAnimationFrame(step);
     }
@@ -860,18 +752,11 @@
       document.body.appendChild(textArea);
       textArea.focus();
       textArea.select();
-      try {
-        document.execCommand('copy');
-        showToast('Wallet Address disalin', 'success', 2000);
-      } catch (err) {
-        showToast('Gagal menyalin', 'error', 2000);
-      }
+      try { document.execCommand('copy'); showToast('Wallet Address disalin', 'success', 2000); } catch (err) { showToast('Gagal menyalin', 'error', 2000); }
       document.body.removeChild(textArea);
     }
 
-    /* ================================================================
-       EVENT LISTENERS
-       ================================================================ */
+    /* EVENT LISTENERS */
     document.getElementById('refreshBtn').addEventListener('click', function() {
       var btn = this;
       var icon = btn.querySelector('i');
@@ -880,9 +765,9 @@
       
       fetchOrCreateWallet(verifiedUser.uid, verifiedUser.username).then(function(res) {
         if (!res.error && res.data) {
-          var data = normalizeWalletData(res.data, false);
+          var data = normalizeWalletData(res.data, false, verifiedUser.username);
           render(data);
-          showToast('Data diperbarui dari server', 'success');
+          showToast('Data diperbarui (Real-time)', 'success');
         } else {
           showToast('Gagal memperbarui data', 'error');
         }
@@ -898,15 +783,13 @@
       safeDel('whs_pi_user');
       safeDel('whs_login_time');
       safeDel('whs_pi_token');
+      /* Opsional: Clear Pi SDK Auth jika memungkinkan */
+      try { if(window.Pi && window.Pi.auth) window.Pi.auth.signOut(); } catch(e){}
+      
       showToast('Sesi berakhir', 'info', 1500);
-      setTimeout(function() {
-        window.location.href = 'login.html';
-      }, 800);
+      setTimeout(function() { window.location.href = 'login.html'; }, 800);
     });
 
-    /* ================================================================
-       JALANKAN APP
-       ================================================================ */
     document.addEventListener('DOMContentLoaded', initApp);
   </script>
 </body>
