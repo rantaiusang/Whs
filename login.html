@@ -365,12 +365,41 @@ CREATE POLICY "allow_anon_select_own"
       || window.location.hostname === 'localhost'
       || window.location.hostname === '127.0.0.1';
 
-    var SDK_TIMEOUT    = (window.APP_CONFIG && window.APP_CONFIG.sdkTimeout)    || 15000;
-    var AUTH_TIMEOUT   = (window.APP_CONFIG && window.APP_CONFIG.authTimeout)   || 30000;
+    var SDK_TIMEOUT     = (window.APP_CONFIG && window.APP_CONFIG.sdkTimeout)    || 15000;
+    var AUTH_TIMEOUT    = (window.APP_CONFIG && window.APP_CONFIG.authTimeout)   || 30000;
     var SESSION_MAX_AGE = (window.APP_CONFIG && window.APP_CONFIG.sessionMaxAge) || 86400000;
 
     var isRedirecting   = false;
     var loginInProgress = false;
+    var sessionPersisted = false; // Melacak apakah sesi SUDAH berhasil disimpan
+
+    /* ================================================================
+       DETEKSI LOOP REDIRECT — CEGAH INFINITE LOOP
+       ================================================================ */
+    (function preventRedirectLoop() {
+      var loopCount = parseInt(sessionStorage.getItem('whs_redirect_count') || '0', 10);
+      if (loopCount >= 3) {
+        console.error('[PI] Terdeteksi redirect loop (' + loopCount + 'x). Menghentikan.');
+        sessionStorage.removeItem('whs_redirect_count');
+        /* Jangan redirect otomatis, biarkan user melihat halaman login */
+        window._BLOCK_AUTO_LOGIN = true;
+        return;
+      }
+      if (loopCount > 0) {
+        console.warn('[PI] Redirect ke-' + loopCount + ' terdeteksi');
+      }
+    })();
+
+    function bumpRedirectCount() {
+      try {
+        var c = parseInt(sessionStorage.getItem('whs_redirect_count') || '0', 10);
+        sessionStorage.setItem('whs_redirect_count', String(c + 1));
+      } catch(e) {}
+    }
+
+    function resetRedirectCount() {
+      try { sessionStorage.removeItem('whs_redirect_count'); } catch(e) {}
+    }
 
     /* ================================================================
        SUPABASE — Inisialisasi Aman
@@ -440,7 +469,7 @@ CREATE POLICY "allow_anon_select_own"
       return Promise.race([promise, tp]).finally(function() { clearTimeout(id); });
     }
 
-    function safeSet(k, v)  { try { localStorage.setItem(k, v); return true; } catch(e) { return false; } }
+    function safeSet(k, v)  { try { localStorage.setItem(k, v); return true; } catch(e) { logDebug('localStorage.setItem gagal: ' + k, false, true); return false; } }
     function safeGet(k)     { try { return localStorage.getItem(k); } catch(e) { return null; } }
     function safeDel(k)     { try { localStorage.removeItem(k); } catch(e) {} }
 
@@ -454,11 +483,15 @@ CREATE POLICY "allow_anon_select_own"
     updateOffline();
 
     /* ================================================================
-       CLEAR AUTH
+       CLEAR AUTH — Hanya hapus jika sesi BELUM disimpan
        ================================================================ */
     function clearPiAuth() {
       ['whs_pi_uid','whs_pi_username','whs_pi_token','whs_login_time','whs_incomplete_payment','whs_wallet'].forEach(function(k) { safeDel(k); });
-      try { ['whs_pi_user','currentWallet','walletData'].forEach(function(k) { sessionStorage.removeItem(k); }); } catch(e) {}
+      try {
+        ['whs_pi_user','currentWallet','walletData'].forEach(function(k) { sessionStorage.removeItem(k); });
+      } catch(e) {}
+      sessionPersisted = false;
+      logDebug('Semua data sesi dihapus');
     }
 
     /* ================================================================
@@ -509,35 +542,121 @@ CREATE POLICY "allow_anon_select_own"
       logDebug(title + ': ' + (msg || desc), true);
     }
 
+    function showWarning(title, desc) {
+      warningText.textContent = desc;
+      warningBox.classList.add('visible');
+      logDebug('Peringatan: ' + desc, false, true);
+    }
+
     /* ================================================================
-       CEK SESI AKTIF BERDASARKAN UID
+       CEK SESI AKTIF — BACA DARI localStorage DAN sessionStorage
        ================================================================ */
     function checkExistingSession() {
       try {
-        var savedUid = safeGet('whs_pi_uid');
-        var savedUsername = safeGet('whs_pi_username');
-        var lt = safeGet('whs_login_time');
+        var savedUid      = safeGet('whs_pi_uid');
+        var savedUsername  = safeGet('whs_pi_username');
+        var lt             = safeGet('whs_login_time');
+
+        /* Juga cek sessionStorage sebagai fallback */
+        if (!savedUid) {
+          try {
+            var ssUser = sessionStorage.getItem('whs_pi_user');
+            if (ssUser) {
+              var parsed = JSON.parse(ssUser);
+              if (parsed && parsed.uid) {
+                savedUid = parsed.uid;
+                savedUsername = parsed.username || savedUsername;
+                /* Restore ke localStorage jika hilang */
+                safeSet('whs_pi_uid', savedUid);
+                if (savedUsername) safeSet('whs_pi_username', savedUsername);
+                logDebug('Sesi dipulihkan dari sessionStorage', false, true);
+              }
+            }
+          } catch(e) {}
+        }
 
         if (!savedUid || !lt) return false;
 
         var age = Date.now() - parseInt(lt, 10);
         if (isNaN(age) || age > SESSION_MAX_AGE) {
-          logDebug('Sesi kadaluarsa', false, true);
+          logDebug('Sesi kadaluarsa (' + Math.round(age/60000) + ' menit lalu)', false, true);
           clearPiAuth();
           return false;
         }
+
         sessionBanner.classList.add('visible');
         sessionUser.textContent = savedUsername ? '@' + savedUsername : 'User';
         var m = Math.round(age / 60000);
         sessionAge.textContent = m < 1 ? ' (baru saja)' : m < 60 ? ' (' + m + 'm lalu)' : ' (' + Math.round(m/60) + 'j lalu)';
         return true;
-      } catch(e) { clearPiAuth(); return false; }
+      } catch(e) {
+        clearPiAuth();
+        return false;
+      }
     }
 
+    /* ================================================================
+       REDIRECT — Gunakan replace() agar halaman login tidak tetap
+       di history browser (mencegah loop saat tombol Back ditekan)
+       ================================================================ */
     function safeRedirect(url, delay) {
       if (isRedirecting) return;
       isRedirecting = true;
-      setTimeout(function() { window.location.href = url; }, delay || 0);
+      logDebug('Redirect ke ' + url + ' dalam ' + (delay || 0) + 'ms');
+      bumpRedirectCount();
+      setTimeout(function() {
+        try {
+          window.location.replace(url);
+        } catch(e) {
+          /* Fallback jika replace gagal (jarang terjadi) */
+          window.location.href = url;
+        }
+      }, delay || 0);
+    }
+
+    /* ================================================================
+       SIMPAN SESI — Tulis ke localStorage DAN sessionStorage sekaligus
+       ================================================================ */
+    function persistSession(uid, username, token) {
+      var now = String(Date.now());
+
+      /* localStorage — penyimpanan utama */
+      var ok1 = safeSet('whs_pi_uid', uid);
+      var ok2 = safeSet('whs_pi_username', username);
+      var ok3 = safeSet('whs_pi_token', token);
+      var ok4 = safeSet('whs_login_time', now);
+
+      /* sessionStorage — mirror data agar dashboard bisa membaca dari sini */
+      var ssOk = false;
+      try {
+        sessionStorage.setItem('whs_pi_user', JSON.stringify({
+          uid: uid,
+          username: username,
+          accessToken: token,
+          loginTime: now
+        }));
+        ssOk = true;
+      } catch(e) {
+        logDebug('sessionStorage write gagal: ' + e.message, false, true);
+      }
+
+      var allOk = ok1 && ok2 && ok3 && ok4;
+      logDebug('Persist sesi: localStorage=' + (allOk ? 'OK' : 'GAGAL') + ', sessionStorage=' + (ssOk ? 'OK' : 'GAGAL'));
+
+      /* Verifikasi read-back dari localStorage */
+      if (allOk) {
+        var verify = safeGet('whs_pi_uid');
+        if (verify !== uid) {
+          logDebug('VERIFIKASI GAGAL: whs_pi_uid set="' + (verify || 'null') + '" expected="' + uid + '"', true);
+          allOk = false;
+        }
+      }
+
+      if (allOk || ssOk) {
+        sessionPersisted = true;
+      }
+
+      return allOk || ssOk; // Return true jika minimal satu storage berhasil
     }
 
     /* ================================================================
@@ -547,7 +666,6 @@ CREATE POLICY "allow_anon_select_own"
 
     function initPiSDK() {
       return new Promise(function(resolve, reject) {
-        /* Jika SDK sudah pernah di-init sebelumnya (stateful), langsung resolve */
         if (sdkReady && window.Pi && window.Pi._initialized) {
           logDebug('Pi SDK sudah terinisialisasi sebelumnya, melewati init ulang');
           resolve();
@@ -586,7 +704,7 @@ CREATE POLICY "allow_anon_select_own"
             return;
           }
 
-          /* Pi SDK v1.x: init() synchronous — cek apakah sudah siap */
+          /* Pi SDK v1.x: init() synchronous */
           sdkReady = true;
           window.Pi._initialized = true;
           logDebug('Pi SDK v1.x terdeteksi — init() synchronous selesai');
@@ -600,12 +718,23 @@ CREATE POLICY "allow_anon_select_own"
     }
 
     /* ================================================================
-       PROSES OTENTIKASI UTAMA (STRICT UID-BASED)
+       PROSES OTENTIKASI UTAMA
        ================================================================ */
     function startPiLogin() {
       if (loginInProgress) return;
       loginInProgress = true;
+      sessionPersisted = false;
       resetUI();
+
+      /* ---- Jika terdeteksi loop, tampilkan pesan error khusus ---- */
+      if (window._BLOCK_AUTO_LOGIN) {
+        showError('Redirect Loop Terdeteksi',
+          'Halaman terus-menerus mengalihkan tanpa berhasil masuk dashboard.',
+          'Loop Terdeteksi',
+          'Kemungkinan dashboard.html tidak dapat membaca data sesi, atau file dashboard.html tidak ada. Pastikan dashboard.html memiliki logika pembacaan sesi yang kompatibel. Coba: (1) Hapus cache browser, (2) Buka dashboard.html langsung untuk cek error, (3) Gunakan ?debug=true untuk melihat log.');
+        loginInProgress = false;
+        return;
+      }
 
       /* ---- Cek koneksi internet ---- */
       if (!navigator.onLine) {
@@ -619,6 +748,7 @@ CREATE POLICY "allow_anon_select_own"
         logDebug('Sesi valid ditemukan, mengalihkan ke dashboard...');
         statusTitle.textContent = 'Menghubungkan Sesi...';
         statusDesc.textContent = 'Membuka dashboard Anda kembali';
+        resetRedirectCount();
         safeRedirect('dashboard.html', 800);
         return;
       }
@@ -638,12 +768,12 @@ CREATE POLICY "allow_anon_select_own"
       }
 
       /* ============================================================
-         LANGKAH 1: INISIALISASI SDK (await sebelum authenticate)
+         LANGKAH 1: INISIALISASI SDK
          ============================================================ */
       initPiSDK()
         .then(function() {
           /* ========================================================
-             LANGKAH 2: BARU SETELAH INIT SELESAI, panggil authenticate
+             LANGKAH 2: AUTHENTICATE (hanya setelah init selesai)
              ======================================================== */
           logDebug('SDK siap. Meminta otentikasi user...');
           statusTitle.textContent = 'Meminta Otorisasi...';
@@ -663,7 +793,7 @@ CREATE POLICY "allow_anon_select_own"
         .then(function(auth) {
           logDebug('Menerima callback respons dari Pi SDK');
 
-          /* PROTEKSI KETAT: Cek ketersediaan objek user dan UID secara absolut */
+          /* Validasi respons */
           if (!auth) {
             throw new Error('Pi SDK mengembalikan respons kosong (null/undefined). Coba lagi.');
           }
@@ -671,27 +801,36 @@ CREATE POLICY "allow_anon_select_own"
             throw new Error('Pi SDK tidak mengirimkan data user. Kemungkinan otentikasi dibatalkan di sisi Pi.');
           }
           if (!auth.user.uid) {
-            throw new Error('Pi SDK mengirimkan user tanpa UID. Ini adalah respons tidak valid dari server Pi.');
+            throw new Error('Pi SDK mengirimkan user tanpa UID. Respons tidak valid dari server Pi.');
           }
 
-          var uid = auth.user.uid;
+          var uid      = auth.user.uid;
           var username = auth.user.username || "PiUser";
-          var token = auth.accessToken;
+          var token    = auth.accessToken;
 
-          logDebug('Otentikasi sukses. UID terverifikasi: ' + uid.substring(0, 8) + '...');
+          logDebug('Otentikasi sukses. UID: ' + uid.substring(0, 8) + '...');
           statusTitle.className = 'pi-status-title success';
           spinnerRing.className = 'pi-spinner-ring success';
           spinnerIcon.className = 'pi-spinner-icon success';
           statusTitle.textContent = 'Otentikasi Berhasil';
+          statusDesc.textContent = 'Menyimpan data sesi...';
+
+          /* ========================================================
+             LANGKAH 3: SIMPAN SESI ke localStorage + sessionStorage
+             ======================================================== */
+          var saved = persistSession(uid, username, token);
+
+          if (!saved) {
+            /* Data gagal disimpan — ini error kritis, jangan lanjut */
+            throw new Error('Gagal menyimpan data sesi ke penyimpanan browser. Pastikan localStorage/sessionStorage tidak diblokir.');
+          }
+
+          logDebug('Sesi tersimpan dengan sukses. UID verify: ' + safeGet('whs_pi_uid').substring(0, 8));
           statusDesc.textContent = 'Sinkronisasi data ke database...';
 
-          /* Simpan identitas utama berbasis UID */
-          safeSet('whs_pi_uid', uid);
-          safeSet('whs_pi_username', username);
-          safeSet('whs_pi_token', token);
-          safeSet('whs_login_time', Date.now());
-
-          /* Upsert ke Supabase jika tersedia */
+          /* ========================================================
+             LANGKAH 4: SYNC KE SUPABASE (non-blocking terhadap redirect)
+             ======================================================== */
           if (SUPABASE_READY && supabase) {
             return supabase.from('users').upsert({
               pi_uid: uid,
@@ -701,21 +840,43 @@ CREATE POLICY "allow_anon_select_own"
             }, { onConflict: 'pi_uid' });
           } else {
             logDebug('Supabase dilewati, melanjutkan login lokal');
-            return { error: null };
+            return { error: null, _skipped: true };
           }
         })
         .then(function(dbResult) {
+          /* Jika Supabase gagal TAPI sesi sudah tersimpan lokal, tetap redirect */
           if (dbResult && dbResult.error) {
-            throw new Error('Gagal mengamankan sesi di database: ' + dbResult.error.message);
+            logDebug('Supabase upsert gagal: ' + dbResult.error.message, false, true);
+            showWarning('Sinkronisasi Database Gagal',
+              'Sesi Anda tersimpan lokal tapi gagal disinkronkan ke cloud. Data akan dicoba lagi nanti.');
+            /* JANGAN throw — sesi lokal sudah valid, tetap lanjut ke dashboard */
           }
-          logDebug('Proses login selesai penuh. Mengalihkan ke dashboard...');
+
+          if (dbResult && dbResult._skipped) {
+            logDebug('Dashboard akan dimuat tanpa sinkronisasi cloud');
+          }
+
+          /* ========================================================
+             LANGKAH 5: VERIFIKASI FINAL SEBELUM REDIRECT
+             ======================================================== */
+          var finalUid = safeGet('whs_pi_uid');
+          if (!finalUid) {
+            throw new Error('Data sesi hilang setelah penyimpanan. Ini bisa disebabkan oleh browser yang membersihkan storage secara otomatis.');
+          }
+
+          logDebug('Verifikasi final OK. Mengalihkan ke dashboard...');
+          resetRedirectCount();
           showToast('Selamat datang kembali!', 'success', 2000);
           safeRedirect('dashboard.html', 1000);
         })
         .catch(function(err) {
-          clearPiAuth();
+          /* HAPUS sesi HANYA jika sesi belum berhasil dipersist */
+          if (!sessionPersisted) {
+            clearPiAuth();
+          } else {
+            logDebug('Sesi sudah tersimpan sebelum error — tidak menghapus data sesi', false, true);
+          }
 
-          /* Pesan error yang lebih spesifik berdasarkan konteks */
           var errorDetail = err.message || 'Terjadi kesalahan sistem internal.';
 
           if (errorDetail.indexOf('init') !== -1 || errorDetail.indexOf('SDK') !== -1) {
@@ -724,6 +885,8 @@ CREATE POLICY "allow_anon_select_own"
             showError('Waktu Habis', 'Server Pi tidak merespons dalam batas waktu.', 'Timeout Otentikasi', errorDetail);
           } else if (errorDetail.indexOf('batal') !== -1 || errorDetail.indexOf('cancel') !== -1 || errorDetail.indexOf('denied') !== -1) {
             showError('Dibatalkan', 'Anda menolak atau membatalkan otorisasi.', 'Otentikasi Ditolak Pengguna', errorDetail);
+          } else if (errorDetail.indexOf('penyimpanan') !== -1 || errorDetail.indexOf('storage') !== -1 || errorDetail.indexOf('localStorage') !== -1) {
+            showError('Penyimpanan Gagal', 'Browser tidak mengizinkan penyimpanan data sesi.', 'Storage Error', errorDetail);
           } else {
             showError('Login Gagal', 'Gagal memvalidasi otentikasi terpusat.', 'Otorisasi Ditolak', errorDetail);
           }
@@ -737,15 +900,23 @@ CREATE POLICY "allow_anon_select_own"
        EVENT LISTENERS
        ================================================================ */
     document.addEventListener('DOMContentLoaded', function() {
-      btnRetry.addEventListener('click', startPiLogin);
-      btnBack.addEventListener('click', function() { window.location.href = 'index.html'; });
+      btnRetry.addEventListener('click', function() {
+        resetRedirectCount();
+        window._BLOCK_AUTO_LOGIN = false;
+        startPiLogin();
+      });
+
+      btnBack.addEventListener('click', function() {
+        window.location.href = 'index.html';
+      });
 
       logoutBtn.addEventListener('click', function() {
         clearPiAuth();
         sessionBanner.classList.remove('visible');
         showToast('Sesi dibersihkan', 'info', 2000);
-        /* Reset flag supaya init SDK bisa dijalankan ulang jika perlu */
         sdkReady = false;
+        resetRedirectCount();
+        window._BLOCK_AUTO_LOGIN = false;
         startPiLogin();
       });
 
