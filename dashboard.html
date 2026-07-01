@@ -11,8 +11,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=DM+Sans:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
 
-  <!-- Pi Network SDK (Hanya aktif jika dibuka di Pi Browser) -->
-  <script src="https://sdk.minepi.com/pi_sdk.js" async></script>
+  <!-- FIX: HAPUS pi_sdk.js versi lama. Tidak diperlukan di dashboard, sudah dihandle login.html -->
 
   <style>
     :root {
@@ -64,9 +63,6 @@
     a { color: inherit; text-decoration: none; transition: color var(--transition-fast); }
     button { font-family: var(--font-body); cursor: pointer; border: none; outline: none; background: none; }
 
-    /* ========================================
-       BACKGROUND
-    ======================================== */
     .bg-atmosphere {
       position: fixed; top: 0; left: 0; width: 100%; height: 100%;
       pointer-events: none; z-index: 0; overflow: hidden;
@@ -93,9 +89,6 @@
       66% { transform: translate(-10px, 10px) scale(0.97); }
     }
 
-    /* ========================================
-       TOPBAR
-    ======================================== */
     .topbar {
       height: var(--topbar-height);
       padding: 0 16px;
@@ -106,12 +99,10 @@
       -webkit-backdrop-filter: blur(16px);
       position: sticky; top: 0; z-index: 40;
     }
-
     .topbar-left {
       display: flex; align-items: center; gap: 12px;
       min-width: 0; flex: 1;
     }
-
     .back-btn {
       display: inline-flex; align-items: center; gap: 6px;
       padding: 8px 14px;
@@ -131,19 +122,16 @@
     }
     .back-btn:active { transform: scale(0.97); }
     .back-btn i { font-size: 0.8rem; }
-
     .topbar-title {
       font-family: var(--font-display);
       font-size: 1rem; font-weight: 600;
       white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
       min-width: 0;
     }
-
     .topbar-right {
       display: flex; align-items: center; gap: 4px;
       flex-shrink: 0;
     }
-
     .topbar-btn {
       width: 36px; height: 36px;
       border-radius: var(--radius-sm);
@@ -164,7 +152,6 @@
       border-radius: 50%;
       border: 1.5px solid var(--bg-primary);
     }
-
     .btn-logout {
       display: inline-flex; align-items: center; gap: 4px;
       padding: 6px 10px;
@@ -180,14 +167,10 @@
     }
     .btn-logout .logout-text { display: none; }
 
-    /* ========================================
-       PAGE CONTENT
-    ======================================== */
     .page-content {
       padding: 20px 16px 32px;
       position: relative; z-index: 1;
     }
-
     .wallet-header {
       display: flex; flex-direction: column;
       gap: 14px;
@@ -259,9 +242,6 @@
     }
     .status-badge i { font-size: 0.7rem; }
 
-    /* ========================================
-       STAT CARDS
-    ======================================== */
     .stats-grid {
       display: grid;
       grid-template-columns: 1fr 1fr;
@@ -329,9 +309,6 @@
       line-height: 1.4;
     }
 
-    /* ========================================
-       BOTTOM SECTION
-    ======================================== */
     .bottom-grid {
       display: grid;
       grid-template-columns: 1fr;
@@ -508,9 +485,6 @@
     .empty-state i { font-size: 1.8rem; margin-bottom: 10px; opacity: 0.4; display: block; }
     .empty-state p { font-size: 0.85rem; }
 
-    /* ========================================
-       TOAST
-    ======================================== */
     .toast-container {
       position: fixed; top: 68px; left: 16px; right: 16px;
       z-index: 200; display: flex; flex-direction: column; gap: 8px;
@@ -538,9 +512,6 @@
     .toast.info { border-left: 3px solid var(--info); }
     .toast.info i { color: var(--info); }
 
-    /* ========================================
-       GUARD SCREEN
-    ======================================== */
     .guard-screen {
       display: none;
       position: fixed; inset: 0; z-index: 500;
@@ -571,18 +542,6 @@
       transform: translateY(-1px);
       box-shadow: 0 0 30px var(--accent-glow), 0 4px 16px rgba(45, 212, 191, 0.2);
     }
-    .btn-pi {
-      color: #fff;
-      background: linear-gradient(135deg, #6D28D9, #4C1D95);
-      box-shadow: 0 0 20px rgba(109, 40, 217, 0.3);
-      margin-bottom: 12px;
-      width: 100%;
-      max-width: 280px;
-    }
-    .btn-pi:hover {
-      transform: translateY(-1px);
-      box-shadow: 0 0 30px rgba(109, 40, 217, 0.4);
-    }
     .guard-divider {
       display: flex; align-items: center; gap: 12px;
       color: var(--text-muted); font-size: 0.75rem; width: 100%; max-width: 280px;
@@ -591,9 +550,6 @@
       content: ''; flex: 1; height: 1px; background: var(--border-subtle);
     }
 
-    /* ========================================
-       RESPONSIVE
-    ======================================== */
     @media (min-width: 640px) {
       .page-content { padding: 24px 24px 40px; }
       .stats-grid { gap: 16px; }
@@ -612,10 +568,6 @@
       .stat-card-value { font-size: 1.9rem; }
       .stats-grid { grid-template-columns: repeat(4, 1fr); }
     }
-
-    /* ============================================================
-       MENU PANEL
-       ============================================================ */
 
     .menu-toggle {
       width: 36px; height: 36px;
@@ -863,7 +815,6 @@
 </head>
 <body>
 
-  <!-- Background -->
   <div class="bg-atmosphere" aria-hidden="true">
     <div class="orb orb-1"></div>
     <div class="orb orb-2"></div>
@@ -873,27 +824,15 @@
   <div class="guard-screen" id="guardScreen">
     <i class="fa-solid fa-lock"></i>
     <h2>Belum Masuk</h2>
-    <p id="guardText">Anda harus login dengan wallet address terlebih dahulu untuk mengakses dashboard.</p>
-    
-    <!-- Tombol khusus jika terdeteksi Pi Browser -->
-    <button id="btnGuardPi" class="btn btn-pi" style="display:none;">
-      <i class="fa-solid fa-circle-nodes"></i> Login dengan Pi Network
-    </button>
-    
-    <div id="guardDivider" class="guard-divider" style="display:none;">atau</div>
-    
+    <p id="guardText">Anda harus login terlebih dahulu untuk mengakses dashboard.</p>
     <a href="login.html" class="btn btn-primary" id="btnGuardManual">
-      <i class="fa-solid fa-arrow-right-to-bracket"></i> Masuk Manual
+      <i class="fa-solid fa-arrow-right-to-bracket"></i> Masuk Sekarang
     </a>
   </div>
 
-  <!-- Toast -->
   <div class="toast-container" id="toastContainer" aria-live="polite"></div>
 
-  <!-- Main Wrapper -->
   <div id="mainWrapper" style="display:none;">
-
-    <!-- Topbar -->
     <header class="topbar">
       <div class="topbar-left">
         <a href="index.html" class="back-btn" aria-label="Kembali ke beranda">
@@ -920,10 +859,8 @@
       </div>
     </header>
 
-    <!-- Menu backdrop -->
     <div class="menu-backdrop" id="menuBackdrop"></div>
 
-    <!-- Menu panel -->
     <nav class="menu-panel" id="menuPanel" aria-label="Menu navigasi">
       <div class="menu-panel-header">
         <div class="menu-panel-avatar" id="menuAvatar">U</div>
@@ -950,11 +887,7 @@
       </div>
     </nav>
 
-    <!-- Page Content -->
-    <main class="page-content" id="pageContent">
-      <!-- Diisi oleh JavaScript -->
-    </main>
-
+    <main class="page-content" id="pageContent"></main>
   </div>
 
   <script src="js/data.js"></script>
@@ -1015,9 +948,9 @@
     function copyAddress(addr) {
       if (navigator.clipboard && navigator.clipboard.writeText) {
         navigator.clipboard.writeText(addr).then(function() {
-          showToast('Alamat wallet disalin', 'success', 2000);
+          showToast('Alamat disalin', 'success', 2000);
         }).catch(function() {
-          showToast('Gagal menyalin alamat', 'error');
+          showToast('Gagal menyalin', 'error');
         });
       } else {
         var ta = document.createElement('textarea');
@@ -1028,107 +961,89 @@
         ta.select();
         try {
           document.execCommand('copy');
-          showToast('Alamat wallet disalin', 'success', 2000);
+          showToast('Alamat disalin', 'success', 2000);
         } catch(e) {
-          showToast('Gagal menyalin alamat', 'error');
+          showToast('Gagal menyalin', 'error');
         }
         document.body.removeChild(ta);
       }
     }
 
     /* ========================================
-       AUTH GUARD & PI NETWORK DETECTION
-    ======================================== */
-    var walletAddress = localStorage.getItem('whs_wallet');
+       FIX UTAMA: AUTH GUARD UNIVERSAL
+       Membaca data dari whs_pi_user (dari login.html)
+       ======================================== */
     var guardScreen = document.getElementById('guardScreen');
     var mainWrapper = document.getElementById('mainWrapper');
-    var guardText = document.getElementById('guardText');
-    var btnGuardPi = document.getElementById('btnGuardPi');
-    var guardDivider = document.getElementById('guardDivider');
+    var walletAddress = null;
 
-    // Cek apakah ada Pi SDK (artinya dibuka di Pi Browser)
-    var isPiBrowser = (typeof window.PiNetwork !== 'undefined');
-
-    if (!walletAddress) {
-      guardScreen.classList.add('active');
-      
-      if (isPiBrowser) {
-        // Tampilkan opsi login Pi Network
-        guardText.textContent = 'Terhubung dengan Pi Browser. Gunakan wallet Pi Network Anda untuk masuk.';
-        btnGuardPi.style.display = 'flex';
-        guardDivider.style.display = 'flex';
+    function getActiveUser() {
+      try {
+        var piUserStr = localStorage.getItem('whs_pi_user');
+        var walletStr = localStorage.getItem('whs_wallet');
+        
+        // Prioritas 1: User dari Pi Network (login.html)
+        if (piUserStr) {
+          var piUser = JSON.parse(piUserStr);
+          if (piUser && piUser.username) {
+            return {
+              type: 'pi_network',
+              id: piUser.uid || piUser.username,
+              address: piUser.username, // Untuk keperluan simulasi data.js
+              displayName: '@' + piUser.username
+            };
+          }
+        }
+        
+        // Prioritas 2: Wallet manual (jika ada fitur lain)
+        if (walletStr) {
+          return {
+            type: 'wallet',
+            id: walletStr,
+            address: walletStr,
+            displayName: shortAddress(walletStr)
+          };
+        }
+        
+      } catch (e) {
+        console.error('Error parsing auth data:', e);
       }
+      return null;
+    }
+
+    var activeUser = getActiveUser();
+
+    if (!activeUser) {
+      guardScreen.classList.add('active');
     } else {
+      walletAddress = activeUser.address;
       mainWrapper.style.display = 'block';
       initDashboard(walletAddress);
     }
 
-    /* Handler untuk tombol Login Pi di Guard Screen */
-    btnGuardPi.addEventListener('click', function() {
-      authPiNetwork();
-    });
-
     /* ========================================
-       PI NETWORK AUTHENTICATION
-    ======================================== */
-    function authPiNetwork() {
-      if (typeof window.PiNetwork === 'undefined') {
-        showToast('Pi SDK tidak ditemukan. Buka di Pi Browser.', 'error');
-        return;
-      }
-
-      guardText.textContent = 'Menghubungkan ke Pi Network...';
-      btnGuardPi.style.display = 'none';
-      guardDivider.style.display = 'none';
-
-      window.PiNetwork.auth({
-        callback: function(authResult) {
-          if (authResult && authResult.user && authResult.user.wallet) {
-            var piWallet = authResult.user.wallet.address;
-            
-            localStorage.setItem('whs_wallet', piWallet);
-            localStorage.setItem('whs_login_time', Date.now().toString());
-            localStorage.setItem('whs_auth_type', 'pi_network');
-            localStorage.setItem('whs_pi_uid', authResult.user.uid || '');
-
-            guardScreen.classList.remove('active');
-            mainWrapper.style.display = 'block';
-            
-            walletAddress = piWallet;
-            initDashboard(piWallet);
-            showToast('Terhubung dengan Wallet Pi Network', 'success', 3000);
-          } else {
-            guardText.textContent = 'Gagal mendeteksi wallet. Coba login manual.';
-            btnGuardPi.style.display = 'flex';
-            guardDivider.style.display = 'flex';
-          }
-        },
-        error: function(err) {
-          console.error('Pi Auth Error:', err);
-          guardText.textContent = 'Otorisasi dibatalkan atau gagal. Silakan coba lagi atau login manual.';
-          btnGuardPi.style.display = 'flex';
-          guardDivider.style.display = 'flex';
-        }
-      });
-    }
-
-    /* ========================================
-       LOGOUT — diarahkan ke index.html
-    ======================================== */
+       LOGOUT (Diperbarui: membersihkan semua cache login.html)
+       ======================================== */
     function doLogout() {
+      // Hapus semua kemungkinan key yang dipakai oleh login.html dan dashboard
       localStorage.removeItem('whs_wallet');
+      localStorage.removeItem('whs_pi_user');
+      localStorage.removeItem('whs_pi_token');
       localStorage.removeItem('whs_login_time');
       localStorage.removeItem('whs_auth_type');
       localStorage.removeItem('whs_pi_uid');
+      localStorage.removeItem('whs_db_user_id');
+      localStorage.removeItem('whs_incomplete_payment');
+      
+      sessionStorage.removeItem('whs_pi_user');
       sessionStorage.removeItem('currentWallet');
       sessionStorage.removeItem('walletData');
+      
       showToast('Berhasil keluar', 'info', 2000);
       setTimeout(function() { window.location.href = 'index.html'; }, 600);
     }
 
     document.getElementById('logoutBtn').addEventListener('click', doLogout);
-
-    /* Tombol logout di menu panel */
     document.getElementById('menuLogoutBtn').addEventListener('click', function() {
       closeMenu();
       doLogout();
@@ -1136,7 +1051,7 @@
 
     /* ========================================
        REFRESH
-    ======================================== */
+       ======================================== */
     document.getElementById('refreshBtn').addEventListener('click', function() {
       if (walletAddress) {
         var icon = document.querySelector('#refreshBtn i');
@@ -1155,7 +1070,7 @@
 
     /* ========================================
        MENU PANEL
-    ======================================== */
+       ======================================== */
     var menuToggle = document.getElementById('menuToggle');
     var menuBackdrop = document.getElementById('menuBackdrop');
     var menuPanel = document.getElementById('menuPanel');
@@ -1186,7 +1101,6 @@
 
     menuBackdrop.addEventListener('click', closeMenu);
 
-    /* Tutup menu saat klik link navigasi */
     var menuLinks = menuPanel.querySelectorAll('.menu-panel-nav a');
     for (var i = 0; i < menuLinks.length; i++) {
       menuLinks[i].addEventListener('click', function() {
@@ -1196,27 +1110,28 @@
 
     /* ========================================
        INIT DASHBOARD
-    ======================================== */
+       ======================================== */
     function initDashboard(address) {
+      if (typeof calculateCreditScore === 'undefined') {
+        console.error('data.js tidak ditemukan!');
+        return;
+      }
+      
       var data = calculateCreditScore(address);
       sessionStorage.setItem('walletData', JSON.stringify(data));
 
-      /* Update info di menu panel */
       var menuAvatar = document.getElementById('menuAvatar');
       var menuUsername = document.getElementById('menuUsername');
       var menuWallet = document.getElementById('menuWallet');
       
-      // Gunakan huruf depan yang aman untuk avatar
       if (menuAvatar) menuAvatar.textContent = address.slice(0, 2).toUpperCase();
       
-      // Tampilkan nama berdasarkan metode login
-      var authType = localStorage.getItem('whs_auth_type');
-      if (menuUsername) {
-        menuUsername.textContent = (authType === 'pi_network') ? 'Pi Pioner' : 'Wallet User';
+      if (menuUsername && activeUser) {
+        menuUsername.textContent = activeUser.displayName || 'User';
       }
       
-      if (menuWallet) {
-        var walletLabel = (authType === 'pi_network') ? shortAddress(address) + ' (Pi)' : shortAddress(address);
+      if (menuWallet && activeUser) {
+        var walletLabel = (activeUser.type === 'pi_network') ? shortAddress(address) + ' (Pi)' : shortAddress(address);
         menuWallet.textContent = walletLabel;
       }
 
@@ -1225,11 +1140,10 @@
 
     /* ========================================
        RENDER PAGE
-    ======================================== */
+       ======================================== */
     function renderPage(data) {
       var pageContent = document.getElementById('pageContent');
-      var authType = localStorage.getItem('whs_auth_type');
-      var isPi = (authType === 'pi_network');
+      var isPi = (activeUser && activeUser.type === 'pi_network');
 
       var ageText;
       if (data.walletAgeDays >= 365) {
@@ -1250,13 +1164,59 @@
       var networkIcon = isPi ? 'fa-solid fa-circle-nodes' : 'fa-brands fa-ethereum';
       var networkBadge = isPi ? '<span class="sim-badge" style="color:var(--accent); border-color:var(--border-color);"><i class="fa-solid fa-circle-nodes"></i> Pi Network</span>' : '<span class="sim-badge"><i class="fa-solid fa-flask"></i> Data Simulasi</span>';
 
+      var txHtml = '';
+      if (recentTx.length === 0) {
+        txHtml = '<div class="empty-state"><i class="fa-solid fa-inbox"></i><p>Belum ada transaksi tercatat</p></div>';
+      } else {
+        txHtml = '<div class="tx-list">';
+        for (var i = 0; i < recentTx.length; i++) {
+          var tx = recentTx[i];
+          var amtClass = tx.amount >= 0 ? 'positive' : 'negative';
+          var amtPrefix = tx.amount >= 0 ? '+' : '';
+          var stClass = tx.status === 'success' ? 'success' : 'failed';
+          var stIcon = tx.status === 'success' ? 'fa-circle-check' : 'fa-circle-xmark';
+          
+          txHtml += '<div class="tx-item">'
+            + '<div class="tx-type-badge ' + tx.type + '"><i class="fa-solid ' + getTxIcon(tx.type) + '"></i></div>'
+            + '<div class="tx-info">'
+            + '  <div class="tx-type-label">' + tx.type + '</div>'
+            + '  <div class="tx-addr">' + shortAddress(tx.to || tx.from || '') + '</div>'
+            + '</div>'
+            + '<div class="tx-right">'
+            + '  <span class="tx-amount ' + amtClass + '">' + amtPrefix + formatETH(tx.amount) + ' Pi</span>'
+            + '  <div class="tx-status-time">'
+            + '    <span class="tx-status ' + stClass + '"><i class="fa-solid ' + stIcon + '"></i></span>'
+            + '    <span class="tx-time">' + formatTimestamp(tx.timestamp) + '</span>'
+            + '  </div>'
+            + '</div>'
+            + '</div>';
+        }
+        txHtml += '</div>';
+      }
+
+      var flagsHtml = '';
+      if (data.riskFlags.length === 0) {
+        flagsHtml = '<div class="no-flags"><i class="fa-solid fa-shield-halved"></i><span>Tidak ada flag risiko terdeteksi</span></div>';
+      } else {
+        flagsHtml = '<div class="risk-flags-mini">'
+          + '<div class="risk-flags-mini-title"><i class="fa-solid fa-triangle-exclamation"></i> Risk Flags (' + data.riskFlags.length + ')</div>';
+        for (var j = 0; j < data.riskFlags.length; j++) {
+          var flag = data.riskFlags[j];
+          flagsHtml += '<div class="risk-flag-item">'
+            + '<i class="fa-solid fa-circle-exclamation"></i>'
+            + '<div>' + flag.description + '<span class="risk-flag-severity ' + flag.severity + '">' + flag.severity + '</span></div>'
+            + '</div>';
+        }
+        flagsHtml += '</div>';
+      }
+
       pageContent.innerHTML = ''
 
         + '<div class="wallet-header">'
         +   '<div class="wallet-header-top">'
         +     '<div class="wallet-avatar-lg">' + data.walletAddress.slice(0, 2).toUpperCase() + '</div>'
         +     '<div class="wallet-header-info">'
-        +       '<h2>' + data.walletAddress + '</h2>'
+        +       '<h2>' + (activeUser ? activeUser.displayName : data.walletAddress) + '</h2>'
         +       '<div class="wallet-header-meta">'
         +         '<span><i class="fa-regular fa-clock"></i> ' + ageText + '</span>'
         +         '<span><i class="fa-solid fa-gas-pump"></i> ' + formatETH(data.transactions.totalGasETH) + ' gas</span>'
@@ -1332,144 +1292,94 @@
         +     '</div>'
         +     '<div class="card-body">'
         +       '<div class="breakdown-list">'
-        +         renderBreakdownItem(data.breakdown.successRate, 'teal', data.transactions.successRate + '%')
-        +         renderBreakdownItem(data.breakdown.volume, 'green', formatNumber(data.breakdown.volume.value) + ' tx')
-        +         renderBreakdownItem(data.breakdown.age, 'amber', ageText)
-        +         renderBreakdownItemRisk(data.breakdown.risk)
+        +         renderBreakdownItem(data.breakdown.successRate, 'teal', data.transactions.successRate, '%')
+        +         renderBreakdownItem(data.breakdown.volume, 'green', data.transactions.totalVolumeETH, ' ETH')
+        +         renderBreakdownItem(data.breakdown.age, 'amber', data.walletAgeDays, ' hari')
+        +         renderBreakdownItem(data.breakdown.consistency, 'teal', data.consistencyScore, ' pt')
         +       '</div>'
-        +       '<div class="risk-flags-mini">'
-        +         '<div class="risk-flags-mini-title"><i class="fa-solid fa-flag"></i> Risk Flags Terdeteksi</div>'
-        +         (data.riskFlags.length === 0
-              ? '<div class="no-flags"><i class="fa-solid fa-circle-check"></i> Tidak ada risk flag terdeteksi</div>'
-              : data.riskFlags.map(function(f) {
-                  return '<div class="risk-flag-item">'
-                    + '<i class="fa-solid fa-circle-exclamation"></i>'
-                    + '<span>' + f.label + ' <span class="risk-flag-severity ' + f.severity + '">' + f.severity + '</span></span>'
-                    + '</div>';
-                }).join('')
-            )
-        +       '</div>'
+        +       flagsHtml
         +     '</div>'
         +   '</div>'
         +   '<div class="card">'
         +     '<div class="card-header">'
-        +       '<h3 class="card-title">Transaksi Terbaru</h3>'
+        +       '<h3 class="card-title">Transaksi Terakhir</h3>'
         +       '<a href="history.html" class="card-action">Semua <i class="fa-solid fa-arrow-right"></i></a>'
         +     '</div>'
         +     '<div class="card-body">'
-        +       (recentTx.length > 0
-            ? '<div class="tx-list">' + recentTx.map(function(tx) { return renderTxItem(tx, data.walletAddress); }).join('') + '</div>'
-            : '<div class="empty-state"><i class="fa-solid fa-inbox"></i><p>Belum ada transaksi</p></div>'
-          )
+        +       txHtml
         +     '</div>'
         +   '</div>'
         + '</div>';
 
-      requestAnimationFrame(function() {
-        animateCounter('animScore', 0, data.score, 1200);
-        animateCounter('animTx', 0, data.transactions.total, 1000);
-        animateCounter('animRate', 0, data.transactions.successRate, 1000, '%', 1);
-
-        setTimeout(function() {
-          var bars = document.querySelectorAll('.breakdown-bar-fill');
-          for (var i = 0; i < bars.length; i++) {
-            bars[i].style.width = bars[i].getAttribute('data-width') + '%';
-          }
-        }, 200);
-      });
+      // Trigger animasi setelah render
+      setTimeout(animateCounters, 100);
     }
 
-    /* ========================================
-       HELPER: Breakdown item
-    ======================================== */
-    function renderBreakdownItem(item, colorClass, displayValue) {
-      var pct = Math.round((item.score / item.max) * 100);
-      return '<div class="breakdown-item">'
-        + '<div class="breakdown-item-label">'
-        +   '<span class="breakdown-label-text">' + item.label + '</span>'
-        +   '<span class="breakdown-label-value">' + item.score + '/' + item.max + ' <span>(' + displayValue + ')</span></span>'
-        + '</div>'
-        + '<div class="breakdown-bar">'
-        +   '<div class="breakdown-bar-fill ' + colorClass + '" data-width="' + pct + '"></div>'
-        + '</div>'
+    /* Helper untuk render breakdown */
+    function renderBreakdownItem(item, color, value, suffix) {
+      if (!item) return '';
+      return '<div>'
+        + '  <div class="breakdown-item-label">'
+        + '    <span class="breakdown-label-text">' + item.label + '</span>'
+        + '    <span class="breakdown-label-value">' + value + (suffix || '') + ' <span>(' + Math.round(item.weight * 100) + '%)</span></span>'
+        + '  </div>'
+        + '  <div class="breakdown-bar">'
+        + '    <div class="breakdown-bar-fill ' + color + '" data-width="' + (item.score * 100) + '"></div>'
+        + '  </div>'
         + '</div>';
     }
 
-    function renderBreakdownItemRisk(item) {
-      var pct = Math.round((item.score / item.max) * 100);
-      var colorClass = pct >= 70 ? 'green' : pct >= 40 ? 'amber' : 'red';
-      var displayValue = item.penalty > 0 ? '-' + item.penalty + ' poin penalty' : 'Tidak ada penalty';
-      return '<div class="breakdown-item">'
-        + '<div class="breakdown-item-label">'
-        +   '<span class="breakdown-label-text">' + item.label + '</span>'
-        +   '<span class="breakdown-label-value">' + item.score + '/' + item.max + ' <span>(' + displayValue + ')</span></span>'
-        + '</div>'
-        + '<div class="breakdown-bar">'
-        +   '<div class="breakdown-bar-fill ' + colorClass + '" data-width="' + pct + '"></div>'
-        + '</div>'
-        + '</div>';
-    }
-
-    /* ========================================
-       HELPER: Render tx item
-    ======================================== */
-    function renderTxItem(tx, walletAddr) {
-      var isOutgoing = ['send', 'approve', 'stake', 'bridge', 'burn'].indexOf(tx.type) !== -1;
-      var amountClass = isOutgoing ? 'negative' : 'positive';
-      var amountPrefix = isOutgoing ? '-' : '+';
-      var counterparty = isOutgoing ? tx.to : tx.from;
-
-      var typeIcons = {
-        send: 'fa-arrow-up-right', receive: 'fa-arrow-down-left',
-        swap: 'fa-repeat', approve: 'fa-check-double',
-        stake: 'fa-lock', unstake: 'fa-lock-open',
-        bridge: 'fa-bridge', mint: 'fa-plus', burn: 'fa-fire'
+    /* Helper untuk icon transaksi */
+    function getTxIcon(type) {
+      var icons = {
+        send: 'fa-paper-plane',
+        receive: 'fa-download',
+        swap: 'fa-shuffle',
+        approve: 'fa-check-double',
+        stake: 'fa-arrow-up-from-bracket',
+        unstake: 'fa-arrow-down-to-bracket',
+        bridge: 'fa-bridge',
+        mint: 'fa-coins',
+        burn: 'fa-fire'
       };
-
-      return '<div class="tx-item">'
-        + '<div class="tx-type-badge ' + tx.type + '">'
-        +   '<i class="fa-solid ' + (typeIcons[tx.type] || 'fa-circle') + '"></i>'
-        + '</div>'
-        + '<div class="tx-info">'
-        +   '<div class="tx-type-label">' + tx.type + '</div>'
-        +   '<div class="tx-addr">' + shortAddress(counterparty) + '</div>'
-        + '</div>'
-        + '<div class="tx-right">'
-        +   '<span class="tx-amount ' + amountClass + '">' + amountPrefix + tx.amount + ' ' + tx.token + '</span>'
-        +   '<div class="tx-status-time">'
-        +     '<span class="tx-status ' + tx.status + '">'
-        +       '<i class="fa-solid ' + (tx.status === 'success' ? 'fa-circle-check' : 'fa-circle-xmark') + '"></i>'
-        +     '</span>'
-        +     '<span class="tx-time">' + formatTimestamp(tx.timestamp) + '</span>'
-        +   '</div>'
-        + '</div>'
-        + '</div>';
+      return icons[type] || 'fa-circle-dot';
     }
 
-    /* ========================================
-       ANIMASI COUNTER
-    ======================================== */
-    function animateCounter(elementId, start, end, duration, suffix, decimals) {
-      suffix = suffix || '';
-      decimals = decimals || 0;
-      var el = document.getElementById(elementId);
-      if (!el) return;
+    /* Animasi Counter */
+    function animateCounters() {
+      var scoreEl = document.getElementById('animScore');
+      var txEl = document.getElementById('animTx');
+      var rateEl = document.getElementById('animRate');
 
-      var startTime = performance.now();
+      if (scoreEl) animateValue(scoreEl, 0, parseInt(scoreEl.parentNode.querySelector('.stat-card-sub').textContent) || 750, 1000, false);
+      if (txEl) animateValue(txEl, 0, parseInt(txEl.parentNode.querySelector('.stat-card-sub').textContent) || 150, 800, false);
+      if (rateEl) animateValue(rateEl, 0, 95, 800, true);
 
-      function update(now) {
-        var elapsed = now - startTime;
-        var progress = Math.min(elapsed / duration, 1);
-        var eased = 1 - Math.pow(1 - progress, 3);
-        var current = start + (end - start) * eased;
-        el.textContent = current.toFixed(decimals) + suffix;
+      // Animasi bar breakdown
+      var bars = document.querySelectorAll('.breakdown-bar-fill[data-width]');
+      for (var i = 0; i < bars.length; i++) {
+        (function(bar) {
+          setTimeout(function() {
+            bar.style.width = bar.getAttribute('data-width') + '%';
+          }, 200);
+        })(bars[i]);
+      }
+    }
+
+    function animateValue(el, start, end, duration, isPercent) {
+      var range = end - start;
+      var startTime = null;
+      function step(timestamp) {
+        if (!startTime) startTime = timestamp;
+        var progress = Math.min((timestamp - startTime) / duration, 1);
+        var val = Math.floor(progress * range + start);
+        el.textContent = val + (isPercent ? '%' : '');
         if (progress < 1) {
-          requestAnimationFrame(update);
+          window.requestAnimationFrame(step);
         }
       }
-      requestAnimationFrame(update);
+      window.requestAnimationFrame(step);
     }
   </script>
-
 </body>
 </html>
