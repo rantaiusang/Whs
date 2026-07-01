@@ -18,7 +18,6 @@
       --bg-primary: #060a13;
       --bg-secondary: #0c1222;
       --bg-card: rgba(14, 22, 42, 0.65);
-      --bg-card-hover: rgba(20, 32, 58, 0.75);
       --border-color: rgba(45, 212, 191, 0.12);
       --border-color-hover: rgba(45, 212, 191, 0.3);
       --border-subtle: rgba(255, 255, 255, 0.06);
@@ -57,7 +56,7 @@
     .orb-2 { width: 260px; height: 260px; background: radial-gradient(circle, rgba(245,158,11,0.06) 0%, transparent 70%); bottom: -8%; right: -5%; animation-delay: -10s; animation-duration: 28s; }
     @keyframes orbFloat { 0%, 100% { transform: translate(0,0) scale(1); } 33% { transform: translate(15px,-20px) scale(1.03); } 66% { transform: translate(-10px,10px) scale(0.97); } }
 
-    .topbar { height: var(--topbar-height); padding: 0 16px; display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid var(--border-subtle); background: rgba(6,10,19,0.85); backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px); position: sticky; top: 0; z-index: 40; }
+    .topbar { height: var(--topbar-height); padding: 0 16px; display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid var(--border-subtle); background: rgba(6,10,19,0.85); backdrop-filter: blur(16px); position: sticky; top: 0; z-index: 40; }
     .topbar-left { display: flex; align-items: center; gap: 12px; min-width: 0; flex: 1; }
     .back-btn { display: inline-flex; align-items: center; gap: 6px; padding: 8px 14px; font-size: 0.82rem; font-weight: 600; color: var(--accent); border: 1px solid var(--border-color); border-radius: var(--radius-full); transition: all var(--transition-fast); white-space: nowrap; flex-shrink: 0; background: var(--accent-dim); }
     .back-btn:hover { background: rgba(45,212,191,0.18); border-color: var(--border-color-hover); box-shadow: 0 0 16px var(--accent-glow); }
@@ -243,7 +242,7 @@
   <div id="mainWrapper">
     <header class="topbar">
       <div class="topbar-left">
-        <a href="index.html" class="back-btn" aria-label="Kembali ke beranda">
+        <a href="dashboard.html" class="back-btn" aria-label="Kembali ke dashboard">
           <i class="fa-solid fa-arrow-left"></i><span>Kembali</span>
         </a>
         <h1 class="topbar-title">Wallet Detail</h1>
@@ -261,7 +260,7 @@
     <main class="page-content" id="pageContent">
       <div class="loading-screen" id="loadingScreen">
         <div class="loading-spinner"></div>
-        <p>Memverifikasi sesi dan memuat data...</p>
+        <p>Memuat data wallet...</p>
       </div>
     </main>
   </div>
@@ -303,39 +302,33 @@
 
     var verifiedUser = null;
 
-    /* FIX AUTH: Gunakan try-catch agar TIDAK CRASH jika tabel 'users' tidak ada di Supabase */
-    async function verifySession() {
+    /* 
+     * AUTH GUARD FIXED: 
+     * Tidak akan pernah crash atau menampilkan "Backend tidak tersedia" 
+     * hanya karena tabel users di Supabase bermasalah. 
+     * Yang dipakai HANYALAH hasil login dari login.html (whs_pi_user)
+     */
+    function verifySession() {
       var raw = safeGet('whs_pi_user');
       var localUser = null;
-      try { if (raw) localUser = JSON.parse(raw); } catch(e) {}
+      try { 
+        if (raw) localUser = JSON.parse(raw); 
+      } catch(e) {}
 
-      if (!localUser || !localUser.uid || !localUser.username) {
+      if (!localUser || !localUser.username) {
         return { ok: false, reason: 'no_local_data' };
       }
 
-      if (!supabase) {
-        return { ok: false, reason: 'no_supabase' };
-      }
+      // Ambil UID (Pi SDK kadang tidak mengembalikan uid, fallback ke username)
+      var uid = localUser.uid || localUser.username;
 
-      try {
-        var result = await supabase
-          .from('users')
-          .select('pi_uid, username, created_at, last_login')
-          .eq('pi_uid', localUser.uid)
-          .single();
-
-        if (result.data) {
-          return { ok: true, uid: result.data.pi_uid, username: result.data.username, firstSeen: result.data.created_at, lastLogin: result.data.last_login };
-        }
-      } catch(e) {
-        /* Abaikan error, fallback ke bawah */
-      }
-
-      /* FALLBACK: Jika tabel users tidak ada atau data tidak ketemu, gunakan localStorage */
-      return { ok: true, uid: localUser.uid, username: localUser.username, firstSeen: new Date().toISOString(), lastLogin: new Date().toISOString() };
+      return { 
+        ok: true, 
+        uid: uid, 
+        username: localUser.username 
+      };
     }
 
-    /* FIX DB: Query menggunakan wallet_address SESUAI TABEL ANDA */
     async function fetchOrCreateWallet(uid, username) {
       if (!supabase) return { error: 'no_supabase' };
 
@@ -357,13 +350,12 @@
           return { data: existing, isNew: false };
         }
 
-        /* Jika belum ada, buat record baru */
         var { data: created, error: insertErr } = await supabase
           .from('wallet')
           .insert({
             user_id:          uid,
             wallet_address:   uid, 
-            score:            0, /* Skor awal 0, akan dihitung real-time di frontend */
+            score:            0,
             success_rate:     0,
             tx_total:         0,
             risk_flags:       [],
@@ -391,18 +383,13 @@
       var loadingScreen = document.getElementById('loadingScreen');
       var guardDetail  = document.getElementById('guardDetail');
 
-      var authResult = await verifySession();
+      var authResult = verifySession();
 
       if (!authResult.ok) {
         mainWrapper.style.display = 'none';
         guardScreen.classList.add('active');
         loadingScreen.style.display = 'none';
-        var reasons = {
-          no_local_data:  null,
-          no_supabase:   'Backend tidak tersedia. Muat ulang halaman.',
-          uid_mismatch:   'Data sesi tidak cocok dengan server.'
-        };
-        guardDetail.textContent = reasons[authResult.reason] || '';
+        guardDetail.textContent = 'Tidak menemukan sesi login yang valid.';
         return;
       }
 
@@ -426,7 +413,6 @@
         mainWrapper.style.display = 'flex';
         loadingScreen.style.display = 'none';
 
-        /* FIX UTAMA: Gunakan verifiedUser.username */
         var data = normalizeWalletData(walletResult.data, walletResult.isNew, verifiedUser.username);
         render(data);
 
@@ -443,7 +429,7 @@
     }
 
     /* ====================================================================
-       FIX NORMALIZE: SKOR DIHITUNG REAL-TIME, UMUR DARI created_at
+       NORMALIZE FIXED: SKOR REAL-TIME, UMUR DARI created_at
        ==================================================================== */
     function normalizeWalletData(dbRow, isNew, realUsername) {
       var riskFlags = [];
@@ -453,7 +439,7 @@
       var txTotal = dbRow.tx_total || 0;
       var riskPenalty = dbRow.risk_penalty || 0;
 
-      /* 1. Hitung Usia Wallet Real-time dari created_at */
+      /* 1. Hitung Usia Wallet Real-time dari created_at DB */
       var ageDays = 0;
       if (dbRow.created_at) {
         ageDays = Math.max(0, Math.floor((Date.now() - new Date(dbRow.created_at).getTime()) / 86400000));
@@ -486,13 +472,13 @@
 
       return {
         walletAddress: dbRow.wallet_address,
-        username: realUsername || 'Pi User', // FIX USERNAME
+        username: realUsername || 'Pi User', 
         uid: dbRow.wallet_address,
-        score: totalScore, // Skor Sekarang Dinamis
+        score: totalScore, 
         networkAvg: networkAvg,
         status: status,
         statusColor: statusColor,
-        walletAgeDays: ageDays, // Umur Sekarang Dinamis
+        walletAgeDays: ageDays, 
         isNew: isNew,
         transactions: {
           total: txTotal,
@@ -509,9 +495,6 @@
       };
     }
 
-    /* ====================================================================
-       RENDER UI
-       ==================================================================== */
     function render(data) {
       var pc = document.getElementById('pageContent');
       var safeAddr = escapeHtml(data.walletAddress);
@@ -560,7 +543,6 @@
         + '</div>'
         + '</div>';
 
-      /* Score Breakdown */
       html += '<div class="section">'
         + '<div class="section-header">'
         +   '<div class="section-icon teal"><i class="fa-solid fa-chart-bar"></i></div>'
@@ -578,7 +560,6 @@
         + '</div>'
         + '</div></div></div></div>';
 
-      /* Why This Score */
       html += '<div class="section">'
         + '<div class="section-header">'
         +   '<div class="section-icon blue"><i class="fa-solid fa-lightbulb"></i></div>'
@@ -587,7 +568,6 @@
         + '<div class="why-grid">' + generateWhyCards(data) + '</div>'
         + '</div>';
 
-      /* Risk Analysis */
       html += '<div class="section">'
         + '<div class="section-header">'
         +   '<div class="section-icon red"><i class="fa-solid fa-triangle-exclamation"></i></div>'
@@ -756,7 +736,6 @@
       document.body.removeChild(textArea);
     }
 
-    /* EVENT LISTENERS */
     document.getElementById('refreshBtn').addEventListener('click', function() {
       var btn = this;
       var icon = btn.querySelector('i');
@@ -783,7 +762,6 @@
       safeDel('whs_pi_user');
       safeDel('whs_login_time');
       safeDel('whs_pi_token');
-      /* Opsional: Clear Pi SDK Auth jika memungkinkan */
       try { if(window.Pi && window.Pi.auth) window.Pi.auth.signOut(); } catch(e){}
       
       showToast('Sesi berakhir', 'info', 1500);
