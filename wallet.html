@@ -84,7 +84,7 @@
     .guard-screen p { font-size: 0.88rem; color: var(--text-muted); max-width: 380px; line-height: 1.55; }
     .guard-screen .guard-detail { font-size: 0.72rem; color: var(--danger); margin-top: -8px; opacity: 0.7; font-family: 'Space Grotesk', monospace; word-break: break-all; max-width: 420px; }
     .guard-screen .guard-hint { font-size: 0.72rem; color: var(--text-muted); margin-top: -4px; max-width: 400px; line-height: 1.6; opacity: 0.6; }
-    .guard-screen .guard-debug { font-size: 0.65rem; color: var(--text-muted); opacity: 0.4; margin-top: 12px; font-family: 'Space Grotesk', monospace; background: rgba(255,255,255,0.03); padding: 12px; border-radius: 8px; max-width: 440px; text-align: left; word-break: break-all; line-height: 1.8; }
+    .guard-screen .guard-debug { font-size: 0.62rem; color: var(--text-muted); opacity: 0.5; margin-top: 12px; font-family: 'Space Grotesk', monospace; background: rgba(255,255,255,0.03); padding: 12px 14px; border-radius: 8px; max-width: 440px; text-align: left; word-break: break-all; line-height: 1.9; white-space: pre-wrap; border: 1px solid rgba(255,255,255,0.05); }
     .btn-primary { display: inline-flex; align-items: center; justify-content: center; gap: 8px; font-weight: 600; font-size: 0.85rem; padding: 11px 26px; border-radius: var(--radius-full); transition: all 250ms ease; color: var(--bg-primary); background: linear-gradient(135deg, var(--accent), #0d9488); box-shadow: 0 0 20px var(--accent-glow); }
     .btn-primary:hover { transform: translateY(-1px); box-shadow: 0 0 30px var(--accent-glow), 0 6px 20px rgba(45,212,191,0.15); }
 
@@ -283,7 +283,7 @@
     <h2>Wallet Address Tidak Ditemukan</h2>
     <p>Halaman ini memerlukan wallet address yang valid dari proses login.</p>
     <p class="guard-detail" id="guardDetail"></p>
-    <p class="guard-hint">Wallet address dikirim dari login.html melalui URL parameter atau sessionStorage.</p>
+    <p class="guard-hint">Wallet address dikirim dari login.html melalui URL parameter atau storage.</p>
     <div class="guard-debug" id="guardDebug"></div>
     <a href="login.html" class="btn-primary"><i class="fa-solid fa-arrow-right-to-bracket"></i> Login via Pi Network</a>
   </div>
@@ -297,7 +297,7 @@
         <h1 class="topbar-title">On-Chain Wallet Health</h1>
       </div>
       <div class="topbar-right">
-        <button class="icon-btn" id="refreshBtn" aria-label="Refresh data" title="Fetch ulang data on-chain"><i class="fa-solid fa-arrows-rotate"></i></button>
+        <button class="icon-btn" id="refreshBtn" aria-label="Refresh data" title="Fetch ulang"><i class="fa-solid fa-arrows-rotate"></i></button>
         <button class="icon-btn" id="logoutBtn" aria-label="Logout" title="Keluar"><i class="fa-solid fa-right-from-bracket"></i></button>
       </div>
     </header>
@@ -311,142 +311,104 @@
   </div>
 
   <script>
-    /* ╔════════════════════════════════════════════════════════════════════════╗
-       ║                                                                      ║
-       ║  WALLET ADDRESS RESOLVER                                             ║
-       ║                                                                      ║
-       ║  Membaca wallet address dari sumber yang DITULIS oleh login.html:   ║
-       ║                                                                      ║
-       ║  1. URL param ?wallet=...  (login.html mengirim ini)                ║
-       ║  2. sessionStorage 'wallet_address' (login.html juga set ini)       ║
-       ║  3. sessionStorage 'whs_pi_user' (login.html set ini, parse JSON)  ║
-       ║  4. localStorage 'whs_pi_user' (login.html set ini, parse JSON)    ║
-       ║                                                                      ║
-       ║  Semua sumber di atas adalah data yang SUDAH ditulis oleh           ║
-       ║  login.html setelah Pi.authenticate() berhasil.                      ║
-       ║  Tidak ada tebak-tebakan.                                            ║
-       ╚════════════════════════════════════════════════════════════════════════╝ */
+    /* ═══════════════════════════════════════════════════════════
+       UTILITAS DASAR
+       ═══════════════════════════════════════════════════════════ */
 
-    function resolveWalletAddress() {
-      var debugLines = [];
-
-      // ── 1. URL parameter: ?wallet=... ──
-      // login.html mengirim: dashboard.html?wallet=USERNAME
-      var urlParams = new URLSearchParams(window.location.search);
-      var fromUrl = urlParams.get('wallet');
-      debugLines.push('URL param ?wallet= ' + (fromUrl ? '"' + fromUrl + '"' : 'null'));
-
-      if (fromUrl && fromUrl.trim().length > 2) {
-        var addr = fromUrl.trim();
-        // Sinkronkan ke sessionStorage sebagai backup
-        try { sessionStorage.setItem('wallet_address', addr); } catch(e) {}
-        debugLines.push('→ Menggunakan URL param: ' + addr);
-        return { address: addr, source: 'url_param', debug: debugLines };
-      }
-
-      // ── 2. sessionStorage: 'wallet_address' ──
-      // login.html: sessionStorage.setItem('wallet_address', walletToPass)
-      var fromSessionAddr = null;
-      try { fromSessionAddr = sessionStorage.getItem('wallet_address'); } catch(e) {}
-      debugLines.push('sessionStorage.wallet_address= ' + (fromSessionAddr ? '"' + fromSessionAddr + '"' : 'null'));
-
-      if (fromSessionAddr && fromSessionAddr.trim().length > 2) {
-        var addr2 = fromSessionAddr.trim();
-        debugLines.push('→ Menggunakan sessionStorage.wallet_address: ' + addr2);
-        return { address: addr2, source: 'session_storage', debug: debugLines };
-      }
-
-      // ── 3. sessionStorage: 'whs_pi_user' (JSON) ──
-      // login.html: sessionStorage.setItem('whs_pi_user', JSON.stringify(auth.user))
-      var fromSessionUser = null;
-      try { fromSessionUser = sessionStorage.getItem('whs_pi_user'); } catch(e) {}
-      debugLines.push('sessionStorage.whs_pi_user= ' + (fromSessionUser ? 'ada (' + fromSessionUser.length + ' chars)' : 'null'));
-
-      if (fromSessionUser) {
-        try {
-          var parsed = JSON.parse(fromSessionUser);
-          debugLines.push('  parsed keys: ' + Object.keys(parsed).join(', '));
-          var w = parsed.wallet_address || parsed.uid || parsed.username;
-          if (w && w.trim().length > 2) {
-            debugLines.push('→ Menggunakan sessionStorage.whs_pi_user.' + (parsed.wallet_address ? 'wallet_address' : parsed.uid ? 'uid' : 'username') + ': ' + w);
-            return { address: w.trim(), source: 'session_storage (whs_pi_user)', debug: debugLines };
-          }
-        } catch(e) {
-          debugLines.push('  parse error: ' + e.message);
-        }
-      }
-
-      // ── 4. localStorage: 'whs_pi_user' (JSON) ──
-      // login.html: localStorage.setItem('whs_pi_user', JSON.stringify(auth.user))
-      var fromLocalUser = null;
-      try { fromLocalUser = localStorage.getItem('whs_pi_user'); } catch(e) {}
-      debugLines.push('localStorage.whs_pi_user= ' + (fromLocalUser ? 'ada (' + fromLocalUser.length + ' chars)' : 'null'));
-
-      if (fromLocalUser) {
-        try {
-          var parsed2 = JSON.parse(fromLocalUser);
-          debugLines.push('  parsed keys: ' + Object.keys(parsed2).join(', '));
-          var w2 = parsed2.wallet_address || parsed2.uid || parsed2.username;
-          if (w2 && w2.trim().length > 2) {
-            debugLines.push('→ Menggunakan localStorage.whs_pi_user.' + (parsed2.wallet_address ? 'wallet_address' : parsed2.uid ? 'uid' : 'username') + ': ' + w2);
-            return { address: w2.trim(), source: 'local_storage (whs_pi_user)', debug: debugLines };
-          }
-        } catch(e) {
-          debugLines.push('  parse error: ' + e.message);
-        }
-      }
-
-      // ── Tidak ditemukan di semua sumber ──
-      debugLines.push('→ TIDAK DITEMUKAN di semua sumber');
-      return null;
+    function esc(s) {
+      var d = document.createElement('div');
+      d.appendChild(document.createTextNode(s || ''));
+      return d.innerHTML;
     }
 
-    // ─── UTILITAS ───────────────────────────────────────────────
-    function esc(s) { var d = document.createElement('div'); d.appendChild(document.createTextNode(s||'')); return d.innerHTML; }
-    function fmtNum(n) { return (n||0).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ','); }
+    function fmtNum(n) {
+      return (n || 0).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+    }
 
-    // ─── TOAST ──────────────────────────────────────────────────
+    /* ═══════════════════════════════════════════════════════════
+       TOAST
+       ═══════════════════════════════════════════════════════════ */
+
     function showToast(msg, type, dur) {
-      type = type||'info'; dur = dur||3000;
+      type = type || 'info';
+      dur = dur || 3000;
       var c = document.getElementById('toastWrap');
       if (!c) return;
       var t = document.createElement('div');
       t.className = 'toast ' + type;
-      var ic = {success:'fa-circle-check',error:'fa-circle-xmark',info:'fa-circle-info',warning:'fa-triangle-exclamation'};
-      t.innerHTML = '<i class="fa-solid '+(ic[type]||ic.info)+'"></i><span>'+msg+'</span>';
+      var icons = {
+        success: 'fa-circle-check',
+        error: 'fa-circle-xmark',
+        info: 'fa-circle-info',
+        warning: 'fa-triangle-exclamation'
+      };
+      t.innerHTML = '<i class="fa-solid ' + (icons[type] || icons.info) + '"></i><span>' + msg + '</span>';
       c.appendChild(t);
-      requestAnimationFrame(function(){ requestAnimationFrame(function(){ t.classList.add('show'); }); });
-      setTimeout(function(){ t.classList.remove('show'); setTimeout(function(){ if(t.parentNode)t.remove(); },300); }, dur);
+      requestAnimationFrame(function () {
+        requestAnimationFrame(function () { t.classList.add('show'); });
+      });
+      setTimeout(function () {
+        t.classList.remove('show');
+        setTimeout(function () { if (t.parentNode) t.remove(); }, 300);
+      }, dur);
     }
 
-    // ─── PARTIKEL ───────────────────────────────────────────────
-    (function(){
+    /* ═══════════════════════════════════════════════════════════
+       PARTIKEL LATAR
+       ═══════════════════════════════════════════════════════════ */
+
+    (function () {
       var canvas = document.getElementById('particleCanvas');
-      if(!canvas) return;
+      if (!canvas) return;
       var ctx = canvas.getContext('2d');
       var particles = [];
-      var COUNT = 30;
-      function resize(){ canvas.width=window.innerWidth; canvas.height=window.innerHeight; }
-      resize(); window.addEventListener('resize', resize);
-      for(var i=0;i<COUNT;i++) particles.push({x:Math.random()*canvas.width,y:Math.random()*canvas.height,r:Math.random()*1.1+0.3,vx:(Math.random()-0.5)*0.1,vy:(Math.random()-0.5)*0.1,a:Math.random()*0.2+0.04});
-      function draw(){
-        ctx.clearRect(0,0,canvas.width,canvas.height);
-        for(var i=0;i<particles.length;i++){
-          var p=particles[i]; p.x+=p.vx; p.y+=p.vy;
-          if(p.x<0)p.x=canvas.width; if(p.x>canvas.width)p.x=0;
-          if(p.y<0)p.y=canvas.height; if(p.y>canvas.height)p.y=0;
-          ctx.beginPath(); ctx.arc(p.x,p.y,Math.max(0.1,p.r),0,Math.PI*2);
-          ctx.fillStyle='rgba(45,212,191,'+p.a+')'; ctx.fill();
+      var COUNT = 28;
+
+      function resize() {
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+      }
+      resize();
+      window.addEventListener('resize', resize);
+
+      for (var i = 0; i < COUNT; i++) {
+        particles.push({
+          x: Math.random() * canvas.width,
+          y: Math.random() * canvas.height,
+          r: Math.random() * 1.1 + 0.3,
+          vx: (Math.random() - 0.5) * 0.1,
+          vy: (Math.random() - 0.5) * 0.1,
+          a: Math.random() * 0.2 + 0.04
+        });
+      }
+
+      function draw() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        for (var i = 0; i < particles.length; i++) {
+          var p = particles[i];
+          p.x += p.vx;
+          p.y += p.vy;
+          if (p.x < 0) p.x = canvas.width;
+          if (p.x > canvas.width) p.x = 0;
+          if (p.y < 0) p.y = canvas.height;
+          if (p.y > canvas.height) p.y = 0;
+          ctx.beginPath();
+          ctx.arc(p.x, p.y, Math.max(0.1, p.r), 0, Math.PI * 2);
+          ctx.fillStyle = 'rgba(45,212,191,' + p.a + ')';
+          ctx.fill();
         }
-        for(var i=0;i<particles.length;i++){
-          for(var j=i+1;j<particles.length;j++){
-            var dx=particles[i].x-particles[j].x, dy=particles[i].y-particles[j].y;
-            var dist=Math.sqrt(dx*dx+dy*dy);
-            if(dist<100){
-              ctx.beginPath(); ctx.moveTo(particles[i].x,particles[i].y);
-              ctx.lineTo(particles[j].x,particles[j].y);
-              ctx.strokeStyle='rgba(45,212,191,'+(0.03*(1-dist/100))+')';
-              ctx.lineWidth=0.5; ctx.stroke();
+        for (var i = 0; i < particles.length; i++) {
+          for (var j = i + 1; j < particles.length; j++) {
+            var dx = particles[i].x - particles[j].x;
+            var dy = particles[i].y - particles[j].y;
+            var dist = Math.sqrt(dx * dx + dy * dy);
+            if (dist < 100) {
+              ctx.beginPath();
+              ctx.moveTo(particles[i].x, particles[i].y);
+              ctx.lineTo(particles[j].x, particles[j].y);
+              ctx.strokeStyle = 'rgba(45,212,191,' + (0.03 * (1 - dist / 100)) + ')';
+              ctx.lineWidth = 0.5;
+              ctx.stroke();
             }
           }
         }
@@ -455,9 +417,106 @@
       draw();
     })();
 
-    /* ╔════════════════════════════════════════════════════════════════════╗
-       ║  CHAIN DATA SERVICE                                                ║
-       ╚════════════════════════════════════════════════════════════════════╝ */
+    /* ═══════════════════════════════════════════════════════════
+       WALLET ADDRESS RESOLVER
+
+       Membaca dari sumber yang DITULIS oleh login.html:
+       1. URL param ?wallet=...
+       2. sessionStorage 'wallet_address'
+       3. sessionStorage 'whs_pi_user' (JSON)
+       4. localStorage 'whs_pi_user' (JSON)
+
+       Login.html menulis ke semua sumber di atas setelah
+       Pi.authenticate() berhasil.
+       ═══════════════════════════════════════════════════════════ */
+
+    function safeSessionGet(key) {
+      try { return sessionStorage.getItem(key); }
+      catch (e) { return null; }
+    }
+
+    function safeLocalGet(key) {
+      try { return localStorage.getItem(key); }
+      catch (e) { return null; }
+    }
+
+    function safeSessionSet(key, val) {
+      try { sessionStorage.setItem(key, val); }
+      catch (e) { /* ignore */ }
+    }
+
+    function extractFromUserJson(jsonStr) {
+      /* Parse JSON dari login.html's auth.user object.
+         Mengambil wallet_address > uid > username (fallback bertingkat) */
+      if (!jsonStr) return null;
+      try {
+        var parsed = JSON.parse(jsonStr);
+        var w = parsed.wallet_address || parsed.uid || parsed.username;
+        if (w && w.trim && w.trim().length > 2) {
+          return w.trim();
+        }
+      } catch (e) {
+        /* JSON parse gagal, abaikan */
+      }
+      return null;
+    }
+
+    function resolveWalletAddress() {
+      var debugLines = [];
+
+      // 1. URL parameter: ?wallet=...
+      var urlParams = new URLSearchParams(window.location.search);
+      var fromUrl = urlParams.get('wallet');
+      debugLines.push('URL ?wallet= ' + (fromUrl ? '"' + fromUrl.substring(0, 50) + '"' : 'null'));
+
+      if (fromUrl && fromUrl.trim().length > 2) {
+        var addr = fromUrl.trim();
+        safeSessionSet('wallet_address', addr);
+        debugLines.push('DIPAKAI dari URL param');
+        return { address: addr, source: 'url_param', debug: debugLines };
+      }
+
+      // 2. sessionStorage 'wallet_address'
+      var ssAddr = safeSessionGet('wallet_address');
+      debugLines.push('SS wallet_address= ' + (ssAddr ? '"' + ssAddr.substring(0, 50) + '"' : 'null'));
+
+      if (ssAddr && ssAddr.trim().length > 2) {
+        debugLines.push('DIPAKAI dari SS.wallet_address');
+        return { address: ssAddr.trim(), source: 'session_storage', debug: debugLines };
+      }
+
+      // 3. sessionStorage 'whs_pi_user' (JSON)
+      var ssUser = safeSessionGet('whs_pi_user');
+      debugLines.push('SS whs_pi_user= ' + (ssUser ? 'ada(' + ssUser.length + 'char)' : 'null'));
+
+      if (ssUser) {
+        var w3 = extractFromUserJson(ssUser);
+        if (w3) {
+          debugLines.push('DIPAKAI dari SS.whs_pi_user');
+          return { address: w3, source: 'session_storage (whs_pi_user)', debug: debugLines };
+        }
+      }
+
+      // 4. localStorage 'whs_pi_user' (JSON)
+      var lsUser = safeLocalGet('whs_pi_user');
+      debugLines.push('LS whs_pi_user= ' + (lsUser ? 'ada(' + lsUser.length + 'char)' : 'null'));
+
+      if (lsUser) {
+        var w4 = extractFromUserJson(lsUser);
+        if (w4) {
+          debugLines.push('DIPAKAI dari LS.whs_pi_user');
+          return { address: w4, source: 'local_storage (whs_pi_user)', debug: debugLines };
+        }
+      }
+
+      // Tidak ditemukan
+      debugLines.push('TIDAK DITEMUKAN');
+      return null;
+    }
+
+    /* ═══════════════════════════════════════════════════════════
+       CHAIN DATA SERVICE
+       ═══════════════════════════════════════════════════════════ */
 
     var API_BASE = '/api/pi-chain';
     var CACHE_PREFIX = 'whs_chain_';
@@ -465,33 +524,61 @@
 
     function getCached(walletAddr) {
       try {
-        var raw = sessionStorage.getItem(CACHE_PREFIX + walletAddr);
+        var raw = safeSessionGet(CACHE_PREFIX + walletAddr);
         if (!raw) return null;
         var p = JSON.parse(raw);
-        if (Date.now() - p.ts > CACHE_TTL) { sessionStorage.removeItem(CACHE_PREFIX + walletAddr); return null; }
+        if (Date.now() - p.ts > CACHE_TTL) {
+          sessionStorage.removeItem(CACHE_PREFIX + walletAddr);
+          return null;
+        }
         return p.data;
-      } catch(e) { return null; }
+      } catch (e) { return null; }
     }
+
     function setCached(walletAddr, data) {
-      try { sessionStorage.setItem(CACHE_PREFIX + walletAddr, JSON.stringify({data:data,ts:Date.now()})); } catch(e) {}
+      try {
+        sessionStorage.setItem(CACHE_PREFIX + walletAddr, JSON.stringify({ data: data, ts: Date.now() }));
+      } catch (e) { /* ignore */ }
     }
 
     function getMockChainData(walletAddr) {
       return {
-        source: 'pi_blockchain', fetched_at: new Date().toISOString(), wallet: walletAddr,
+        source: 'pi_blockchain',
+        fetched_at: new Date().toISOString(),
+        wallet: walletAddr,
         username: null,
         metrics: {
-          tx_total: 147, tx_success: 139, tx_failed: 6, tx_pending: 2,
-          success_rate: 94.6, unique_counterparties: 23, avg_tx_per_day: 0.42,
-          first_tx_timestamp: '2023-06-14T08:22:00Z', last_tx_timestamp: '2025-01-10T14:05:00Z',
-          age_days_on_chain: 576, time_distribution_entropy: 0.72,
-          velocity_24h: 3, velocity_7d: 12
+          tx_total: 147,
+          tx_success: 139,
+          tx_failed: 6,
+          tx_pending: 2,
+          success_rate: 94.6,
+          unique_counterparties: 23,
+          avg_tx_per_day: 0.42,
+          first_tx_timestamp: '2023-06-14T08:22:00Z',
+          last_tx_timestamp: '2025-01-10T14:05:00Z',
+          age_days_on_chain: 576,
+          time_distribution_entropy: 0.72,
+          velocity_24h: 3,
+          velocity_7d: 12
         },
         risk: {
           total_penalty: 40,
           flags: [
-            { severity:'medium', label:'Velocity Spike', description:'3 transaksi dalam 24 jam terakhir, di atas rata-rata 0.42 tx/hari.', detail:'Pola: 2 transfer keluar + 1 transfer masuk dalam interval 4 jam. Bisa jadi aktivitas normal atau potensial wash trading.', penalty:25 },
-            { severity:'low', label:'Time Pattern Slightly Regular', description:'Distribusi waktu transaksi menunjukkan sedikit kebiasaan (entropy 0.72).', detail:'Sebagian transaksi terjadi di jam yang sama. Entropy 0.72 dari skala 0-1.', penalty:15 }
+            {
+              severity: 'medium',
+              label: 'Velocity Spike',
+              description: '3 transaksi dalam 24 jam terakhir, di atas rata-rata 0.42 tx/hari.',
+              detail: 'Pola: 2 transfer keluar + 1 transfer masuk dalam interval 4 jam. Bisa jadi aktivitas normal atau potensial wash trading.',
+              penalty: 25
+            },
+            {
+              severity: 'low',
+              label: 'Time Pattern Slightly Regular',
+              description: 'Distribusi waktu transaksi menunjukkan sedikit kebiasaan (entropy 0.72).',
+              detail: 'Sebagian transaksi terjadi di jam yang sama. Entropy 0.72 dari skala 0-1.',
+              penalty: 15
+            }
           ]
         },
         network_average: null,
@@ -513,7 +600,7 @@
           setCached(walletAddr, json);
           return { data: json, fromCache: false };
         }
-      } catch(e) {
+      } catch (e) {
         console.warn('[ChainService] API unreachable, mock fallback:', e.message);
       }
 
@@ -523,344 +610,534 @@
       return { data: mock, fromCache: false };
     }
 
-    /* ╔════════════════════════════════════════════════════════════════════╗
-       ║  CHAIN ANALYZER (scoring logic — di produksi pindah ke backend)   ║
-       ╚════════════════════════════════════════════════════════════════════╝ */
+    /* ═══════════════════════════════════════════════════════════
+       CHAIN ANALYZER (di produksi: pindah ke backend)
+       ═══════════════════════════════════════════════════════════ */
 
     var ChainAnalyzer = {
-      calcSuccessRate: function(rate) {
+      calcSuccessRate: function (rate) {
         if (rate >= 98) return 250;
-        if (rate >= 95) return 230 + Math.round((rate-95)/3*20);
-        if (rate >= 90) return 195 + Math.round((rate-90)/5*35);
-        if (rate >= 80) return 145 + Math.round((rate-80)/10*50);
-        if (rate >= 60) return 80 + Math.round((rate-60)/20*65);
-        if (rate >= 40) return 30 + Math.round((rate-40)/20*50);
-        return Math.round(rate/40*30);
+        if (rate >= 95) return 230 + Math.round((rate - 95) / 3 * 20);
+        if (rate >= 90) return 195 + Math.round((rate - 90) / 5 * 35);
+        if (rate >= 80) return 145 + Math.round((rate - 80) / 10 * 50);
+        if (rate >= 60) return 80 + Math.round((rate - 60) / 20 * 65);
+        if (rate >= 40) return 30 + Math.round((rate - 40) / 20 * 50);
+        return Math.round(rate / 40 * 30);
       },
-      calcVolume: function(m) {
-        var cp = m.unique_counterparties||0;
-        var cpScore = cp===0 ? 0 : Math.min(150, Math.round(Math.log2(cp+1)/Math.log2(100)*150));
-        var tx = m.tx_total||0;
-        var txScore = tx===0 ? 0 : Math.min(70, Math.round(Math.log2(tx+1)/Math.log2(500)*70));
-        var entropy = m.time_distribution_entropy||0;
-        var entropyBonus = Math.round(entropy*30);
-        return Math.min(250, cpScore+txScore+entropyBonus);
+
+      calcVolume: function (m) {
+        var cp = m.unique_counterparties || 0;
+        var cpScore = cp === 0 ? 0 : Math.min(150, Math.round(Math.log2(cp + 1) / Math.log2(100) * 150));
+        var tx = m.tx_total || 0;
+        var txScore = tx === 0 ? 0 : Math.min(70, Math.round(Math.log2(tx + 1) / Math.log2(500) * 70));
+        var entropy = m.time_distribution_entropy || 0;
+        var entropyBonus = Math.round(entropy * 30);
+        return Math.min(250, cpScore + txScore + entropyBonus);
       },
-      calcAge: function(days) {
-        if (days>=730) return 250; if (days>=548) return 235; if (days>=365) return 210;
-        if (days>=270) return 180; if (days>=180) return 145; if (days>=90) return 100;
-        if (days>=30) return 55; if (days>0) return 25; return 0;
+
+      calcAge: function (days) {
+        if (days >= 730) return 250;
+        if (days >= 548) return 235;
+        if (days >= 365) return 210;
+        if (days >= 270) return 180;
+        if (days >= 180) return 145;
+        if (days >= 90) return 100;
+        if (days >= 30) return 55;
+        if (days > 0) return 25;
+        return 0;
       },
-      calcRisk: function(penalty) { return Math.max(0, 250-(penalty||0)); },
-      formatAge: function(d) {
-        if(d>=365){var y=Math.floor(d/365);var m2=Math.floor((d%365)/30);return y+' tahun'+(m2>0?' '+m2+' bulan':'');}
-        if(d>=30) return Math.floor(d/30)+' bulan';
-        if(d>0) return d+' hari';
+
+      calcRisk: function (penalty) {
+        return Math.max(0, 250 - (penalty || 0));
+      },
+
+      formatAge: function (d) {
+        if (d >= 365) {
+          var y = Math.floor(d / 365);
+          var m2 = Math.floor((d % 365) / 30);
+          return y + ' tahun' + (m2 > 0 ? ' ' + m2 + ' bulan' : '');
+        }
+        if (d >= 30) return Math.floor(d / 30) + ' bulan';
+        if (d > 0) return d + ' hari';
         return 'N/A';
       },
-      analyze: function(chainData) {
-        var m = chainData.metrics, r = chainData.risk;
+
+      analyze: function (chainData) {
+        var m = chainData.metrics;
+        var r = chainData.risk;
         var srScore = this.calcSuccessRate(m.success_rate);
         var volScore = this.calcVolume(m);
         var ageScore = this.calcAge(m.age_days_on_chain);
         var riskScore = this.calcRisk(r.total_penalty);
-        var total = srScore+volScore+ageScore+riskScore;
+        var total = srScore + volScore + ageScore + riskScore;
+
         var netAvg = chainData.network_average;
-        var hasNetAvg = netAvg!==null && netAvg!==undefined;
-        var vsNetwork = hasNetAvg ? total-netAvg : null;
+        var hasNetAvg = netAvg !== null && netAvg !== undefined;
+        var vsNetwork = hasNetAvg ? total - netAvg : null;
+
         var status, statusColor;
-        if(total>=800){status='Excellent';statusColor='var(--success)';}
-        else if(total>=600){status='Good';statusColor='var(--accent)';}
-        else if(total>=400){status='Fair';statusColor='var(--warning)';}
-        else{status='Poor';statusColor='var(--danger)';}
-        var nb = chainData.network_average_breakdown||null;
+        if (total >= 800) { status = 'Excellent'; statusColor = 'var(--success)'; }
+        else if (total >= 600) { status = 'Good'; statusColor = 'var(--accent)'; }
+        else if (total >= 400) { status = 'Fair'; statusColor = 'var(--warning)'; }
+        else { status = 'Poor'; statusColor = 'var(--danger)'; }
+
+        var nb = chainData.network_average_breakdown || null;
+
         return {
-          score:total, maxScore:1000, status:status, statusColor:statusColor,
-          networkAverage:netAvg, hasNetworkAverage:hasNetAvg, vsNetwork:vsNetwork,
-          breakdown:{
-            successRate:{label:'Success Rate',score:srScore,max:250,displayVal:m.success_rate.toFixed(1)+'%',netAvg:nb?nb.successRate:null},
-            volume:{label:'Activity Weight',score:volScore,max:250,displayVal:fmtNum(m.unique_counterparties)+' counterparties',detail:fmtNum(m.tx_total)+' tx total',netAvg:nb?nb.volume:null},
-            age:{label:'On-Chain Age',score:ageScore,max:250,displayVal:this.formatAge(m.age_days_on_chain),netAvg:nb?nb.age:null},
-            risk:{label:'Risk Assessment',score:riskScore,max:250,penalty:r.total_penalty,displayVal:r.total_penalty>0?'-'+r.total_penalty+' penalty':'Bersih',netAvg:nb?nb.risk:null}
+          score: total, maxScore: 1000,
+          status: status, statusColor: statusColor,
+          networkAverage: netAvg, hasNetworkAverage: hasNetAvg,
+          vsNetwork: vsNetwork,
+          breakdown: {
+            successRate: { label: 'Success Rate', score: srScore, max: 250, displayVal: m.success_rate.toFixed(1) + '%', netAvg: nb ? nb.successRate : null },
+            volume: { label: 'Activity Weight', score: volScore, max: 250, displayVal: fmtNum(m.unique_counterparties) + ' counterparties', detail: fmtNum(m.tx_total) + ' tx total', netAvg: nb ? nb.volume : null },
+            age: { label: 'On-Chain Age', score: ageScore, max: 250, displayVal: this.formatAge(m.age_days_on_chain), netAvg: nb ? nb.age : null },
+            risk: { label: 'Risk Assessment', score: riskScore, max: 250, penalty: r.total_penalty, displayVal: r.total_penalty > 0 ? '-' + r.total_penalty + ' penalty' : 'Bersih', netAvg: nb ? nb.risk : null }
           },
-          rawMetrics:m, riskFlags:r.flags||[]
+          rawMetrics: m,
+          riskFlags: r.flags || []
         };
       }
     };
 
-    /* ╔════════════════════════════════════════════════════════════════════╗
-       ║  UI RENDERER                                                       ║
-       ╚════════════════════════════════════════════════════════════════════╝ */
+    /* ═══════════════════════════════════════════════════════════
+       UI RENDERER
+       ═══════════════════════════════════════════════════════════ */
 
     var UI = {
-      drawGauge: function(id, score, maxScore, color) {
+      drawGauge: function (id, score, maxScore, color) {
         var canvas = document.getElementById(id);
-        if(!canvas) return;
-        var ctx=canvas.getContext('2d'), dpr=window.devicePixelRatio||1, size=200;
-        canvas.width=size*dpr; canvas.height=size*dpr;
-        canvas.style.width=size+'px'; canvas.style.height=size+'px';
-        ctx.scale(dpr,dpr);
-        var cx=size/2,cy=size/2,radius=Math.max(1,size/2-24),lineW=10;
-        var startA=Math.PI*0.75,endA=Math.PI*2.25,totalArc=endA-startA;
-        var pct=Math.min(1,Math.max(0,score/maxScore));
-        var targetA=startA+totalArc*pct;
-        ctx.beginPath(); ctx.arc(cx,cy,radius,startA,endA);
-        ctx.strokeStyle='rgba(255,255,255,0.06)'; ctx.lineWidth=lineW; ctx.lineCap='round'; ctx.stroke();
-        for(var i=0;i<=10;i++){
-          var a=startA+(totalArc/10)*i, inn=radius-lineW/2-6, out=radius-lineW/2-2;
-          ctx.beginPath(); ctx.moveTo(cx+Math.cos(a)*inn,cy+Math.sin(a)*inn);
-          ctx.lineTo(cx+Math.cos(a)*out,cy+Math.sin(a)*out);
-          ctx.strokeStyle='rgba(255,255,255,0.08)'; ctx.lineWidth=1; ctx.lineCap='butt'; ctx.stroke();
+        if (!canvas) return;
+        var ctx = canvas.getContext('2d');
+        var dpr = window.devicePixelRatio || 1;
+        var size = 200;
+        canvas.width = size * dpr;
+        canvas.height = size * dpr;
+        canvas.style.width = size + 'px';
+        canvas.style.height = size + 'px';
+        ctx.scale(dpr, dpr);
+
+        var cx = size / 2, cy = size / 2;
+        var radius = Math.max(1, size / 2 - 24);
+        var lineW = 10;
+        var startA = Math.PI * 0.75;
+        var endA = Math.PI * 2.25;
+        var totalArc = endA - startA;
+        var pct = Math.min(1, Math.max(0, score / maxScore));
+
+        // Background arc
+        ctx.beginPath();
+        ctx.arc(cx, cy, radius, startA, endA);
+        ctx.strokeStyle = 'rgba(255,255,255,0.06)';
+        ctx.lineWidth = lineW;
+        ctx.lineCap = 'round';
+        ctx.stroke();
+
+        // Tick marks
+        for (var i = 0; i <= 10; i++) {
+          var a = startA + (totalArc / 10) * i;
+          var inn = radius - lineW / 2 - 6;
+          var out = radius - lineW / 2 - 2;
+          ctx.beginPath();
+          ctx.moveTo(cx + Math.cos(a) * inn, cy + Math.sin(a) * inn);
+          ctx.lineTo(cx + Math.cos(a) * out, cy + Math.sin(a) * out);
+          ctx.strokeStyle = 'rgba(255,255,255,0.08)';
+          ctx.lineWidth = 1;
+          ctx.lineCap = 'butt';
+          ctx.stroke();
         }
-        var startTime=null, dur=1400;
-        function anim(ts){
-          if(!startTime)startTime=ts;
-          var p=Math.min(1,(ts-startTime)/dur), ease=1-Math.pow(1-p,3);
-          var curA=startA+totalArc*pct*ease;
-          ctx.save(); ctx.beginPath(); ctx.arc(cx,cy,radius+lineW,0,Math.PI*2); ctx.clip(); ctx.clearRect(0,0,size,size); ctx.restore();
-          ctx.beginPath(); ctx.arc(cx,cy,radius,startA,endA); ctx.strokeStyle='rgba(255,255,255,0.06)'; ctx.lineWidth=lineW; ctx.lineCap='round'; ctx.stroke();
-          for(var j=0;j<=10;j++){
-            var a2=startA+(totalArc/10)*j,inn2=radius-lineW/2-6,out2=radius-lineW/2-2;
-            ctx.beginPath(); ctx.moveTo(cx+Math.cos(a2)*inn2,cy+Math.sin(a2)*inn2);
-            ctx.lineTo(cx+Math.cos(a2)*out2,cy+Math.sin(a2)*out2);
-            ctx.strokeStyle='rgba(255,255,255,0.08)'; ctx.lineWidth=1; ctx.lineCap='butt'; ctx.stroke();
+
+        // Animate
+        var startTime = null;
+        var dur = 1400;
+
+        function anim(ts) {
+          if (!startTime) startTime = ts;
+          var p = Math.min(1, (ts - startTime) / dur);
+          var ease = 1 - Math.pow(1 - p, 3);
+          var curA = startA + totalArc * pct * ease;
+
+          ctx.save();
+          ctx.beginPath();
+          ctx.arc(cx, cy, radius + lineW, 0, Math.PI * 2);
+          ctx.clip();
+          ctx.clearRect(0, 0, size, size);
+          ctx.restore();
+
+          // Redraw bg
+          ctx.beginPath();
+          ctx.arc(cx, cy, radius, startA, endA);
+          ctx.strokeStyle = 'rgba(255,255,255,0.06)';
+          ctx.lineWidth = lineW;
+          ctx.lineCap = 'round';
+          ctx.stroke();
+
+          // Redraw ticks
+          for (var j = 0; j <= 10; j++) {
+            var a2 = startA + (totalArc / 10) * j;
+            var inn2 = radius - lineW / 2 - 6;
+            var out2 = radius - lineW / 2 - 2;
+            ctx.beginPath();
+            ctx.moveTo(cx + Math.cos(a2) * inn2, cy + Math.sin(a2) * inn2);
+            ctx.lineTo(cx + Math.cos(a2) * out2, cy + Math.sin(a2) * out2);
+            ctx.strokeStyle = 'rgba(255,255,255,0.08)';
+            ctx.lineWidth = 1;
+            ctx.lineCap = 'butt';
+            ctx.stroke();
           }
-          if(curA>startA+0.01){
-            ctx.beginPath(); ctx.arc(cx,cy,radius,startA,curA); ctx.strokeStyle=color; ctx.lineWidth=lineW; ctx.lineCap='round'; ctx.stroke();
-            ctx.beginPath(); ctx.arc(cx,cy,radius,startA,curA);
-            ctx.strokeStyle=color.replace('rgb','rgba').replace(')',',0.25)'); ctx.lineWidth=lineW+8; ctx.lineCap='round'; ctx.stroke();
+
+          // Fill arc
+          if (curA > startA + 0.01) {
+            ctx.beginPath();
+            ctx.arc(cx, cy, radius, startA, curA);
+            ctx.strokeStyle = color;
+            ctx.lineWidth = lineW;
+            ctx.lineCap = 'round';
+            ctx.stroke();
+
+            // Glow
+            ctx.beginPath();
+            ctx.arc(cx, cy, radius, startA, curA);
+            ctx.strokeStyle = color.replace('rgb', 'rgba').replace(')', ',0.25)');
+            ctx.lineWidth = lineW + 8;
+            ctx.lineCap = 'round';
+            ctx.stroke();
           }
-          ctx.fillStyle='#f1f5f9'; ctx.font='700 42px "Space Grotesk",sans-serif';
-          ctx.textAlign='center'; ctx.textBaseline='middle';
-          ctx.fillText(Math.round(score*ease),cx,cy-8);
-          ctx.fillStyle='#475569'; ctx.font='500 12px "DM Sans",sans-serif';
-          ctx.fillText('/ '+maxScore,cx,cy+18);
-          if(p<1) requestAnimationFrame(anim);
+
+          // Score text
+          ctx.fillStyle = '#f1f5f9';
+          ctx.font = '700 42px "Space Grotesk",sans-serif';
+          ctx.textAlign = 'center';
+          ctx.textBaseline = 'middle';
+          ctx.fillText(Math.round(score * ease), cx, cy - 8);
+
+          ctx.fillStyle = '#475569';
+          ctx.font = '500 12px "DM Sans",sans-serif';
+          ctx.fillText('/ ' + maxScore, cx, cy + 18);
+
+          if (p < 1) requestAnimationFrame(anim);
         }
         requestAnimationFrame(anim);
       },
 
-      render: function(walletAddr, resolveSource, chainData, analysis) {
-        var pc=document.getElementById('pageContent'), sd=analysis, m=sd.rawMetrics;
-        var isOnChain=chainData.source==='pi_blockchain', isFallback=!isOnChain;
-        var safeAddr=esc(walletAddr);
-        var username=chainData.username||walletAddr.substring(0,10)+'...';
-        var ageStr=ChainAnalyzer.formatAge(m.age_days_on_chain);
-        var gaugeColor=sd.statusColor==='var(--success)'?'rgb(34,197,94)':sd.statusColor==='var(--accent)'?'rgb(45,212,191)':sd.statusColor==='var(--warning)'?'rgb(245,158,11)':'rgb(239,68,68)';
-        var h='';
+      render: function (walletAddr, resolveSource, chainData, analysis) {
+        var pc = document.getElementById('pageContent');
+        var sd = analysis;
+        var m = sd.rawMetrics;
+        var isOnChain = chainData.source === 'pi_blockchain';
+        var isFallback = !isOnChain;
+        var safeAddr = esc(walletAddr);
+        var username = chainData.username || walletAddr.substring(0, 10) + '...';
+        var ageStr = ChainAnalyzer.formatAge(m.age_days_on_chain);
 
-        if(isFallback) h+='<div class="ds-warning"><i class="fa-solid fa-triangle-exclamation"></i><div><strong>Mode Fallback</strong> — Backend API tidak dapat dijangkau. Data yang ditampilkan adalah <em>mock development</em>, bukan data on-chain sesungguhnya.</div></div>';
+        var gaugeColor = sd.statusColor === 'var(--success)' ? 'rgb(34,197,94)' :
+          sd.statusColor === 'var(--accent)' ? 'rgb(45,212,191)' :
+            sd.statusColor === 'var(--warning)' ? 'rgb(245,158,11)' : 'rgb(239,68,68)';
 
-        // Identity
-        h+='<div class="identity-card"><div class="identity-top"><div class="identity-left"><div class="identity-avatar">&pi;</div><div class="identity-info">';
-        h+='<div class="identity-name">'+esc('@'+username)+'<span class="src-badge '+(isOnChain?'onchain':'fallback')+'"><i class="fa-solid '+(isOnChain?'fa-link':'fa-database')+'"></i> '+esc(chainData.source)+'</span></div>';
-        h+='<div class="identity-wallet-row"><span class="wallet-badge"><i class="fa-solid fa-fingerprint"></i> Wallet</span><span class="wallet-addr">'+safeAddr+'</span></div>';
-        h+='<div class="identity-meta"><span><i class="fa-solid fa-shield-halved" style="color:'+sd.statusColor+'"></i> <b style="color:'+sd.statusColor+'">'+sd.status+'</b></span><span><i class="fa-regular fa-clock"></i> '+ageStr+' on-chain</span><span><i class="fa-solid fa-route"></i> via '+esc(resolveSource)+'</span></div>';
-        h+='</div></div><div class="identity-actions"><button class="btn-ghost" id="copyWalletBtn"><i class="fa-regular fa-copy"></i> Salin</button></div></div></div>';
+        var h = '';
+
+        // Fallback warning
+        if (isFallback) {
+          h += '<div class="ds-warning"><i class="fa-solid fa-triangle-exclamation"></i><div><strong>Mode Fallback</strong> — Backend API tidak dapat dijangkau. Data yang ditampilkan adalah <em>mock development</em>, bukan data on-chain sesungguhnya.</div></div>';
+        }
+
+        // Identity Card
+        h += '<div class="identity-card"><div class="identity-top"><div class="identity-left"><div class="identity-avatar">&pi;</div><div class="identity-info">';
+        h += '<div class="identity-name">' + esc('@' + username) + '<span class="src-badge ' + (isOnChain ? 'onchain' : 'fallback') + '"><i class="fa-solid ' + (isOnChain ? 'fa-link' : 'fa-database') + '"></i> ' + esc(chainData.source) + '</span></div>';
+        h += '<div class="identity-wallet-row"><span class="wallet-badge"><i class="fa-solid fa-fingerprint"></i> Wallet</span><span class="wallet-addr">' + safeAddr + '</span></div>';
+        h += '<div class="identity-meta">';
+        h += '<span><i class="fa-solid fa-shield-halved" style="color:' + sd.statusColor + '"></i> <b style="color:' + sd.statusColor + '">' + sd.status + '</b></span>';
+        h += '<span><i class="fa-regular fa-clock"></i> ' + ageStr + ' on-chain</span>';
+        h += '<span><i class="fa-solid fa-route"></i> via ' + esc(resolveSource) + '</span>';
+        h += '</div></div></div>';
+        h += '<div class="identity-actions"><button class="btn-ghost" id="copyWalletBtn"><i class="fa-regular fa-copy"></i> Salin</button></div></div></div>';
 
         // Score Hero
-        h+='<div class="score-hero"><div class="gauge-card"><canvas id="scoreGauge"></canvas>';
-        h+='<div class="gauge-label">Total Health Score</div>';
-        var statusBg=sd.statusColor.replace('var(--success)','rgba(34,197,94,0.12)').replace('var(--accent)','rgba(45,212,191,0.12)').replace('var(--warning)','rgba(245,158,11,0.12)').replace('var(--danger)','rgba(239,68,68,0.12)');
-        var statusBd=sd.statusColor.replace('var(--success)','rgba(34,197,94,0.2)').replace('var(--accent)','rgba(45,212,191,0.2)').replace('var(--warning)','rgba(245,158,11,0.2)').replace('var(--danger)','rgba(239,68,68,0.2)');
-        h+='<div class="gauge-status" style="color:'+sd.statusColor+';background:'+statusBg+';border:1px solid '+statusBd+'"><i class="fa-solid fa-circle-check"></i> '+sd.status+'</div>';
-        var totalPct=Math.round(sd.score/sd.maxScore*100), avgPct=sd.hasNetworkAverage?Math.round(sd.networkAverage/sd.maxScore*100):0;
-        h+='<div class="total-bar-wrap"><div class="total-bar-head"><span class="total-bar-label">Progress</span><span class="total-bar-vals">'+sd.score+' / '+sd.maxScore+' ('+totalPct+'%)</span></div>';
-        h+='<div class="total-bar-track"><div class="total-bar-fill" data-width="'+totalPct+'" style="background:linear-gradient(90deg,'+gaugeColor+','+gaugeColor.replace('rgb','rgba').replace(')',',0.6)')+')"></div>';
-        h+='<div class="avg-marker '+(sd.hasNetworkAverage?'':'hidden')+'" data-left="'+avgPct+'"></div></div></div></div>';
+        h += '<div class="score-hero"><div class="gauge-card"><canvas id="scoreGauge"></canvas>';
+        h += '<div class="gauge-label">Total Health Score</div>';
 
-        // Stats
-        h+='<div class="stats-grid">';
-        h+='<div class="stat-card"><div class="stat-value" style="color:var(--accent)" id="animTx">0</div><div class="stat-label">Total Transaksi</div></div>';
-        h+='<div class="stat-card"><div class="stat-value" id="animRate">0%</div><div class="stat-label">Success Rate</div></div>';
-        h+='<div class="stat-card"><div class="stat-value" style="color:'+(sd.riskFlags.length>0?'var(--danger)':'var(--success)')+'">'+sd.riskFlags.length+'</div><div class="stat-label">Risk Flags</div></div>';
-        var vsColor=sd.vsNetwork!==null?(sd.vsNetwork>=0?'var(--success)':'var(--danger)'):'var(--text-muted)';
-        var vsText=sd.vsNetwork!==null?(sd.vsNetwork>=0?'+':'')+sd.vsNetwork:'N/A';
-        h+='<div class="stat-card"><div class="stat-value" style="color:'+vsColor+'">'+vsText+'</div><div class="stat-label">vs Network Avg</div></div></div></div>';
+        var statusBg = sd.statusColor.replace('var(--success)', 'rgba(34,197,94,0.12)').replace('var(--accent)', 'rgba(45,212,191,0.12)').replace('var(--warning)', 'rgba(245,158,11,0.12)').replace('var(--danger)', 'rgba(239,68,68,0.12)');
+        var statusBd = sd.statusColor.replace('var(--success)', 'rgba(34,197,94,0.2)').replace('var(--accent)', 'rgba(45,212,191,0.2)').replace('var(--warning)', 'rgba(245,158,11,0.2)').replace('var(--danger)', 'rgba(239,68,68,0.2)');
+        h += '<div class="gauge-status" style="color:' + sd.statusColor + ';background:' + statusBg + ';border:1px solid ' + statusBd + '"><i class="fa-solid fa-circle-check"></i> ' + sd.status + '</div>';
+
+        var totalPct = Math.round(sd.score / sd.maxScore * 100);
+        var avgPct = sd.hasNetworkAverage ? Math.round(sd.networkAverage / sd.maxScore * 100) : 0;
+
+        h += '<div class="total-bar-wrap"><div class="total-bar-head"><span class="total-bar-label">Progress</span><span class="total-bar-vals">' + sd.score + ' / ' + sd.maxScore + ' (' + totalPct + '%)</span></div>';
+        h += '<div class="total-bar-track"><div class="total-bar-fill" data-width="' + totalPct + '" style="background:linear-gradient(90deg,' + gaugeColor + ',' + gaugeColor.replace('rgb', 'rgba').replace(')', ',0.6)') + ')"></div>';
+        h += '<div class="avg-marker ' + (sd.hasNetworkAverage ? '' : 'hidden') + '" data-left="' + avgPct + '"></div></div></div></div>';
+
+        // Stats grid
+        h += '<div class="stats-grid">';
+        h += '<div class="stat-card"><div class="stat-value" style="color:var(--accent)" id="animTx">0</div><div class="stat-label">Total Transaksi</div></div>';
+        h += '<div class="stat-card"><div class="stat-value" id="animRate">0%</div><div class="stat-label">Success Rate</div></div>';
+        h += '<div class="stat-card"><div class="stat-value" style="color:' + (sd.riskFlags.length > 0 ? 'var(--danger)' : 'var(--success)') + '">' + sd.riskFlags.length + '</div><div class="stat-label">Risk Flags</div></div>';
+        var vsColor = sd.vsNetwork !== null ? (sd.vsNetwork >= 0 ? 'var(--success)' : 'var(--danger)') : 'var(--text-muted)';
+        var vsText = sd.vsNetwork !== null ? (sd.vsNetwork >= 0 ? '+' : '') + sd.vsNetwork : 'N/A';
+        h += '<div class="stat-card"><div class="stat-value" style="color:' + vsColor + '">' + vsText + '</div><div class="stat-label">vs Network Avg</div></div></div></div>';
 
         // TX Overview
-        h+='<div class="section" data-reveal><div class="section-head"><div class="section-icon teal"><i class="fa-solid fa-arrow-right-arrow-left"></i></div><h2 class="section-title">Transaction Overview</h2></div><div class="card"><div class="card-body">';
-        h+='<div class="tx-grid">';
-        h+='<div class="tx-card"><div class="tx-val">'+fmtNum(m.tx_success)+'</div><div class="tx-lbl">Berhasil</div></div>';
-        h+='<div class="tx-card"><div class="tx-val" style="color:var(--danger)">'+fmtNum(m.tx_failed)+'</div><div class="tx-lbl">Gagal</div></div>';
-        h+='<div class="tx-card"><div class="tx-val" style="color:var(--warning)">'+fmtNum(m.tx_pending)+'</div><div class="tx-lbl">Pending</div></div>';
-        h+='<div class="tx-card"><div class="tx-val">'+m.avg_tx_per_day.toFixed(2)+'</div><div class="tx-lbl">Rata-rata Tx/Hari</div></div></div>';
-        var okPct=m.tx_total>0?Math.round(m.tx_success/m.tx_total*100):100;
-        var failPct=m.tx_total>0?Math.round(m.tx_failed/m.tx_total*100):0;
-        h+='<div class="tx-fail-bar"><div class="tx-fail-head"><span>Berhasil vs Gagal</span><span>'+okPct+'% OK / '+failPct+'% gagal</span></div>';
-        h+='<div class="tx-fail-track"><div class="tx-fail-ok" data-width="'+okPct+'"></div><div class="tx-fail-fail" data-width="'+failPct+'"></div></div></div>';
-        h+='</div></div></div>';
+        h += '<div class="section" data-reveal><div class="section-head"><div class="section-icon teal"><i class="fa-solid fa-arrow-right-arrow-left"></i></div><h2 class="section-title">Transaction Overview</h2></div><div class="card"><div class="card-body">';
+        h += '<div class="tx-grid">';
+        h += '<div class="tx-card"><div class="tx-val">' + fmtNum(m.tx_success) + '</div><div class="tx-lbl">Berhasil</div></div>';
+        h += '<div class="tx-card"><div class="tx-val" style="color:var(--danger)">' + fmtNum(m.tx_failed) + '</div><div class="tx-lbl">Gagal</div></div>';
+        h += '<div class="tx-card"><div class="tx-val" style="color:var(--warning)">' + fmtNum(m.tx_pending) + '</div><div class="tx-lbl">Pending</div></div>';
+        h += '<div class="tx-card"><div class="tx-val">' + m.avg_tx_per_day.toFixed(2) + '</div><div class="tx-lbl">Rata-rata Tx/Hari</div></div></div>';
+        var okPct = m.tx_total > 0 ? Math.round(m.tx_success / m.tx_total * 100) : 100;
+        var failPct = m.tx_total > 0 ? Math.round(m.tx_failed / m.tx_total * 100) : 0;
+        h += '<div class="tx-fail-bar"><div class="tx-fail-head"><span>Berhasil vs Gagal</span><span>' + okPct + '% OK / ' + failPct + '% gagal</span></div>';
+        h += '<div class="tx-fail-track"><div class="tx-fail-ok" data-width="' + okPct + '"></div><div class="tx-fail-fail" data-width="' + failPct + '"></div></div></div>';
+        h += '</div></div></div>';
 
         // Breakdown
-        h+='<div class="section" data-reveal><div class="section-head"><div class="section-icon blue"><i class="fa-solid fa-chart-bar"></i></div><h2 class="section-title">Breakdown Skor</h2><span class="section-sub">Maks 250/kategori</span></div><div class="card"><div class="card-body"><div class="breakdown-grid">';
-        var bd=sd.breakdown;
-        h+=this.renderBd(bd.successRate,'c-teal','fa-circle-check',bd.successRate.displayVal,'Persentase transaksi confirmed. Curve logarithmic — konsistensi dihargai lebih.');
-        h+=this.renderBd(bd.volume,'c-green','fa-users',bd.volume.displayVal,'Unique counterparties (log-scaled) + total tx (diminishing returns) + entropy bonus. Anti-spam.',bd.volume.detail);
-        h+=this.renderBd(bd.age,'c-amber','fa-clock',bd.age.displayVal,'Dihitung dari timestamp transaksi pertama di blockchain, bukan dari database record.');
-        var rPct=Math.round(bd.risk.score/bd.risk.max*100);
-        var rCol=rPct>=70?'c-mix-g':rPct>=40?'c-mix-a':'c-mix-r';
-        var rExp=bd.risk.penalty===0?'Tidak ada penalty dari risk engine.':bd.risk.penalty<=30?'Penalti ringan.':bd.risk.penalty<=80?'Penalti sedang — ada indikasi pola mencurigakan.':'Penalti berat — multiple risk indicators.';
-        h+=this.renderBd(bd.risk,rCol,'fa-shield-halved',bd.risk.displayVal,rExp);
-        h+='</div></div></div></div>';
+        h += '<div class="section" data-reveal><div class="section-head"><div class="section-icon blue"><i class="fa-solid fa-chart-bar"></i></div><h2 class="section-title">Breakdown Skor</h2><span class="section-sub">Maks 250/kategori</span></div><div class="card"><div class="card-body"><div class="breakdown-grid">';
+        var bd = sd.breakdown;
+        h += this.renderBd(bd.successRate, 'c-teal', 'fa-circle-check', bd.successRate.displayVal, 'Persentase transaksi confirmed. Curve logarithmic.');
+        h += this.renderBd(bd.volume, 'c-green', 'fa-users', bd.volume.displayVal, 'Unique counterparties (log-scaled) + total tx (diminishing returns) + entropy bonus.', bd.volume.detail);
+        h += this.renderBd(bd.age, 'c-amber', 'fa-clock', bd.age.displayVal, 'Dihitung dari timestamp transaksi pertama di blockchain.');
+        var rPct = Math.round(bd.risk.score / bd.risk.max * 100);
+        var rCol = rPct >= 70 ? 'c-mix-g' : rPct >= 40 ? 'c-mix-a' : 'c-mix-r';
+        var rExp = bd.risk.penalty === 0 ? 'Tidak ada penalty dari risk engine.' : bd.risk.penalty <= 30 ? 'Penalti ringan.' : bd.risk.penalty <= 80 ? 'Penalti sedang.' : 'Penalti berat.';
+        h += this.renderBd(bd.risk, rCol, 'fa-shield-halved', bd.risk.displayVal, rExp);
+        h += '</div></div></div></div>';
 
         // Why
-        h+='<div class="section" data-reveal><div class="section-head"><div class="section-icon green"><i class="fa-solid fa-lightbulb"></i></div><h2 class="section-title">Mengapa Skor Ini?</h2></div><div class="why-grid">'+this.genWhy(sd,m)+'</div></div>';
+        h += '<div class="section" data-reveal><div class="section-head"><div class="section-icon green"><i class="fa-solid fa-lightbulb"></i></div><h2 class="section-title">Mengapa Skor Ini?</h2></div><div class="why-grid">' + this.genWhy(sd, m) + '</div></div>';
 
         // Risk
-        var critC=0,highC=0;
-        for(var r=0;r<sd.riskFlags.length;r++){if(sd.riskFlags[r].severity==='critical')critC++;if(sd.riskFlags[r].severity==='high')highC++;}
-        h+='<div class="section" data-reveal><div class="section-head"><div class="section-icon red"><i class="fa-solid fa-triangle-exclamation"></i></div><h2 class="section-title">Analisis Risiko On-Chain</h2><span class="section-sub">'+sd.riskFlags.length+' flag</span></div><div class="card"><div class="card-body">';
-        h+='<div class="risk-metrics">';
-        h+='<div class="risk-m"><div class="risk-m-val" style="color:'+(critC>0?'var(--danger)':'var(--success)')+'">'+critC+'</div><div class="risk-m-lbl">Critical</div></div>';
-        h+='<div class="risk-m"><div class="risk-m-val" style="color:'+(highC>0?'var(--warning)':'var(--success)')+'">'+highC+'</div><div class="risk-m-lbl">High</div></div>';
-        h+='<div class="risk-m"><div class="risk-m-val" style="color:'+(sd.breakdown.risk.penalty>0?'var(--danger)':'var(--success)')+'">-'+sd.breakdown.risk.penalty+'</div><div class="risk-m-lbl">Total Penalty</div></div></div>';
-        if(sd.riskFlags.length===0){
-          h+='<div class="no-flags"><i class="fa-solid fa-shield-halved"></i><h4>Wallet Bersih</h4><p>Tidak ada indikasi risiko dari analisa on-chain.</p></div>';
+        var critC = 0, highC = 0;
+        for (var r = 0; r < sd.riskFlags.length; r++) {
+          if (sd.riskFlags[r].severity === 'critical') critC++;
+          if (sd.riskFlags[r].severity === 'high') highC++;
+        }
+
+        h += '<div class="section" data-reveal><div class="section-head"><div class="section-icon red"><i class="fa-solid fa-triangle-exclamation"></i></div><h2 class="section-title">Analisis Risiko On-Chain</h2><span class="section-sub">' + sd.riskFlags.length + ' flag</span></div><div class="card"><div class="card-body">';
+        h += '<div class="risk-metrics">';
+        h += '<div class="risk-m"><div class="risk-m-val" style="color:' + (critC > 0 ? 'var(--danger)' : 'var(--success)') + '">' + critC + '</div><div class="risk-m-lbl">Critical</div></div>';
+        h += '<div class="risk-m"><div class="risk-m-val" style="color:' + (highC > 0 ? 'var(--warning)' : 'var(--success)') + '">' + highC + '</div><div class="risk-m-lbl">High</div></div>';
+        h += '<div class="risk-m"><div class="risk-m-val" style="color:' + (sd.breakdown.risk.penalty > 0 ? 'var(--danger)' : 'var(--success)') + '">-' + sd.breakdown.risk.penalty + '</div><div class="risk-m-lbl">Total Penalty</div></div></div>';
+
+        if (sd.riskFlags.length === 0) {
+          h += '<div class="no-flags"><i class="fa-solid fa-shield-halved"></i><h4>Wallet Bersih</h4><p>Tidak ada indikasi risiko dari analisa on-chain.</p></div>';
         } else {
-          h+='<div class="risk-list">';
-          var sI={critical:'fa-skull-crossbones',high:'fa-circle-exclamation',medium:'fa-triangle-exclamation',low:'fa-circle-info'};
-          for(var f=0;f<sd.riskFlags.length;f++){
-            var fl=sd.riskFlags[f],sv=fl.severity||'low';
-            h+='<div class="risk-flag sev-'+sv+'" data-toggle-detail><div class="rf-icon"><i class="fa-solid '+(sI[sv]||'fa-circle-info')+'"></i></div><div class="rf-body"><div class="rf-head"><span class="rf-label">'+esc(fl.label)+'</span><span class="sev-tag '+sv+'">'+sv+'</span></div><div class="rf-desc">'+esc(fl.description)+'</div>';
-            if(fl.detail) h+='<div class="rf-detail"><div class="rf-detail-inner">'+esc(fl.detail)+'</div></div>';
-            h+='</div><div class="rf-penalty">-'+(fl.penalty||0)+'</div></div>';
+          h += '<div class="risk-list">';
+          var sI = { critical: 'fa-skull-crossbones', high: 'fa-circle-exclamation', medium: 'fa-triangle-exclamation', low: 'fa-circle-info' };
+          for (var f = 0; f < sd.riskFlags.length; f++) {
+            var fl = sd.riskFlags[f];
+            var sv = fl.severity || 'low';
+            h += '<div class="risk-flag sev-' + sv + '" data-toggle-detail><div class="rf-icon"><i class="fa-solid ' + (sI[sv] || 'fa-circle-info') + '"></i></div><div class="rf-body"><div class="rf-head"><span class="rf-label">' + esc(fl.label) + '</span><span class="sev-tag ' + sv + '">' + sv + '</span></div><div class="rf-desc">' + esc(fl.description) + '</div>';
+            if (fl.detail) h += '<div class="rf-detail"><div class="rf-detail-inner">' + esc(fl.detail) + '</div></div>';
+            h += '</div><div class="rf-penalty">-' + (fl.penalty || 0) + '</div></div>';
           }
-          h+='</div>';
+          h += '</div>';
         }
-        h+='</div></div></div>';
+        h += '</div></div></div>';
 
-        pc.innerHTML=h;
-        this.postRender(walletAddr,sd,m,gaugeColor);
+        pc.innerHTML = h;
+        this.postRender(walletAddr, sd, m, gaugeColor);
       },
 
-      renderBd: function(item,colorCls,icon,dispVal,explain,extra) {
-        var pct=Math.round(item.score/item.max*100);
-        var hasAvg=item.netAvg!==null&&item.netAvg!==undefined;
-        var avgPct=hasAvg?Math.round(item.netAvg/item.max*100):0;
-        var cVar=colorCls==='c-teal'?'var(--accent)':colorCls==='c-green'||colorCls==='c-mix-g'?'var(--success)':colorCls==='c-amber'?'var(--warning)':'var(--danger)';
-        var s='<div><div class="bd-head"><span class="bd-label"><i class="fa-solid '+icon+'" style="color:'+cVar+'"></i> '+item.label+'</span>';
-        s+='<span class="bd-vals"><span class="sc">'+item.score+'</span><span class="mx">/'+item.max+'</span>';
-        if(extra) s+='<span class="dt">('+esc(extra)+')</span>';
-        else s+='<span class="dt">('+esc(dispVal)+')</span>';
-        s+='</span></div><div class="bd-bar"><div class="bd-fill '+colorCls+'" data-width="'+pct+'"></div>';
-        s+='<div class="bd-marker '+(hasAvg?'has-avg':'')+'" data-left="'+avgPct+'"></div></div>';
-        s+='<div class="bd-explain">'+explain+'</div>';
-        if(!hasAvg) s+='<div class="bd-no-avg">Network average belum tersedia dari backend</div>';
-        s+='</div>';
+      renderBd: function (item, colorCls, icon, dispVal, explain, extra) {
+        var pct = Math.round(item.score / item.max * 100);
+        var hasAvg = item.netAvg !== null && item.netAvg !== undefined;
+        var avgPct = hasAvg ? Math.round(item.netAvg / item.max * 100) : 0;
+        var cVar = colorCls === 'c-teal' ? 'var(--accent)' :
+          colorCls === 'c-green' || colorCls === 'c-mix-g' ? 'var(--success)' :
+            colorCls === 'c-amber' ? 'var(--warning)' : 'var(--danger)';
+
+        var s = '<div><div class="bd-head"><span class="bd-label"><i class="fa-solid ' + icon + '" style="color:' + cVar + '"></i> ' + item.label + '</span>';
+        s += '<span class="bd-vals"><span class="sc">' + item.score + '</span><span class="mx">/' + item.max + '</span>';
+        if (extra) s += '<span class="dt">(' + esc(extra) + ')</span>';
+        else s += '<span class="dt">(' + esc(dispVal) + ')</span>';
+        s += '</span></div><div class="bd-bar"><div class="bd-fill ' + colorCls + '" data-width="' + pct + '"></div>';
+        s += '<div class="bd-marker ' + (hasAvg ? 'has-avg' : '') + '" data-left="' + avgPct + '"></div></div>';
+        s += '<div class="bd-explain">' + explain + '</div>';
+        if (!hasAvg) s += '<div class="bd-no-avg">Network average belum tersedia dari backend</div>';
+        s += '</div>';
         return s;
       },
 
-      genWhy: function(sd,m) {
-        var cards=[];
-        if(m.tx_total===0){cards.push({icon:'fa-hourglass-start',type:'neu',title:'Belum Ada Transaksi',text:'Wallet ini belum memiliki riwayat transaksi di Pi Blockchain.',impact:'0 / 500 poin',it:'neu'});}
-        else{
-          if(m.success_rate>=90) cards.push({icon:'fa-circle-check',type:'pos',title:'Tingkat Keberhasilan Tinggi',text:m.success_rate.toFixed(1)+'% dari '+fmtNum(m.tx_total)+' transaksi confirmed. Scoring logarithmic.',impact:'+'+sd.breakdown.successRate.score+' poin',it:'pos'});
-          else if(m.success_rate<70) cards.push({icon:'fa-circle-xmark',type:'neg',title:'Banyak Transaksi Gagal',text:fmtNum(m.tx_failed)+' gagal dari '+fmtNum(m.tx_total)+'.',impact:'+'+sd.breakdown.successRate.score+' poin (rendah)',it:'neg'});
-          if(m.unique_counterparties>=15) cards.push({icon:'fa-users',type:'pos',title:'Jaringan Counterparty Luas',text:m.unique_counterparties+' alamat berbeda. Indikator kuat aktivitas organik.',impact:'+'+sd.breakdown.volume.score+' poin',it:'pos'});
-          else if(m.unique_counterparties<5&&m.tx_total>10) cards.push({icon:'fa-user-group',type:'neg',title:'Counterparty Sempit',text:'Hanya '+m.unique_counterparties+' counterparty dari '+fmtNum(m.tx_total)+' tx.',impact:'+'+sd.breakdown.volume.score+' poin (rendah)',it:'neg'});
+      genWhy: function (sd, m) {
+        var cards = [];
+        if (m.tx_total === 0) {
+          cards.push({ icon: 'fa-hourglass-start', type: 'neu', title: 'Belum Ada Transaksi', text: 'Wallet ini belum memiliki riwayat transaksi di Pi Blockchain.', impact: '0 / 500 poin', it: 'neu' });
+        } else {
+          if (m.success_rate >= 90) cards.push({ icon: 'fa-circle-check', type: 'pos', title: 'Tingkat Keberhasilan Tinggi', text: m.success_rate.toFixed(1) + '% dari ' + fmtNum(m.tx_total) + ' transaksi confirmed. Scoring logarithmic.', impact: '+' + sd.breakdown.successRate.score + ' poin', it: 'pos' });
+          else if (m.success_rate < 70) cards.push({ icon: 'fa-circle-xmark', type: 'neg', title: 'Banyak Transaksi Gagal', text: fmtNum(m.tx_failed) + ' gagal dari ' + fmtNum(m.tx_total) + '.', impact: '+' + sd.breakdown.successRate.score + ' poin (rendah)', it: 'neg' });
+          if (m.unique_counterparties >= 15) cards.push({ icon: 'fa-users', type: 'pos', title: 'Jaringan Counterparty Luas', text: m.unique_counterparties + ' alamat berbeda. Indikator aktivitas organik.', impact: '+' + sd.breakdown.volume.score + ' poin', it: 'pos' });
+          else if (m.unique_counterparties < 5 && m.tx_total > 10) cards.push({ icon: 'fa-user-group', type: 'neg', title: 'Counterparty Sempit', text: 'Hanya ' + m.unique_counterparties + ' counterparty dari ' + fmtNum(m.tx_total) + ' tx.', impact: '+' + sd.breakdown.volume.score + ' poin (rendah)', it: 'neg' });
         }
-        if(m.age_days_on_chain>=180) cards.push({icon:'fa-calendar-check',type:'pos',title:'Wallet Mapan',text:'Aktif di blockchain selama '+ChainAnalyzer.formatAge(m.age_days_on_chain)+'.',impact:'+'+sd.breakdown.age.score+' poin',it:'pos'});
-        else if(m.age_days_on_chain===0) cards.push({icon:'fa-clock',type:'neu',title:'Usia Unknown',text:'Belum ada transaksi pertama.',impact:'+'+sd.breakdown.age.score+' poin',it:'neu'});
-        if(sd.riskFlags.length===0) cards.push({icon:'fa-shield-halved',type:'pos',title:'Profil Risiko Bersih',text:'Risk engine tidak menemukan indikasi penyalahgunaan.',impact:'Penuh (250/250)',it:'pos'});
-        else cards.push({icon:'fa-triangle-exclamation',type:'neg',title:sd.riskFlags.length+' Risk Flag',text:'Backend risk engine mendeteksi pola mencurigakan.',impact:'-'+sd.breakdown.risk.penalty+' poin',it:'neg'});
+        if (m.age_days_on_chain >= 180) cards.push({ icon: 'fa-calendar-check', type: 'pos', title: 'Wallet Mapan', text: 'Aktif di blockchain selama ' + ChainAnalyzer.formatAge(m.age_days_on_chain) + '.', impact: '+' + sd.breakdown.age.score + ' poin', it: 'pos' });
+        else if (m.age_days_on_chain === 0) cards.push({ icon: 'fa-clock', type: 'neu', title: 'Usia Unknown', text: 'Belum ada transaksi pertama.', impact: '+' + sd.breakdown.age.score + ' poin', it: 'neu' });
+        if (sd.riskFlags.length === 0) cards.push({ icon: 'fa-shield-halved', type: 'pos', title: 'Profil Risiko Bersih', text: 'Risk engine tidak menemukan indikasi penyalahgunaan.', impact: 'Penuh (250/250)', it: 'pos' });
+        else cards.push({ icon: 'fa-triangle-exclamation', type: 'neg', title: sd.riskFlags.length + ' Risk Flag', text: 'Backend risk engine mendeteksi pola mencurigakan.', impact: '-' + sd.breakdown.risk.penalty + ' poin', it: 'neg' });
 
-        var s='';
-        for(var i=0;i<cards.length;i++){
-          var c=cards[i], arrI=c.it==='pos'?'fa-arrow-up':c.it==='neg'?'fa-arrow-down':'fa-minus';
-          s+='<div class="why-card"><div class="why-top"><div class="why-icon '+c.it+'"><i class="fa-solid '+c.icon+'"></i></div><div class="why-body"><div class="why-title">'+c.title+'</div><div class="why-text">'+c.text+'</div><div class="why-impact '+c.it+'"><i class="fa-solid '+arrI+'"></i> '+c.impact+'</div></div></div></div>';
+        var s = '';
+        for (var i = 0; i < cards.length; i++) {
+          var c = cards[i];
+          var arrI = c.it === 'pos' ? 'fa-arrow-up' : c.it === 'neg' ? 'fa-arrow-down' : 'fa-minus';
+          s += '<div class="why-card"><div class="why-top"><div class="why-icon ' + c.it + '"><i class="fa-solid ' + c.icon + '"></i></div><div class="why-body"><div class="why-title">' + c.title + '</div><div class="why-text">' + c.text + '</div><div class="why-impact ' + c.it + '"><i class="fa-solid ' + arrI + '"></i> ' + c.impact + '</div></div></div></div>';
         }
         return s;
       },
 
-      postRender: function(walletAddr,sd,m,gaugeColor) {
-        this.drawGauge('scoreGauge',sd.score,sd.maxScore,gaugeColor);
-        var copyBtn=document.getElementById('copyWalletBtn');
-        if(copyBtn){
-          copyBtn.addEventListener('click',function(){
-            var btn=this;
-            if(navigator.clipboard&&navigator.clipboard.writeText){
-              navigator.clipboard.writeText(walletAddr).then(function(){
-                btn.classList.add('copied'); btn.innerHTML='<i class="fa-solid fa-check"></i> Disalin';
-                showToast('Wallet address disalin','success',2000);
-                setTimeout(function(){btn.classList.remove('copied');btn.innerHTML='<i class="fa-regular fa-copy"></i> Salin';},2000);
-              }).catch(function(){fallbackCopy(walletAddr,btn);});
-            } else { fallbackCopy(walletAddr,btn); }
+      postRender: function (walletAddr, sd, m, gaugeColor) {
+        this.drawGauge('scoreGauge', sd.score, sd.maxScore, gaugeColor);
+
+        var copyBtn = document.getElementById('copyWalletBtn');
+        if (copyBtn) {
+          copyBtn.addEventListener('click', function () {
+            var btn = this;
+            if (navigator.clipboard && navigator.clipboard.writeText) {
+              navigator.clipboard.writeText(walletAddr).then(function () {
+                btn.classList.add('copied');
+                btn.innerHTML = '<i class="fa-solid fa-check"></i> Disalin';
+                showToast('Wallet address disalin', 'success', 2000);
+                setTimeout(function () { btn.classList.remove('copied'); btn.innerHTML = '<i class="fa-regular fa-copy"></i> Salin'; }, 2000);
+              }).catch(function () { fallbackCopy(walletAddr, btn); });
+            } else { fallbackCopy(walletAddr, btn); }
           });
         }
-        var flags=document.querySelectorAll('[data-toggle-detail]');
-        for(var i=0;i<flags.length;i++){(function(el){el.addEventListener('click',function(){var d=el.querySelector('.rf-detail');if(d)d.classList.toggle('open');});})(flags[i]);}
-        this.animC('animTx',0,m.tx_total,1200);
-        this.animC('animRate',0,m.success_rate,1000,'%',1);
-        setTimeout(function(){
-          var fills=document.querySelectorAll('[data-width]');
-          for(var j=0;j<fills.length;j++){var el=fills[j];if(el.classList.contains('bd-fill')||el.classList.contains('total-bar-fill')||el.classList.contains('tx-fail-ok')||el.classList.contains('tx-fail-fail')){el.style.width=el.getAttribute('data-width')+'%';}}
-          var markers=document.querySelectorAll('[data-left]');
-          for(var k=0;k<markers.length;k++){markers[k].style.left=markers[k].getAttribute('data-left')+'%';}
-        },300);
+
+        var flags = document.querySelectorAll('[data-toggle-detail]');
+        for (var i = 0; i < flags.length; i++) {
+          (function (el) {
+            el.addEventListener('click', function () {
+              var d = el.querySelector('.rf-detail');
+              if (d) d.classList.toggle('open');
+            });
+          })(flags[i]);
+        }
+
+        this.animC('animTx', 0, m.tx_total, 1200);
+        this.animC('animRate', 0, m.success_rate, 1000, '%', 1);
+
+        var selfRef = this;
+        setTimeout(function () {
+          var fills = document.querySelectorAll('[data-width]');
+          for (var j = 0; j < fills.length; j++) {
+            var el = fills[j];
+            if (el.classList.contains('bd-fill') || el.classList.contains('total-bar-fill') || el.classList.contains('tx-fail-ok') || el.classList.contains('tx-fail-fail')) {
+              el.style.width = el.getAttribute('data-width') + '%';
+            }
+          }
+          var markers = document.querySelectorAll('[data-left]');
+          for (var k = 0; k < markers.length; k++) {
+            markers[k].style.left = markers[k].getAttribute('data-left') + '%';
+          }
+        }, 300);
+
         this.initReveal();
       },
 
-      animC: function(id,start,end,dur,suf,dec) {
-        suf=suf||''; dec=dec||0;
-        var el=document.getElementById(id); if(!el) return;
-        var range=end-start, st=null;
-        function step(ts){if(!st)st=ts;var p=Math.min(1,(ts-st)/dur),ease=1-Math.pow(1-p,3);var cur=start+range*ease;el.textContent=(dec>0?cur.toFixed(dec):Math.floor(cur))+suf;if(p<1)requestAnimationFrame(step);else el.textContent=(dec>0?end.toFixed(dec):end)+suf;}
+      animC: function (id, start, end, dur, suf, dec) {
+        suf = suf || ''; dec = dec || 0;
+        var el = document.getElementById(id);
+        if (!el) return;
+        var range = end - start;
+        var st = null;
+        function step(ts) {
+          if (!st) st = ts;
+          var p = Math.min(1, (ts - st) / dur);
+          var ease = 1 - Math.pow(1 - p, 3);
+          var cur = start + range * ease;
+          el.textContent = (dec > 0 ? cur.toFixed(dec) : Math.floor(cur)) + suf;
+          if (p < 1) requestAnimationFrame(step);
+          else el.textContent = (dec > 0 ? end.toFixed(dec) : end) + suf;
+        }
         requestAnimationFrame(step);
       },
 
-      initReveal: function() {
-        var secs=document.querySelectorAll('[data-reveal]');
-        if(!secs.length) return;
-        var obs=new IntersectionObserver(function(entries){for(var i=0;i<entries.length;i++){if(entries[i].isIntersecting){entries[i].target.classList.add('visible');obs.unobserve(entries[i].target);}}},{threshold:0.1,rootMargin:'0px 0px -40px 0px'});
-        for(var j=0;j<secs.length;j++) obs.observe(secs[j]);
+      initReveal: function () {
+        var secs = document.querySelectorAll('[data-reveal]');
+        if (!secs.length) return;
+        var obs = new IntersectionObserver(function (entries) {
+          for (var i = 0; i < entries.length; i++) {
+            if (entries[i].isIntersecting) {
+              entries[i].target.classList.add('visible');
+              obs.unobserve(entries[i].target);
+            }
+          }
+        }, { threshold: 0.1, rootMargin: '0px 0px -40px 0px' });
+        for (var j = 0; j < secs.length; j++) obs.observe(secs[j]);
       }
     };
 
-    function fallbackCopy(text,btn){
-      var ta=document.createElement('textarea');ta.value=text;ta.style.position='fixed';ta.style.left='-9999px';
-      document.body.appendChild(ta);ta.focus();ta.select();
-      try{document.execCommand('copy');if(btn){btn.classList.add('copied');btn.innerHTML='<i class="fa-solid fa-check"></i> Disalin';setTimeout(function(){btn.classList.remove('copied');btn.innerHTML='<i class="fa-regular fa-copy"></i> Salin';},2000);}showToast('Wallet address disalin','success',2000);}
-      catch(e){showToast('Gagal menyalin','error',2000);}
+    function fallbackCopy(text, btn) {
+      var ta = document.createElement('textarea');
+      ta.value = text;
+      ta.style.position = 'fixed';
+      ta.style.left = '-9999px';
+      document.body.appendChild(ta);
+      ta.focus();
+      ta.select();
+      try {
+        document.execCommand('copy');
+        if (btn) {
+          btn.classList.add('copied');
+          btn.innerHTML = '<i class="fa-solid fa-check"></i> Disalin';
+          setTimeout(function () { btn.classList.remove('copied'); btn.innerHTML = '<i class="fa-regular fa-copy"></i> Salin'; }, 2000);
+        }
+        showToast('Wallet address disalin', 'success', 2000);
+      } catch (e) { showToast('Gagal menyalin', 'error', 2000); }
       document.body.removeChild(ta);
     }
 
-    /* ╔════════════════════════════════════════════════════════════════════╗
-       ║  APP INIT                                                         ║
-       ╚════════════════════════════════════════════════════════════════════╝ */
+    /* ═══════════════════════════════════════════════════════════
+       APP INIT
+       ═══════════════════════════════════════════════════════════ */
 
     var currentWallet = null;
     var currentSource = null;
 
     function clearAllSession() {
-      ['whs_pi_user','whs_pi_token','whs_login_time','whs_incomplete_payment','whs_wallet','whs_db_user_id','pi_user','pi_auth'].forEach(function(k){try{localStorage.removeItem(k);}catch(e){}});
-      ['wallet_address','whs_pi_user','currentWallet','walletData',CACHE_PREFIX+(currentWallet||'')].forEach(function(k){try{sessionStorage.removeItem(k);}catch(e){}});
+      var lsKeys = ['whs_pi_user', 'whs_pi_token', 'whs_login_time', 'whs_incomplete_payment', 'whs_wallet', 'whs_db_user_id', 'pi_user', 'pi_auth'];
+      var ssKeys = ['wallet_address', 'whs_pi_user', 'currentWallet', 'walletData'];
+      if (currentWallet) ssKeys.push(CACHE_PREFIX + currentWallet);
+
+      for (var i = 0; i < lsKeys.length; i++) {
+        try { localStorage.removeItem(lsKeys[i]); } catch (e) { /* ignore */ }
+      }
+      for (var j = 0; j < ssKeys.length; j++) {
+        try { sessionStorage.removeItem(ssKeys[j]); } catch (e) { /* ignore */ }
+      }
+    }
+
+    /* Helper untuk guard debug — tidak pakai IIFE yang bisa crash */
+    function buildGuardDebug() {
+      var lines = [];
+      lines.push('URL: ' + window.location.href);
+
+      var ssAddr = safeSessionGet('wallet_address');
+      lines.push('SS.wallet_address: ' + (ssAddr ? '"' + ssAddr + '"' : 'null'));
+
+      var ssUser = safeSessionGet('whs_pi_user');
+      lines.push('SS.whs_pi_user: ' + (ssUser ? '"' + ssUser.substring(0, 80) + '..."' : 'null'));
+
+      var lsUser = safeLocalGet('whs_pi_user');
+      lines.push('LS.whs_pi_user: ' + (lsUser ? '"' + lsUser.substring(0, 80) + '..."' : 'null'));
+
+      return lines.join('\n');
     }
 
     async function initApp() {
-      var guardScreen=document.getElementById('guardScreen');
-      var mainWrapper=document.getElementById('mainWrapper');
-      var loadingScreen=document.getElementById('loadingScreen');
-      var loadingSub=document.getElementById('loadingSub');
-      var guardDetail=document.getElementById('guardDetail');
-      var guardDebug=document.getElementById('guardDebug');
+      var guardScreen = document.getElementById('guardScreen');
+      var mainWrapper = document.getElementById('mainWrapper');
+      var loadingScreen = document.getElementById('loadingScreen');
+      var loadingSub = document.getElementById('loadingSub');
+      var guardDetail = document.getElementById('guardDetail');
+      var guardDebug = document.getElementById('guardDebug');
 
-      // ── STEP 1: Resolve wallet address ──
+      // STEP 1: Resolve wallet address
       var resolved = resolveWalletAddress();
 
       if (!resolved) {
-        // Tampilkan guard dengan debug info
-        mainWrapper.style.display='none';
+        // Tampilkan guard screen dengan debug info
+        mainWrapper.style.display = 'none';
         guardScreen.classList.add('active');
-        loadingScreen.style.display='none';
-        guardDetail.textContent = 'Tidak ada wallet address di URL param atau storage.';
-
-        // Tampilkan debug info di guard screen
-        var dbgLines = [];
-        dbgLines.push('URL: ' + window.location.href);
-        dbgLines.push('sessionStorage.wallet_address: ' + (function(){try{return sessionStorage.getItem('wallet_address')||'null';}catch(e){return='error';}})());
-        dbgLines.push('sessionStorage.whs_pi_user: ' + (function(){try{var v=sessionStorage.getItem('whs_pi_user');return v?v.substring(0,60)+'...':'null';}catch(e){return='error';}})());
-        dbgLines.push('localStorage.whs_pi_user: ' + (function(){try{var v=localStorage.getItem('whs_pi_user');return v?v.substring(0,60)+'...':'null';}catch(e){return='error';}})());
-        guardDebug.textContent = dbgLines.join('\n');
+        loadingScreen.style.display = 'none';
+        guardDetail.textContent = 'Tidak ada wallet address di URL atau storage.';
+        guardDebug.textContent = buildGuardDebug();
         return;
       }
 
@@ -869,63 +1146,91 @@
 
       // Bersihkan URL param setelah dibaca
       if (resolved.source === 'url_param') {
-        try { window.history.replaceState({}, '', window.location.pathname); } catch(e) {}
+        try { window.history.replaceState({}, '', window.location.pathname); } catch (e) { /* ignore */ }
       }
 
-      // ── STEP 2: Fetch ──
-      loadingSub.textContent = 'Mengambil data untuk ' + currentWallet.substring(0, 12) + '...';
+      // STEP 2: Fetch chain data
+      loadingSub.textContent = 'Mengambil data untuk ' + currentWallet.substring(0, 14) + '...';
 
       try {
         var result = await fetchChainData(currentWallet);
         var chainData = result.data;
 
-        if (result.fromCache) loadingSub.textContent = 'Menggunakan data cache...';
-        else loadingSub.textContent = 'Menganalisis ' + chainData.source + '...';
+        if (result.fromCache) {
+          loadingSub.textContent = 'Menggunakan data cache...';
+        } else {
+          loadingSub.textContent = 'Menganalisis ' + chainData.source + '...';
+        }
 
-        await new Promise(function(r){ setTimeout(r, 500); });
+        // Simulasi delay analisis
+        await new Promise(function (r) { setTimeout(r, 500); });
+
+        // STEP 3: Analisa
         var analysis = ChainAnalyzer.analyze(chainData);
 
-        // ── STEP 3: Render ──
-        mainWrapper.style.display='flex';
-        loadingScreen.style.display='none';
+        // STEP 4: Render
+        mainWrapper.style.display = 'flex';
+        loadingScreen.style.display = 'none';
+
         UI.render(currentWallet, currentSource, chainData, analysis);
 
-        if (chainData.source === 'pi_blockchain') showToast('Data on-chain berhasil dianalisis','success',3000);
-        else if (chainData.source === 'mock_fallback') showToast('Mode fallback — bukan data asli','warning',4000);
-        else showToast('Data dianalisis dari: '+chainData.source,'info',3000);
-        if (result.fromCache) showToast('Data dari cache ('+Math.round(CACHE_TTL/1000)+'s)','info',2000);
+        // Toast
+        if (chainData.source === 'pi_blockchain') {
+          showToast('Data on-chain berhasil dianalisis', 'success', 3000);
+        } else if (chainData.source === 'mock_fallback') {
+          showToast('Mode fallback — bukan data asli', 'warning', 4000);
+        } else {
+          showToast('Data dianalisis dari: ' + chainData.source, 'info', 3000);
+        }
+        if (result.fromCache) {
+          showToast('Data dari cache (' + Math.round(CACHE_TTL / 1000) + 's)', 'info', 2000);
+        }
 
-      } catch(e) {
+      } catch (e) {
         console.error('[App] Fatal:', e);
-        mainWrapper.style.display='flex';
-        loadingScreen.style.display='none';
-        document.getElementById('pageContent').innerHTML=
-          '<div class="error-state"><i class="fa-solid fa-link-slash"></i><h3>Gagal Memproses Data</h3><p>Terjadi kesalahan saat mengambil atau menganalisa data.</p><button class="btn-primary" onclick="location.reload()"><i class="fa-solid fa-arrows-rotate"></i> Coba Lagi</button><p class="error-detail">'+esc(e.message)+'</p></div>';
+        mainWrapper.style.display = 'flex';
+        loadingScreen.style.display = 'none';
+        document.getElementById('pageContent').innerHTML =
+          '<div class="error-state">' +
+          '<i class="fa-solid fa-link-slash"></i>' +
+          '<h3>Gagal Memproses Data</h3>' +
+          '<p>Terjadi kesalahan saat mengambil atau menganalisa data.</p>' +
+          '<button class="btn-primary" onclick="location.reload()"><i class="fa-solid fa-arrows-rotate"></i> Coba Lagi</button>' +
+          '<p class="error-detail">' + esc(e.message) + '</p>' +
+          '</div>';
       }
     }
 
-    // Refresh
-    document.getElementById('refreshBtn').addEventListener('click', function(){
-      if(!currentWallet) return;
-      var btn=this;
-      if(btn.classList.contains('spinning')) return;
-      btn.classList.add('spinning'); btn.disabled=true;
-      try{sessionStorage.removeItem(CACHE_PREFIX+currentWallet);}catch(e){}
-      fetchChainData(currentWallet).then(function(result){
-        var analysis=ChainAnalyzer.analyze(result.data);
-        UI.render(currentWallet,currentSource,result.data,analysis);
-        showToast('Data diperbarui'+(result.fromCache?' (cache)':''),'success');
-      }).catch(function(e){showToast('Gagal refresh: '+e.message,'error');}).finally(function(){btn.classList.remove('spinning');btn.disabled=false;});
+    // Refresh button
+    document.getElementById('refreshBtn').addEventListener('click', function () {
+      if (!currentWallet) return;
+      var btn = this;
+      if (btn.classList.contains('spinning')) return;
+      btn.classList.add('spinning');
+      btn.disabled = true;
+
+      try { sessionStorage.removeItem(CACHE_PREFIX + currentWallet); } catch (e) { /* ignore */ }
+
+      fetchChainData(currentWallet).then(function (result) {
+        var analysis = ChainAnalyzer.analyze(result.data);
+        UI.render(currentWallet, currentSource, result.data, analysis);
+        showToast('Data diperbarui' + (result.fromCache ? ' (cache)' : ''), 'success');
+      }).catch(function (e) {
+        showToast('Gagal refresh: ' + e.message, 'error');
+      }).finally(function () {
+        btn.classList.remove('spinning');
+        btn.disabled = false;
+      });
     });
 
-    // Logout
-    document.getElementById('logoutBtn').addEventListener('click', function(){
+    // Logout button
+    document.getElementById('logoutBtn').addEventListener('click', function () {
       clearAllSession();
-      showToast('Sesi berakhir','info',1500);
-      setTimeout(function(){ window.location.href='login.html'; },800);
+      showToast('Sesi berakhir', 'info', 1500);
+      setTimeout(function () { window.location.href = 'login.html'; }, 800);
     });
 
-    // Start
+    // START
     document.addEventListener('DOMContentLoaded', initApp);
   </script>
 </body>
