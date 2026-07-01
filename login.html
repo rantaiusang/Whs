@@ -25,45 +25,35 @@
     };
   </script>
 
-  <!--
-    ============================================================
-    SUPABASE SCHEMA — SALIN DAN JALANKAN DI SQL EDITOR SUPABASE
-    ============================================================
-    RLS lama kamu pakai current_setting('request.headers')::json->>'x-user-uid'
-    yang TIDAK VALID di Supabase anon mode.
-
-    GANTI SEMUA POLICY lama dengan ini:
-
-    DROP POLICY IF EXISTS "allow_anon_insert" ON users;
-    DROP POLICY IF EXISTS "allow_anon_update_own" ON users;
-    DROP POLICY IF EXISTS "allow_anon_select_own" ON users;
-
-    CREATE POLICY "allow_all_select"
-      ON users FOR SELECT TO anon USING (true);
-
-    CREATE POLICY "allow_all_update"
-      ON users FOR UPDATE TO anon USING (true);
-
-    CREATE POLICY "allow_all_insert"
-      ON users FOR INSERT TO anon WITH CHECK (true);
-    ============================================================
-  -->
   <script id="supabase-schema" type="text/sql">
--- !!! JALANKAN INI DI SQL EDITOR SUPABASE !!!
--- Hapus policy lama yang bermasalah
-DROP POLICY IF EXISTS "allow_anon_insert" ON users;
-DROP POLICY IF EXISTS "allow_anon_update_own" ON users;
-DROP POLICY IF EXISTS "allow_anon_select_own" ON users;
+-- !!! JALANKAN DI SUPABASE SQL EDITOR !!!
+DROP TABLE IF EXISTS users CASCADE;
 
--- Policy baru: allow all untuk anon (aman untuk dev/sandbox)
-CREATE POLICY "allow_all_select"
+CREATE TABLE users (
+  id              UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  pi_uid          TEXT NOT NULL,
+  username        TEXT NOT NULL,
+  pi_access_token TEXT,
+  last_login      TIMESTAMPTZ,
+  created_at      TIMESTAMPTZ DEFAULT now()
+);
+
+CREATE UNIQUE INDEX IF NOT EXISTS idx_users_pi_uid_unique ON users (pi_uid);
+CREATE INDEX IF NOT EXISTS idx_users_username ON users (username);
+
+ALTER TABLE users ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "allow_anon_insert"
+  ON users FOR INSERT TO anon WITH CHECK (true);
+
+CREATE POLICY "allow_anon_update"
+  ON users FOR UPDATE TO anon USING (true) WITH CHECK (true);
+
+CREATE POLICY "allow_anon_select"
   ON users FOR SELECT TO anon USING (true);
 
-CREATE POLICY "allow_all_update"
-  ON users FOR UPDATE TO anon USING (true);
-
-CREATE POLICY "allow_all_insert"
-  ON users FOR INSERT TO anon WITH CHECK (true);
+CREATE POLICY "allow_anon_delete"
+  ON users FOR DELETE TO anon USING (true);
   </script>
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -357,7 +347,7 @@ CREATE POLICY "allow_all_insert"
             </div>
 
             <footer class="card-footer">
-              Login aman via Pi SDK — token tidak disimpan di localStorage.<br>
+              Login aman via Pi SDK — tidak ada data sensitif yang disimpan.<br>
               Bukan pengguna Pi? <a href="index.html">Kembali ke beranda</a>
             </footer>
           </article>
@@ -365,7 +355,7 @@ CREATE POLICY "allow_all_insert"
           <div class="trust-row" aria-label="Indikator keamanan">
             <div class="trust-chip"><i class="fa-solid fa-lock tc-teal" aria-hidden="true"></i><span>Pi SDK Resmi</span></div>
             <div class="trust-chip"><i class="fa-solid fa-bolt tc-amber" aria-hidden="true"></i><span>Login Instan</span></div>
-            <div class="trust-chip"><i class="fa-solid fa-shield-halved tc-green" aria-hidden="true"></i><span>Token Aman</span></div>
+            <div class="trust-chip"><i class="fa-solid fa-shield-halved tc-green" aria-hidden="true"></i><span>Aman</span></div>
           </div>
         </div>
       </div>
@@ -388,15 +378,8 @@ CREATE POLICY "allow_all_insert"
     var isRedirecting   = false;
     var loginInProgress = false;
 
-    /*
-     * Memory-only token storage.
-     * Token Pi TIDAK pernah disimpan di localStorage/sessionStorage.
-     * Hanya uid dan username yang disimpan (bukan data sensitif).
-     */
-    var _memoryToken = null;
-
     /* ================================================================
-       SUPABASE — Inisialisasi Aman
+       SUPABASE
        ================================================================ */
     var supabase = null;
     var SUPABASE_READY = false;
@@ -414,7 +397,8 @@ CREATE POLICY "allow_all_insert"
         return;
       }
       try {
-        supabase = window.supabase.createClient(url, key);
+        var createClient = window.supabase.createClient;
+        supabase = createClient(url, key);
         SUPABASE_READY = true;
         logDebug('Supabase client siap');
       } catch (e) {
@@ -423,7 +407,7 @@ CREATE POLICY "allow_all_insert"
     })();
 
     /* ================================================================
-       UTILITAS UI
+       UTILITAS
        ================================================================ */
     function showToast(message, type, duration) {
       type = type || 'info'; duration = duration || 3500;
@@ -431,21 +415,11 @@ CREATE POLICY "allow_all_insert"
       if (!c) return;
       var t = document.createElement('div');
       t.className = 'toast ' + type;
-      var icons = {
-        success: 'fa-solid fa-circle-check',
-        error:   'fa-solid fa-circle-xmark',
-        info:    'fa-solid fa-circle-info',
-        warning: 'fa-solid fa-triangle-exclamation'
-      };
-      t.innerHTML = '<i class="' + (icons[type] || icons.info) + '"></i><span>' + message + '</span>';
+      var icons = { success:'fa-solid fa-circle-check', error:'fa-solid fa-circle-xmark', info:'fa-solid fa-circle-info', warning:'fa-solid fa-triangle-exclamation' };
+      t.innerHTML = '<i class="' + (icons[type]||icons.info) + '"></i><span>' + message + '</span>';
       c.appendChild(t);
-      requestAnimationFrame(function() {
-        requestAnimationFrame(function() { t.classList.add('show'); });
-      });
-      setTimeout(function() {
-        t.classList.remove('show');
-        setTimeout(function() { if (t.parentNode) t.remove(); }, 300);
-      }, duration);
+      requestAnimationFrame(function() { requestAnimationFrame(function() { t.classList.add('show'); }); });
+      setTimeout(function() { t.classList.remove('show'); setTimeout(function() { if(t.parentNode) t.remove(); }, 300); }, duration);
     }
 
     function logDebug(msg, isError, isWarn) {
@@ -460,9 +434,7 @@ CREATE POLICY "allow_all_insert"
       if (isError) p.className = 'err';
       else if (isWarn) p.className = 'warn';
       var d = new Date();
-      var ts = String(d.getHours()).padStart(2, '0') + ':' +
-               String(d.getMinutes()).padStart(2, '0') + ':' +
-               String(d.getSeconds()).padStart(2, '0');
+      var ts = String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0')+':'+String(d.getSeconds()).padStart(2,'0');
       p.textContent = '[' + ts + '] ' + msg;
       box.appendChild(p);
       box.scrollTop = box.scrollHeight;
@@ -470,16 +442,13 @@ CREATE POLICY "allow_all_insert"
 
     function withTimeout(promise, ms, errMsg) {
       var id;
-      var tp = new Promise(function(_, rej) {
-        id = setTimeout(function() { rej(new Error(errMsg)); }, ms);
-      });
+      var tp = new Promise(function(_, rej) { id = setTimeout(function() { rej(new Error(errMsg)); }, ms); });
       return Promise.race([promise, tp]).finally(function() { clearTimeout(id); });
     }
 
-    /* Storage helpers — hanya untuk data non-sensitif (uid, username, waktu) */
-    function safeSet(k, v) { try { localStorage.setItem(k, v); return true; } catch(e) { return false; } }
-    function safeGet(k)    { try { return localStorage.getItem(k); } catch(e) { return null; } }
-    function safeDel(k)    { try { localStorage.removeItem(k); } catch(e) {} }
+    function safeSet(k, v)  { try { localStorage.setItem(k, v); return true; } catch(e) { return false; } }
+    function safeGet(k)     { try { return localStorage.getItem(k); } catch(e) { return null; } }
+    function safeDel(k)     { try { localStorage.removeItem(k); } catch(e) {} }
 
     /* ================================================================
        OFFLINE DETECTION
@@ -491,18 +460,11 @@ CREATE POLICY "allow_all_insert"
     updateOffline();
 
     /* ================================================================
-       CLEAR AUTH — hapus data non-sensitif + memory token
+       CLEAR AUTH — hapus key yang SAMA dengan yang ditulis
        ================================================================ */
     function clearPiAuth() {
-      ['whs_pi_uid', 'whs_pi_username', 'whs_pi_token', 'whs_login_time',
-       'whs_incomplete_payment', 'whs_wallet'].forEach(function(k) { safeDel(k); });
-      try {
-        ['whs_pi_user', 'currentWallet', 'walletData'].forEach(function(k) {
-          sessionStorage.removeItem(k);
-        });
-      } catch(e) {}
-      _memoryToken = null;
-      logDebug('Semua data sesi dihapus (termasuk memory token)');
+      ['whs_pi_user','whs_pi_token','whs_login_time','whs_incomplete_payment','whs_wallet','whs_db_user_id','pi_user','pi_auth'].forEach(function(k) { safeDel(k); });
+      try { ['whs_pi_user','currentWallet','walletData'].forEach(function(k) { sessionStorage.removeItem(k); }); } catch(e) {}
     }
 
     /* ================================================================
@@ -527,6 +489,43 @@ CREATE POLICY "allow_all_insert"
     var logoutBtn      = $('logoutBtn');
     var cardSubtitle   = $('cardSubtitle');
 
+    /* ================================================================
+       CEK SESI — baca whs_pi_user (JSON) + whs_login_time
+       Ini HARUS sama dengan cara dashboard.html membaca sesi
+       ================================================================ */
+    function checkExistingSession() {
+      try {
+        var saved = safeGet('whs_pi_user');
+        var lt    = safeGet('whs_login_time');
+        if (!saved || !lt) return false;
+        var user = JSON.parse(saved);
+        if (!user || !user.username) return false;
+        var age = Date.now() - parseInt(lt, 10);
+        if (isNaN(age) || age > SESSION_MAX_AGE) {
+          logDebug('Sesi kadaluarsa', false, true);
+          clearPiAuth();
+          return false;
+        }
+        sessionBanner.classList.add('visible');
+        sessionUser.textContent = '@' + user.username;
+        var m = Math.round(age / 60000);
+        sessionAge.textContent = m < 1 ? ' (baru saja)' : m < 60 ? ' (' + m + 'm lalu)' : ' (' + Math.round(m/60) + 'j lalu)';
+        return true;
+      } catch(e) { clearPiAuth(); return false; }
+    }
+
+    /* ================================================================
+       SAFE REDIRECT
+       ================================================================ */
+    function safeRedirect(url, delay) {
+      if (isRedirecting) return;
+      isRedirecting = true;
+      setTimeout(function() { window.location.href = url; }, delay || 0);
+    }
+
+    /* ================================================================
+       RESET UI — spinner SELALU dikembalikan ke flex
+       ================================================================ */
     function resetUI() {
       spinnerWrapper.style.display = 'flex';
       spinnerRing.className = 'pi-spinner-ring';
@@ -540,347 +539,209 @@ CREATE POLICY "allow_all_insert"
       actionButtons.classList.remove('visible');
     }
 
+    /* ================================================================
+       SHOW ERROR — sembunyikan spinner, tampilkan error
+       ================================================================ */
     function showError(title, desc, subtitle, msg) {
-      spinnerRing.className = 'pi-spinner-ring error';
-      spinnerIcon.className = 'pi-spinner-icon error';
-      statusTitle.className = 'pi-status-title error';
+      spinnerRing.classList.add('error');
+      spinnerIcon.classList.add('error');
+      statusTitle.classList.add('error');
       statusTitle.textContent = title;
       statusDesc.textContent = desc;
       cardSubtitle.textContent = subtitle;
-      errorText.textContent = msg || 'Terjadi kesalahan sistem internal.';
+      errorText.textContent = msg;
       errorBox.classList.add('visible');
       actionButtons.classList.add('visible');
-      logDebug(title + ': ' + (msg || desc), true);
+      spinnerWrapper.style.display = 'none';
     }
 
     /* ================================================================
-       CEK SESI AKTIF — baca dari localStorage + sessionStorage fallback
+       Pi.init() DENGAN FALLBACK OTOMATIS
+       Percobaan 1: tanpa version (SDK terbaru)
+       Percobaan 2: dengan version "2.0" (SDK versi lama)
        ================================================================ */
-    function checkExistingSession() {
-      try {
-        var savedUid     = safeGet('whs_pi_uid');
-        var savedUsername = safeGet('whs_pi_username');
-        var lt            = safeGet('whs_login_time');
+    async function safePiInit(isSandbox) {
+      var lastError = null;
 
-        /* Fallback: coba sessionStorage jika localStorage kosong */
-        if (!savedUid) {
+      /* Percobaan 1: tanpa version */
+      logDebug('Pi.init() percobaan 1: tanpa version');
+      try {
+        await withTimeout(
+          Pi.init({ sandbox: isSandbox }),
+          SDK_TIMEOUT,
+          'Pi.init() timeout'
+        );
+        logDebug('Pi.init() berhasil — mode tanpa version');
+        return;
+      } catch (e) {
+        lastError = e;
+        logDebug('Percobaan 1 gagal: ' + e.message, false, true);
+
+        if (e.message && (
+          e.message.indexOf('version') !== -1 ||
+          e.message.indexOf('Version') !== -1 ||
+          e.message.indexOf('Unrecognized') !== -1
+        )) {
+          /* Percobaan 2: dengan version "2.0" */
+          logDebug('Pi.init() percobaan 2: dengan version "2.0"');
           try {
-            var ssRaw = sessionStorage.getItem('whs_pi_user');
-            if (ssRaw) {
-              var parsed = JSON.parse(ssRaw || '{}');
-              if (parsed && parsed.uid) {
-                savedUid     = parsed.uid;
-                savedUsername = parsed.username || savedUsername;
-                lt           = parsed.loginTime || lt;
-                /* Restore ke localStorage */
-                safeSet('whs_pi_uid', savedUid);
-                if (savedUsername) safeSet('whs_pi_username', savedUsername);
-                if (lt) safeSet('whs_login_time', lt);
-                logDebug('Sesi dipulihkan dari sessionStorage', false, true);
-              }
-            }
-          } catch(e) {
-            /* sessionStorage corrupt — abaikan, parsed sudah default {} */
+            await withTimeout(
+              Pi.init({ version: '2.0', sandbox: isSandbox }),
+              SDK_TIMEOUT,
+              'Pi.init() timeout'
+            );
+            logDebug('Pi.init() berhasil — mode version "2.0"');
+            return;
+          } catch (e2) {
+            lastError = e2;
+            logDebug('Percobaan 2 gagal: ' + e2.message, true);
           }
         }
-
-        if (!savedUid || !lt) return false;
-
-        var age = Date.now() - parseInt(lt, 10);
-        if (isNaN(age) || age > SESSION_MAX_AGE) {
-          logDebug('Sesi kadaluarsa (' + Math.round(age / 60000) + ' menit lalu)', false, true);
-          clearPiAuth();
-          return false;
-        }
-
-        sessionBanner.classList.add('visible');
-        sessionUser.textContent = savedUsername ? '@' + savedUsername : 'User';
-        var m = Math.round(age / 60000);
-        sessionAge.textContent = m < 1 ? ' (baru saja)' : m < 60 ? ' (' + m + 'm lalu)' : ' (' + Math.round(m / 60) + 'j lalu)';
-        return true;
-      } catch(e) {
-        clearPiAuth();
-        return false;
       }
+
+      throw lastError || new Error('Pi.init() gagal tanpa pesan error');
     }
 
     /* ================================================================
-       REDIRECT — pakai replace() agar login tidak tetap di history
+       SYNC KE SUPABASE — fungsi terpisah, error tidak memblokir
        ================================================================ */
-    function safeRedirect(url, delay) {
-      if (isRedirecting) return;
-      isRedirecting = true;
-      logDebug('Redirect ke ' + url + ' dalam ' + (delay || 0) + 'ms');
-      setTimeout(function() {
-        try { window.location.replace(url); }
-        catch(e) { window.location.href = url; }
-      }, delay || 0);
-    }
+    async function syncUserToSupabase(authUser, accessToken) {
+      if (!SUPABASE_READY || !supabase) {
+        logDebug('Supabase tidak tersedia — skip sync');
+        return { success: false, skip: true };
+      }
 
-    /* ================================================================
-       SIMPAN SESI — HANYA data non-sensitif
-       - uid, username, loginTime → localStorage + sessionStorage
-       - accessToken → MEMORY ONLY (tidak pernah ke storage persisten)
-       - SELALU return true — tidak pernah memblokir redirect
-       ================================================================ */
-    function persistSession(uid, username, token) {
-      var now = String(Date.now());
-      var lsOk = 0;
+      var username = authUser.username || null;
+      var uid      = authUser.uid || authUser.username;
 
-      /* localStorage: hanya uid, username, loginTime */
-      if (safeSet('whs_pi_uid', uid))          lsOk++;
-      if (safeSet('whs_pi_username', username)) lsOk++;
-      if (safeSet('whs_login_time', now))       lsOk++;
+      if (!uid || !username) {
+        return { success: false, warning: 'Username kosong dari Pi SDK' };
+      }
 
-      /* HAPUS token lama dari localStorage jika masih ada dari versi sebelumnya */
-      safeDel('whs_pi_token');
+      logDebug('Sync: pi_uid=' + uid + ', username=' + username);
 
-      /* Memory-only token */
-      _memoryToken = token;
-
-      /* sessionStorage: mirror untuk dashboard compatibility */
-      var ssOk = false;
       try {
-        /* Perhatikan: token TIDAK disertakan di sessionStorage JSON */
-        sessionStorage.setItem('whs_pi_user', JSON.stringify({
-          uid: uid,
-          username: username,
-          loginTime: now
-          /* accessToken sengaja TIDAK ada di sini */
-        }));
-        ssOk = true;
-      } catch(e) {
-        logDebug('sessionStorage write gagal: ' + e.message, false, true);
+        var row = {
+          pi_uid:           uid,
+          username:         username,
+          pi_access_token:  accessToken,
+          last_login:       new Date().toISOString()
+        };
+
+        var result = await withTimeout(
+          supabase.from('users').upsert(row, { onConflict: 'pi_uid' }).select().single(),
+          10000,
+          'Timeout menyimpan data ke database'
+        );
+
+        if (result.error) {
+          var code = result.error.code || '-';
+          var msg  = result.error.message || '-';
+          logDebug('DB error [' + code + ']: ' + msg, true);
+
+          var hint = null;
+          if (code === '42501')      hint = 'RLS memblokir. Jalankan SQL schema di source code halaman ini.';
+          else if (code === '42P01') hint = 'Tabel "users" belum ada. Jalankan SQL schema dulu.';
+          else if (code === '22023' || msg.indexOf('uuid') !== -1)
+                                  hint = 'Mismatch tipe id. DROP TABLE users; lalu buat ulang dengan schema UUID.';
+
+          return { success: false, warning: hint || ('DB [' + code + ']: ' + msg) };
+        }
+
+        logDebug('Tersimpan, id=' + (result.data ? result.data.id : '?'));
+        return { success: true, data: result.data };
+
+      } catch (e) {
+        logDebug('Sync gagal: ' + e.message, true);
+        return { success: false, warning: 'Koneksi DB gagal: ' + e.message };
       }
-
-      logDebug('Persist sesi: localStorage=' + lsOk + '/3, sessionStorage=' + (ssOk ? 'OK' : 'GAGAL') + ', token=memory-only');
-
-      /* SELALU true — storage gagal tidak boleh memblokir redirect */
-      return true;
     }
 
     /* ================================================================
-       PI SDK INIT — sinkron, tanpa berharap Promise
+       PROSES LOGIN UTAMA — async/await, bukan .then().then()
        ================================================================ */
-    function initPiSDK() {
-      return new Promise(function(resolve, reject) {
-        /* Guard pertama: objek Pi harus ada */
-        if (!window.Pi) {
-          reject(new Error('Pi SDK tidak ditemukan. Buka halaman ini dari dalam Pi Browser.'));
-          return;
-        }
-
-        /* Guard kedua: metode authenticate harus ada */
-        if (typeof window.Pi.authenticate !== 'function') {
-          reject(new Error('Pi SDK ada tapi authenticate() tidak tersedia. Buka dari Pi Browser, bukan Chrome biasa.'));
-          return;
-        }
-
-        logDebug('Memanggil Pi.init()...');
-
-        try {
-          window.Pi.init({
-            version: "2.0",
-            sandbox: true
-          });
-        } catch(e) {
-          logDebug('Pi.init() throw error: ' + e.message, false, true);
-          /* Jangan reject — beberapa versi SDK throw tapi tetap bekerja */
-        }
-
-        /* Verifikasi pasca-init: authenticate masih ada? */
-        if (typeof window.Pi.authenticate !== 'function') {
-          reject(new Error('Pi.init() menyebabkan authenticate() hilang. Kemungkinan versi SDK tidak kompatibel.'));
-          return;
-        }
-
-        logDebug('Pi SDK init selesai — authenticate() tersedia');
-        resolve();
-      });
-    }
-
-    /* ================================================================
-       PROSES OTENTIKASI UTAMA
-       ================================================================ */
-    function startPiLogin() {
+    async function runPiLogin() {
+      if (isRedirecting) return;
       if (loginInProgress) return;
       loginInProgress = true;
+
+      if (urlParams.get('retry') === 'true') {
+        clearPiAuth();
+        window.history.replaceState({}, document.title, window.location.pathname);
+      }
+
       resetUI();
 
-      /* ---- Cek koneksi ---- */
-      if (!navigator.onLine) {
-        showError('Koneksi Gagal', 'Anda sedang offline.', 'Koneksi internet diperlukan',
-          'Silakan aktifkan data internet Anda terlebih dahulu.');
-        loginInProgress = false;
-        return;
-      }
+      try {
+        /* ── 1. Cek Pi SDK ── */
+        logDebug('Mengecek Pi SDK...');
+        var ua = navigator.userAgent || '';
 
-      /* ---- Cek sesi valid ---- */
-      if (checkExistingSession()) {
-        logDebug('Sesi valid ditemukan, redirect ke dashboard...');
-        statusTitle.textContent = 'Menghubungkan Sesi...';
-        statusDesc.textContent = 'Membuka dashboard Anda kembali';
-        safeRedirect('dashboard.html', 800);
-        return;
-      }
+        if (typeof Pi === 'undefined') {
+          if (!ua.includes('PiBrowser') && !ua.includes('piebrowser')) {
+            throw new Error('Buka halaman ini di dalam Pi Browser, bukan browser biasa.');
+          } else {
+            throw new Error('Pi SDK tidak terdeteksi di Pi Browser. Tunggu beberapa detik lalu coba lagi.');
+          }
+        }
 
-      /* ---- Guard: Pi SDK harus tersedia ---- */
-      if (!window.Pi || typeof window.Pi.authenticate !== 'function') {
-        showError(
-          'Pi SDK Tidak Tersedia',
-          'Tidak dapat menemukan Pi Network SDK atau metode otentikasi.',
-          'Bukan Pi Browser',
-          'Pastikan halaman ini dibuka dari dalam aplikasi Pi Browser. ' +
-          'Jika sudah di Pi Browser, coba tutup semua tab Pi lalu buka ulang. ' +
-          'Pi SDK tidak berfungsi di Chrome, Safari, atau browser lain.'
+        /* ── 2. Pi.init() dengan fallback ── */
+        logDebug('Memulai Pi.init()...');
+        statusTitle.textContent = 'Inisialisasi...';
+        statusDesc.textContent = 'Menghubungkan ke Pi Network';
+        cardSubtitle.textContent = 'Menginisialisasi Pi SDK...';
+
+        var isSandbox = (typeof window.APP_CONFIG !== 'undefined')
+          ? window.APP_CONFIG.sandbox
+          : true;
+
+        await safePiInit(isSandbox);
+        logDebug('Pi.init() selesai (sandbox=' + isSandbox + ')');
+
+        /* ── 3. Pi.authenticate() ── */
+        logDebug('Memulai Pi.authenticate()...');
+        statusTitle.textContent = 'Autentikasi...';
+        statusDesc.textContent = 'Izinkan akses akun Pi Anda di popup yang muncul';
+        cardSubtitle.textContent = 'Menunggu persetujuan Anda...';
+
+        var scopes = (typeof window.APP_CONFIG !== 'undefined' && window.APP_CONFIG.authScopes)
+          ? window.APP_CONFIG.authScopes
+          : ['username', 'payments'];
+
+        var onIncompletePaymentFound = function(payment) {
+          logDebug('Incomplete payment: ' + (payment && payment.identifier ? payment.identifier : '-'));
+          if (payment && payment.identifier) safeSet('whs_incomplete_payment', payment.identifier);
+        };
+
+        var auth = await withTimeout(
+          Pi.authenticate(scopes, onIncompletePaymentFound),
+          AUTH_TIMEOUT,
+          'Autentikasi timeout — Anda tidak menyetujui dalam waktu yang ditentukan.'
         );
-        loginInProgress = false;
-        return;
-      }
 
-      /* ============================================================
-         LANGKAH 1: INIT SDK (sinkron + guard)
-         ============================================================ */
-      initPiSDK()
-        .then(function() {
-          /* ========================================================
-             LANGKAH 2: AUTHENTICATE
-             ======================================================== */
-          logDebug('Meminta otentikasi user...');
-          statusTitle.textContent = 'Meminta Otorisasi...';
-          statusDesc.textContent = 'Konfirmasi login pada pop-up Pi Browser jika muncul';
+        /* ── 4. Validasi ── */
+        if (!auth || !auth.user || !auth.user.username) {
+          throw new Error('Respons autentikasi tidak valid: data user kosong.');
+        }
+        if (!auth.accessToken) {
+          throw new Error('Autentikasi berhasil tetapi access token tidak diterima.');
+        }
 
-          var authScopes = window.APP_CONFIG.authScopes;
+        logDebug('Auth berhasil! @' + auth.user.username);
+        logDebug('uid: ' + (auth.user.uid || 'tidak ada — pakai username'));
+        logDebug('keys: ' + JSON.stringify(Object.keys(auth.user)));
 
-          var authPromise = window.Pi.authenticate(authScopes, function onIncompletePayment(payment) {
-            logDebug('Pembayaran tertunda: ' + (payment ? payment.identifier : 'tanpa ID'), false, true);
-            if (payment && payment.identifier) {
-              safeSet('whs_incomplete_payment', payment.identifier);
-            }
-          });
+        /* ── 5. Simpan ke storage — KEY YANG SAMA DENGAN YANG DIBACA DASHBOARD ── */
+        safeSet('whs_pi_user', JSON.stringify(auth.user));
+        safeSet('whs_pi_token', auth.accessToken);
+        safeSet('whs_login_time', String(Date.now()));
+        try { sessionStorage.setItem('whs_pi_user', JSON.stringify(auth.user)); } catch(e) {}
 
-          return withTimeout(authPromise, AUTH_TIMEOUT,
-            'Batas waktu otentikasi habis. Pi SDK tidak merespons dalam ' + (AUTH_TIMEOUT / 1000) + ' detik.');
-        })
-        .then(function(auth) {
-          logDebug('Menerima respons dari Pi SDK');
+        /* ── 6. Sync Supabase ── */
+        statusTitle.textContent = 'Menyimpan...';
+        statusDesc.textContent = 'Mencatat data akun Anda';
+        cardSubtitle.textContent = 'Menyinkronkan ke server...';
 
-          /* Validasi respons */
-          if (!auth) {
-            throw new Error('Pi SDK mengembalikan respons kosong. Coba lagi.');
-          }
-          if (!auth.user) {
-            throw new Error('Pi SDK tidak mengirimkan data user. Otentikasi mungkin dibatalkan di sisi Pi.');
-          }
-          if (!auth.user.uid) {
-            throw new Error('Pi SDK mengirimkan user tanpa UID. Respons tidak valid dari server Pi.');
-          }
+        var db = await syncUserToSupabase(auth.user, auth.accessToken);
 
-          var uid      = auth.user.uid;
-          var username = auth.user.username || "PiUser";
-          var token    = auth.accessToken;
-
-          logDebug('Otentikasi sukses. UID: ' + uid.substring(0, 8) + '...');
-          statusTitle.className = 'pi-status-title success';
-          spinnerRing.className = 'pi-spinner-ring success';
-          spinnerIcon.className = 'pi-spinner-icon success';
-          statusTitle.textContent = 'Otentikasi Berhasil';
-          statusDesc.textContent = 'Menyimpan data sesi...';
-
-          /* ========================================================
-             LANGKAH 3: SIMPAN SESI (selalu berhasil)
-             ======================================================== */
-          persistSession(uid, username, token);
-
-          statusDesc.textContent = 'Sinkronisasi ke database...';
-
-          /* ========================================================
-             LANGKAH 4: SYNC SUPABASE (gagal = warning saja)
-             Token dikirim ke DB tapi TIDAK disimpan di localStorage
-             ======================================================== */
-          if (SUPABASE_READY && supabase) {
-            return supabase.from('users').upsert({
-              pi_uid:          uid,
-              username:        username,
-              pi_access_token: token,
-              last_login:      new Date().toISOString()
-            }, { onConflict: 'pi_uid' });
-          } else {
-            logDebug('Supabase dilewati, lanjut login lokal');
-            return { error: null, _skipped: true };
-          }
-        })
-        .then(function(dbResult) {
-          /* Supabase gagal → warning, TIDAK throw, TIDAK blokir redirect */
-          if (dbResult && dbResult.error) {
-            logDebug('Supabase gagal: ' + dbResult.error.message + ' — diabaikan', false, true);
-            warningText.textContent = 'Sinkronisasi cloud gagal: ' + dbResult.error.message +
-              '. Sesi lokal Anda tetap aktif, data akan dicoba lagi nanti.';
-            warningBox.classList.add('visible');
-          }
-
-          /* ========================================================
-             LANGKAH 5: REDIRECT — tidak ada kondisi yang memblokir
-             ======================================================== */
-          logDebug('Mengalihkan ke dashboard...');
-          showToast('Selamat datang kembali!', 'success', 2000);
-          safeRedirect('dashboard.html', 1000);
-        })
-        .catch(function(err) {
-          /* .catch() hanya tercapai jika error SEBELUM auth sukses
-             (SDK gagal, auth gagal, user cancel, timeout).
-             Setelah auth sukses, flow menuju .then() terakhir. */
-          clearPiAuth();
-
-          var detail = err.message || 'Terjadi kesalahan sistem internal.';
-
-          if (detail.indexOf('SDK') !== -1 || detail.indexOf('Pi Browser') !== -1) {
-            showError('Pi SDK Tidak Tersedia',
-              'Tidak dapat menginisialisasi otentikasi Pi.',
-              'Bukan Lingkungan Pi',
-              detail);
-          } else if (detail.indexOf('waktu') !== -1 || detail.indexOf('timeout') !== -1) {
-            showError('Waktu Habis',
-              'Server Pi tidak merespons dalam batas waktu.',
-              'Timeout Otentikasi',
-              detail);
-          } else if (detail.indexOf('batal') !== -1 || detail.indexOf('cancel') !== -1 ||
-                     detail.indexOf('denied') !== -1) {
-            showError('Dibatalkan',
-              'Anda menolak atau membatalkan otorisasi.',
-              'Otentikasi Ditolak Pengguna',
-              detail);
-          } else {
-            showError('Login Gagal',
-              'Gagal memvalidasi otentikasi terpusat.',
-              'Otorisasi Ditolak',
-              detail);
-          }
-        })
-        .finally(function() {
-          loginInProgress = false;
-        });
-    }
-
-    /* ================================================================
-       EVENT LISTENERS
-       ================================================================ */
-    document.addEventListener('DOMContentLoaded', function() {
-      btnRetry.addEventListener('click', startPiLogin);
-      btnBack.addEventListener('click', function() {
-        window.location.href = 'index.html';
-      });
-
-      logoutBtn.addEventListener('click', function() {
-        clearPiAuth();
-        sessionBanner.classList.remove('visible');
-        showToast('Sesi dibersihkan', 'info', 2000);
-        startPiLogin();
-      });
-
-      /* Auto-login saat halaman dimuat */
-      setTimeout(startPiLogin, 500);
-    });
-  </script>
-</body>
-</html>
+        if (db.success) {
