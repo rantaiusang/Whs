@@ -108,7 +108,7 @@
     @keyframes fadeInUp { from{opacity:0;transform:translateY(20px)} to{opacity:1;transform:translateY(0)} }
 
     /* ── Connected banner di hero (muncul setelah login) ── */
-    .hero-connected { display:none; align-items:center; justify-content:center; gap:12px; margin-bottom:20px; padding:12px 20px; background:rgba(34,197,94,0.08); border:1px solid rgba(34,197,94,0.2); border-radius:var(--radius-full); animation:fadeInUp 0.5s ease-out; }
+    .hero-connected { display:none; align-items:center; justify-content:center; gap:12px; margin-bottom:20px; padding:12px 20px; background:rgba(34,197,94,0.08); border:1px solid rgba(34,197,94,0.2); border-radius:var(--radius-full); animation:fadeInUp 0.5s ease-out; flex-wrap:wrap; }
     .hero-connected.show { display:inline-flex; }
     .hero-connected-dot { width:8px; height:8px; background:var(--success); border-radius:50%; box-shadow:0 0 10px rgba(34,197,94,0.5); animation:connPulse 2.5s ease-in-out infinite; }
     .hero-connected-text { font-size:0.85rem; font-weight:500; color:var(--success); }
@@ -325,7 +325,7 @@
     <header class="hero">
       <div class="container">
 
-        <!-- Banner "Terhubung" — muncul saat sudah login, menggantikan posisi badge -->
+        <!-- Banner "Terhubung" — muncul saat sudah login -->
         <div class="hero-connected" id="heroConnected">
           <span class="hero-connected-dot"></span>
           <span class="hero-connected-text">Terhubung sebagai <strong id="heroConnectedUser">@user</strong></span>
@@ -343,11 +343,10 @@
           Ukur Kesehatan<br /><span class="highlight">Wallet On-Chain</span>
         </h1>
         <p class="hero-subtitle">
-          Sistem credit scoring berbasis analisis transaksi on-chain. 
+          Sistem credit scoring berbasis analisis transaksi on-chain.
           Login dengan Pi Network dan dapatkan skor reputasi wallet Anda secara instan.
         </p>
         <div class="hero-actions">
-          <!-- Tombol ini berubah jadi "Buka Dashboard" jika sudah login -->
           <a href="login.html" class="btn btn-primary btn-lg" id="heroCtaBtn">
             <i class="fa-solid fa-right-to-bracket"></i> Login dengan Pi Sekarang
           </a>
@@ -429,9 +428,8 @@
           <h2 class="cta-title" id="ctaTitle">Siap Menilai Kesehatan Wallet Anda?</h2>
           <p class="cta-desc">Login dengan akun Pi Network Anda untuk mulai menganalisis Wallet Health Score dan tingkatkan kepercayaan on-chain Anda.</p>
           <div class="cta-actions">
-            <!-- Tombol ini juga berubah jika sudah login -->
             <a href="login.html" class="btn btn-primary btn-lg" id="ctaBtn">
-              <span style="font-weight:800;font-size:1.1rem;">π</span> Login dengan Pi Sekarang
+              <span style="font-weight:800;font-size:1.1rem;">&pi;</span> Login dengan Pi Sekarang
             </a>
           </div>
         </div>
@@ -489,23 +487,66 @@
   <script>
     document.addEventListener('DOMContentLoaded', function() {
 
-      /* ==========================================
-         SESSION — Baca data yang sama dengan login.html
-         Login menyimpan: whs_wallet, whs_pi_user, whs_login_time
-         ========================================== */
+      /* ================================================================
+         KONSTANTA — harus konsisten dengan login.html
+         login.html menyimpan: whs_pi_user, whs_pi_token, whs_login_time
+         whs_wallet hanya disimpan oleh dashboard.html (opsional)
+         ================================================================ */
+      var SESSION_MAX_AGE = 86400000; /* 24 jam — sama dengan login.html */
+
+      /* Key yang wajib dihapus saat logout — sama persis dengan login.html */
+      var ALL_SESSION_KEYS = [
+        'whs_pi_user',
+        'whs_pi_token',
+        'whs_login_time',
+        'whs_incomplete_payment',
+        'whs_wallet',
+        'whs_db_user_id',
+        'pi_user',
+        'pi_auth'
+      ];
+      var ALL_SESSION_STORAGE_KEYS = [
+        'whs_pi_user',
+        'currentWallet',
+        'walletData'
+      ];
+
+      /* ================================================================
+         SESSION — FIX UTAMA: hanya cek whs_pi_user + whs_login_time
+         TIDAK lagi mengharuskan whs_wallet ada
+         ================================================================ */
       function getSession() {
         try {
-          var user = localStorage.getItem('whs_pi_user');
-          var wallet = localStorage.getItem('whs_wallet');
-          var loginTime = localStorage.getItem('whs_login_time');
-          if (user && wallet) {
+          var userRaw = localStorage.getItem('whs_pi_user');
+          var loginTimeRaw = localStorage.getItem('whs_login_time');
+
+          /* Sesi valid jika ada data user DAN waktu login belum kadaluarsa */
+          if (userRaw && loginTimeRaw) {
+            var user = JSON.parse(userRaw);
+            var loginTime = parseInt(loginTimeRaw, 10);
+
+            /* Validasi isi user */
+            if (!user || !user.username) {
+              clearAllSession();
+              return null;
+            }
+
+            /* Validasi umur sesi */
+            var age = Date.now() - loginTime;
+            if (isNaN(age) || age > SESSION_MAX_AGE) {
+              clearAllSession();
+              return null;
+            }
+
             return {
-              user: JSON.parse(user),
-              wallet: wallet,
-              loginTime: loginTime ? parseInt(loginTime, 10) : null
+              user: user,
+              wallet: localStorage.getItem('whs_wallet') || null,
+              loginTime: loginTime
             };
           }
-        } catch (e) {}
+        } catch (e) {
+          clearAllSession();
+        }
         return null;
       }
 
@@ -513,19 +554,31 @@
         return getSession() !== null;
       }
 
+      /* ================================================================
+         CLEAR SESSION — konsisten dengan login.html
+         ================================================================ */
+      function clearAllSession() {
+        ALL_SESSION_KEYS.forEach(function(k) {
+          try { localStorage.removeItem(k); } catch(e) {}
+        });
+        ALL_SESSION_STORAGE_KEYS.forEach(function(k) {
+          try { sessionStorage.removeItem(k); } catch(e) {}
+        });
+      }
+
       function shortAddress(addr) {
         if (!addr || addr.length < 12) return addr || '—';
         return addr.slice(0, 6) + '...' + addr.slice(-4);
       }
 
-      /* ==========================================
+      /* ================================================================
          TOAST
-         ========================================== */
+         ================================================================ */
       var toastContainer = document.getElementById('toastContainer');
 
       function showToast(message, type) {
         type = type || 'info';
-        var icons = { success:'fa-circle-check', error:'fa-circle-xmark', info:'fa-circle-info' };
+        var icons = { success:'fa-circle-check', error:'fa-circle-xmark', info:'fa-circle-info', warning:'fa-triangle-exclamation' };
         var toast = document.createElement('div');
         toast.className = 'toast ' + type;
         toast.innerHTML = '<i class="fa-solid ' + (icons[type] || icons.info) + '"></i><span>' + message + '</span>';
@@ -539,9 +592,9 @@
         }, 3500);
       }
 
-      /* ==========================================
+      /* ================================================================
          HALAMAN YANG WAJIB LOGIN
-         ========================================== */
+         ================================================================ */
       document.addEventListener('click', function(e) {
         var link = e.target.closest('[data-protected]');
         if (link) {
@@ -556,9 +609,9 @@
         }
       });
 
-      /* ==========================================
-         UPDATE UI BERDASARKAN STATUS LOGIN
-         ========================================== */
+      /* ================================================================
+         DOM ELEMENTS
+         ================================================================ */
       var navConnection = document.getElementById('navConnection');
       var navUserInfo = document.getElementById('navUserInfo');
       var navAvatar = document.getElementById('navAvatar');
@@ -571,11 +624,15 @@
       var heroCtaBtn = document.getElementById('heroCtaBtn');
       var ctaBtn = document.getElementById('ctaBtn');
 
+      /* ================================================================
+         UPDATE UI BERDASARKAN STATUS LOGIN
+         ================================================================ */
       function updateUI() {
         var session = getSession();
 
         if (session) {
           var username = session.user.username || 'User';
+          var hasWallet = session.wallet && session.wallet.length > 0;
 
           /* Nav: tampilkan status terhubung + info user */
           navConnection.classList.add('show');
@@ -586,7 +643,15 @@
           /* Hero: tampilkan banner terhubung, sembunyikan badge default */
           heroConnected.classList.add('show');
           heroConnectedUser.textContent = '@' + username;
-          heroConnectedWallet.textContent = shortAddress(session.wallet);
+
+          /* Wallet address: tampilkan kalau ada, sembunyikan kalau belum */
+          if (hasWallet) {
+            heroConnectedWallet.textContent = shortAddress(session.wallet);
+            heroConnectedWallet.style.display = '';
+          } else {
+            heroConnectedWallet.style.display = 'none';
+          }
+
           heroBadge.style.display = 'none';
 
           /* Tombol CTA: ubah jadi "Buka Dashboard" */
@@ -602,45 +667,40 @@
 
           /* Hero: kembalikan ke default */
           heroConnected.classList.remove('show');
+          heroConnectedWallet.style.display = '';
           heroBadge.style.display = '';
 
           /* Tombol CTA: kembalikan ke default */
           heroCtaBtn.href = 'login.html';
           heroCtaBtn.innerHTML = '<i class="fa-solid fa-right-to-bracket"></i> Login dengan Pi Sekarang';
           ctaBtn.href = 'login.html';
-          ctaBtn.innerHTML = '<span style="font-weight:800;font-size:1.1rem;">π</span> Login dengan Pi Sekarang';
+          ctaBtn.innerHTML = '<span style="font-weight:800;font-size:1.1rem;">\u03C0</span> Login dengan Pi Sekarang';
         }
       }
 
-      /* ==========================================
-         LOGOUT
-         ========================================== */
+      /* ================================================================
+         LOGOUT — gunakan clearAllSession() yang sama persis key-nya
+         ================================================================ */
       function doLogout() {
-        localStorage.removeItem('whs_wallet');
-        localStorage.removeItem('whs_pi_user');
-        localStorage.removeItem('whs_pi_token');
-        localStorage.removeItem('whs_login_time');
-        sessionStorage.removeItem('whs_pi_user');
-        sessionStorage.removeItem('currentWallet');
-        sessionStorage.removeItem('walletData');
+        clearAllSession();
         updateUI();
         showToast('Anda telah keluar dari akun', 'info');
       }
 
       logoutBtnDesktop.addEventListener('click', doLogout);
 
-      /* ==========================================
+      /* ================================================================
          NAV SCROLL EFFECT
-         ========================================== */
+         ================================================================ */
       var mainNav = document.getElementById('mainNav');
       window.addEventListener('scroll', function() {
         if (window.scrollY > 50) mainNav.classList.add('scrolled');
         else mainNav.classList.remove('scrolled');
       });
 
-      /* ==========================================
+      /* ================================================================
          REVEAL ON SCROLL
-         ========================================== */
+         ================================================================ */
       var revealObserver = new IntersectionObserver(function(entries) {
         entries.forEach(function(entry) {
           if (entry.isIntersecting) entry.target.classList.add('visible');
@@ -648,10 +708,20 @@
       }, { threshold: 0.1 });
       document.querySelectorAll('.reveal').forEach(function(el) { revealObserver.observe(el); });
 
-      /* ==========================================
+      /* ================================================================
          INIT
-         ========================================== */
+         ================================================================ */
       updateUI();
+
+      /* Debug: log sesi status di console untuk membantu troubleshooting */
+      if (isLoggedIn()) {
+        var s = getSession();
+        console.log('[INDEX] Sesi aktif: @' + s.user.username +
+          ' | wallet: ' + (s.wallet || 'belum ada') +
+          ' | umur: ' + Math.round((Date.now() - s.loginTime) / 60000) + ' menit');
+      } else {
+        console.log('[INDEX] Tidak ada sesi aktif');
+      }
 
     });
   </script>
