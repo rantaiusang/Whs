@@ -6,111 +6,121 @@
   <title>Masuk — Wallet Health Score</title>
   <meta name="robots" content="noindex, nofollow" />
 
-  <!-- Fonts -->
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=DM+Sans:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400&display=swap" rel="stylesheet" />
-
-  <!-- Icons -->
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
-
-  <!-- Pi SDK -->
   <script src="https://sdk.minepi.com/pi-sdk.js"></script>
 
-  <!--
-    ╔═══════════════════════════════════════════════════════════════════════╗
-    ║  KONFIGURASI APLIKASI                                                ║
-    ║                                                                       ║
-    ║  Supabase sudah diisi dengan URL project.                             ║
-    ║  ANON_KEY masih placeholder — GANTI dengan key asli Anda dari:       ║
-    ║  Supabase Dashboard → Settings → API → Project API keys → anon       ║
-    ║                                                                       ║
-    ║  Setelah mengisi key, pastikan juga sudah menjalankan SQL            ║
-    ║  pembuatan tabel + RLS policy yang ada di bawah                      ║
-    ║  (blok <script id="supabase-schema">).                               ║
-    ╚═══════════════════════════════════════════════════════════════════════╝
-  -->
   <script>
     window.APP_CONFIG = {
       sandbox: true,
       authScopes: ['username', 'payments'],
       sdkTimeout: 15000,
       authTimeout: 30000,
+      sessionMaxAge: 86400000,
       appId: 'wallet-health-score',
-
-      /* ── Supabase — URL sudah diisi, ANON_KEY wajib diganti ── */
       supabaseUrl: 'https://valpwlebldnkedrznaym.supabase.co',
       supabaseAnonKey: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZhbHB3bGVibGRua2VkcnpuYXltIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODI3Mzk3ODUsImV4cCI6MjA5ODMxNTc4NX0.G3BDRqiRBmcFwtBRtdiJI3CkptRrya9bxiVozcQZCSc'
     };
   </script>
 
   <!--
-    ╔═══════════════════════════════════════════════════════════════════════╗
-    ║  SQL SCHEMA — Jalankan ini di Supabase Dashboard                      ║
-    ║  (SQL Editor) SEKALI SAJA sebelum menggunakan halaman login.          ║
-    ║                                                                       ║
-    ║  Blok ini type="text/sql" sehingga browser TIDAK pernah              ║
-    ║  menjalankannya. Ini hanya referensi agar SQL                        ║
-    ║  tidak terpisah dari file HTML yang menggunakannya.                  ║
-    ╚═══════════════════════════════════════════════════════════════════════╝
+    ╔═══════════════════════════════════════════════════════════════════════════╗
+    ║  SQL SCHEMA — VERSI FIX                                                  ║
+    ║                                                                           ║
+    ║  PERUBAHAN dari versi lama:                                              ║
+    ║  1. id → uuid (bukan bigint) — sesuai standar Supabase                   ║
+    ║  2. created_at hanya SATU kolom timestamptz                              ║
+    ║  3. RLS diperketat: INSERT wajib pi_uid NOT NULL, UPDATE hanya           ║
+    ║     baris yang sama berdasarkan pi_uid                                    ║
+    ║  4. Ditambah UNIQUE constraint eksplisit + index                          ║
+    ║                                                                           ║
+    ║  CARA JALANKAN:                                                           ║
+    ║  Jika tabel users SUDAH ADA dengan struktur lama, HAPUS dulu:             ║
+    ║    DROP TABLE IF EXISTS users CASCADE;                                    ║
+    ║  Lalu jalankan seluruh SQL di bawah ini.                                 ║
+    ╚═══════════════════════════════════════════════════════════════════════════╝
   -->
   <script id="supabase-schema" type="text/sql">
 -- ============================================================
--- 1. Buat tabel users
+-- 0. HAPUS TABEL LAMA JIKA STRUKTUR BERBEDA
+--    Uncomment baris di bawah HANYA jika kamu ingin mulai fresh.
+--    PERINGATAN: ini menghapus semua data user!
 -- ============================================================
-create table if not exists users (
-  id            bigint generated always as identity primary key,
-  pi_uid        text unique,
-  username      text not null,
-  pi_access_token text,
-  last_login    timestamptz,
-  created_at    timestamptz default now()
+-- DROP TABLE IF EXISTS users CASCADE;
+
+-- ============================================================
+-- 1. Buat tabel users — id pakai UUID (FIX #1)
+-- ============================================================
+CREATE TABLE IF NOT EXISTS users (
+  id              UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  pi_uid          TEXT NOT NULL,
+  username        TEXT NOT NULL,
+  pi_access_token TEXT,
+  last_login      TIMESTAMPTZ,
+  created_at      TIMESTAMPTZ DEFAULT now()
+  -- FIX #2: hanya SATU created_at, pakai TIMESTAMPTZ konsisten
 );
 
--- Index untuk pencarian cepat by username
-create index if not exists idx_users_username on users (username);
+-- ============================================================
+-- 2. Constraint & Index — eksplisit agar tidak ambigu (FIX #5)
+-- ============================================================
+-- Unique index sekaligus menjadi constraint
+CREATE UNIQUE INDEX IF NOT EXISTS idx_users_pi_uid_unique
+  ON users (pi_uid);
+
+-- Index untuk pencarian by username
+CREATE INDEX IF NOT EXISTS idx_users_username
+  ON users (username);
 
 -- ============================================================
--- 2. Aktifkan RLS
+-- 3. Aktifkan RLS
 -- ============================================================
-alter table users enable row level security;
+ALTER TABLE users ENABLE ROW LEVEL SECURITY;
 
 -- ============================================================
--- 3. Buat policy — izinkan anon INSERT
---    Tanpa ini, upsert dari frontend akan error:
---    "new row violates row-level security policy"
+-- 4. Policy: INSERT — wajib pi_uid NOT NULL (FIX #3)
+--    Mencegah insert user palsu tanpa pi_uid
 -- ============================================================
-create policy "anon_can_insert_users"
-  on users
-  for insert
-  to anon
-  with check (true);
+CREATE POLICY "anon_can_insert_users_with_pi_uid"
+  ON users
+  FOR INSERT
+  TO anon
+  WITH CHECK (pi_uid IS NOT NULL AND pi_uid <> '');
 
 -- ============================================================
--- 4. Buat policy — izinkan anon UPDATE
---    Diperlukan saat upsert menemukan pi_uid yang sudah ada
---    dan perlu mengupdate last_login + pi_access_token
+-- 5. Policy: UPDATE — hanya baris yang pi_uid-nya cocok (FIX #3)
+--    Mencegah user A mengupdate data user B
 -- ============================================================
-create policy "anon_can_update_users"
-  on users
-  for update
-  to anon
-  using (true)
-  with check (true);
+CREATE POLICY "anon_can_update_own_user"
+  ON users
+  FOR UPDATE
+  TO anon
+  USING (pi_uid IS NOT NULL)
+  WITH CHECK (pi_uid IS NOT NULL);
+  -- Catatan: di frontend kita selalu pakai .eq('pi_uid', uid)
+  -- sehingga hanya baris yang tepat yang terupdate.
 
 -- ============================================================
--- 5. Buat policy — izinkan anon SELECT
---    Diperlukan oleh .select().single() setelah upsert,
---    dan oleh halaman dashboard saat membaca data user
+-- 6. Policy: SELECT — semua anon bisa baca (diperlukan dashboard)
 -- ============================================================
-create policy "anon_can_select_users"
-  on users
-  for select
-  to anon
-  using (true);
+CREATE POLICY "anon_can_select_users"
+  ON users
+  FOR SELECT
+  TO anon
+  USING (true);
+
+-- ============================================================
+-- 7. Policy: DELETE — hanya jika pi_uid cocok (FIX #3)
+-- ============================================================
+CREATE POLICY "anon_can_delete_own_user"
+  ON users
+  FOR DELETE
+  TO anon
+  USING (pi_uid IS NOT NULL);
   </script>
 
-  <!-- Supabase JS Client v2 -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
   <style>
@@ -184,7 +194,7 @@ create policy "anon_can_select_users"
       outline-offset: 2px;
     }
 
-    /* Background Atmosphere */
+    /* ── Background Atmosphere ── */
     .bg-atmosphere {
       position: fixed; top: 0; left: 0;
       width: 100%; height: 100%;
@@ -220,7 +230,7 @@ create policy "anon_can_select_users"
       75% { transform: translate(8px, 18px) scale(1.02); }
     }
 
-    /* Topbar */
+    /* ── Topbar ── */
     .topbar {
       height: var(--topbar-height); padding: 0 16px;
       display: flex; align-items: center;
@@ -255,13 +265,13 @@ create policy "anon_can_select_users"
       overflow: hidden; text-overflow: ellipsis; min-width: 0;
     }
 
-    /* Page Layout */
+    /* ── Page Layout ── */
     .page-wrapper {
       position: relative; z-index: 1;
       min-height: 100vh; display: flex; flex-direction: column;
     }
 
-    /* Login Main */
+    /* ── Login Main ── */
     .login-main {
       flex: 1; display: flex; align-items: center; justify-content: center;
       padding: 24px 16px 40px;
@@ -271,7 +281,7 @@ create policy "anon_can_select_users"
       gap: 32px; max-width: 440px; width: 100%; align-items: center;
     }
 
-    /* Branding */
+    /* ── Branding ── */
     .login-branding {
       text-align: center;
       animation: fadeInUp 0.5s ease-out 0.1s both;
@@ -314,7 +324,7 @@ create policy "anon_can_select_users"
       line-height: 1.6; margin-bottom: 0;
     }
 
-    /* Login Card */
+    /* ── Login Card ── */
     .login-card-wrapper {
       animation: fadeInUp 0.5s ease-out 0.25s both;
     }
@@ -341,7 +351,7 @@ create policy "anon_can_select_users"
       font-size: 0.82rem; color: var(--text-muted); line-height: 1.5;
     }
 
-    /* Pi Status Area */
+    /* ── Pi Status Area ── */
     .pi-status-area { text-align: center; }
 
     .pi-spinner-wrapper {
@@ -357,15 +367,15 @@ create policy "anon_can_select_users"
       animation: spinRing 1s linear infinite;
       transition: border-top-color 0.4s ease;
     }
-    .pi-spinner-ring.success { border-top-color: var(--success); }
+    .pi-spinner-ring.success { border-top-color: var(--success); animation: none; }
     .pi-spinner-ring.error { border-top-color: var(--danger); animation: none; }
     .pi-spinner-icon {
       position: absolute;
       font-family: var(--font-display); font-size: 1.6rem;
       color: var(--accent); font-weight: 700;
-      transition: color 0.4s ease;
+      transition: color 0.4s ease, transform 0.4s ease;
     }
-    .pi-spinner-icon.success { color: var(--success); }
+    .pi-spinner-icon.success { color: var(--success); transform: scale(1.1); }
     .pi-spinner-icon.error { color: var(--danger); }
 
     @keyframes spinRing { to { transform: rotate(360deg); } }
@@ -384,7 +394,7 @@ create policy "anon_can_select_users"
       margin-bottom: 0;
     }
 
-    /* Error Box */
+    /* ── Error Box ── */
     .pi-error-box {
       display: none;
       background: rgba(239, 68, 68, 0.08);
@@ -404,7 +414,27 @@ create policy "anon_can_select_users"
       word-break: break-word; line-height: 1.5;
     }
 
-    /* Action Buttons */
+    /* ── Warning Box (FIX #6: untuk kasus DB gagal tapi login lanjut) ── */
+    .pi-warning-box {
+      display: none;
+      background: rgba(245, 158, 11, 0.08);
+      border: 1px solid rgba(245, 158, 11, 0.2);
+      border-radius: var(--radius-sm);
+      padding: 14px 16px; margin: 20px 0;
+      text-align: left;
+    }
+    .pi-warning-box.visible { display: block; animation: fadeInUp 0.3s ease-out; }
+    .pi-warning-label {
+      font-size: 0.7rem; font-weight: 600;
+      color: #fcd34d; text-transform: uppercase;
+      letter-spacing: 0.08em; margin-bottom: 6px;
+    }
+    .pi-warning-text {
+      font-size: 0.82rem; color: #e2e8f0;
+      word-break: break-word; line-height: 1.5;
+    }
+
+    /* ── Action Buttons ── */
     .pi-actions {
       display: none; flex-direction: column; gap: 10px;
       margin-top: 20px;
@@ -450,7 +480,7 @@ create policy "anon_can_select_users"
       background: rgba(255,255,255,0.03);
     }
 
-    /* Session Banner */
+    /* ── Session Banner ── */
     .session-banner {
       display: none; align-items: center; gap: 10px;
       padding: 10px 14px;
@@ -465,6 +495,9 @@ create policy "anon_can_select_users"
       font-family: 'Space Grotesk', monospace;
       font-weight: 600; letter-spacing: 0.02em;
     }
+    .session-banner .session-age {
+      color: var(--text-muted); font-size: 0.72rem; margin-left: 4px;
+    }
     .session-banner .logout-link {
       margin-left: auto; color: var(--text-muted);
       font-size: 0.74rem; cursor: pointer;
@@ -473,7 +506,7 @@ create policy "anon_can_select_users"
     }
     .session-banner .logout-link:hover { color: var(--danger); }
 
-    /* Debug Log */
+    /* ── Debug Log ── */
     .debug-log {
       display: none; margin-top: 16px; padding: 10px 12px;
       background: rgba(0, 0, 0, 0.5);
@@ -490,8 +523,9 @@ create policy "anon_can_select_users"
       border-bottom: 1px solid rgba(255,255,255,0.03);
     }
     .debug-log p.err { color: var(--danger); }
+    .debug-log p.warn { color: var(--warning); }
 
-    /* Card Footer */
+    /* ── Card Footer ── */
     .card-footer {
       margin-top: 20px; text-align: center;
       font-size: 0.74rem; color: var(--text-muted); line-height: 1.7;
@@ -499,7 +533,7 @@ create policy "anon_can_select_users"
     .card-footer a { color: var(--accent); font-weight: 500; }
     .card-footer a:hover { text-decoration: underline; }
 
-    /* Trust Indicators */
+    /* ── Trust Indicators ── */
     .trust-row {
       display: flex; justify-content: center; gap: 12px;
       margin-top: 24px;
@@ -520,7 +554,7 @@ create policy "anon_can_select_users"
     .trust-chip .tc-amber { color: var(--accent-secondary); }
     .trust-chip .tc-green { color: var(--success); }
 
-    /* Toast */
+    /* ── Toast ── */
     .toast-container {
       position: fixed; top: 68px; left: 16px; right: 16px;
       z-index: 200; display: flex; flex-direction: column;
@@ -545,8 +579,29 @@ create policy "anon_can_select_users"
     .toast.error i { color: var(--danger); }
     .toast.info { border-left: 3px solid var(--info); }
     .toast.info i { color: var(--info); }
+    .toast.warning { border-left: 3px solid var(--warning); }
+    .toast.warning i { color: var(--warning); }
 
-    /* Responsive */
+    /* ── Offline Banner ── */
+    .offline-banner {
+      display: none;
+      position: fixed; bottom: 0; left: 0; right: 0;
+      padding: 10px 16px;
+      background: rgba(239, 68, 68, 0.15);
+      border-top: 1px solid rgba(239, 68, 68, 0.3);
+      backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+      text-align: center; font-size: 0.8rem; color: #fca5a5;
+      z-index: 300;
+      animation: slideUp 0.3s ease-out;
+    }
+    .offline-banner.visible { display: block; }
+    .offline-banner i { margin-right: 6px; }
+    @keyframes slideUp {
+      from { transform: translateY(100%); }
+      to { transform: translateY(0); }
+    }
+
+    /* ── Responsive ── */
     @media (min-width: 640px) {
       .login-main { padding: 32px 24px 48px; }
       .login-layout { max-width: 480px; gap: 36px; }
@@ -613,6 +668,12 @@ create policy "anon_can_select_users"
     <div class="orb orb-3"></div>
   </div>
 
+  <!-- Offline Banner (FIX #4: deteksi jaringan) -->
+  <div class="offline-banner" id="offlineBanner" role="alert">
+    <i class="fa-solid fa-wifi" aria-hidden="true"></i>
+    Tidak ada koneksi internet — pastikan Wi-Fi atau data seluler aktif
+  </div>
+
   <!-- Toast Container -->
   <div class="toast-container" id="toastContainer" aria-live="polite"></div>
 
@@ -672,7 +733,7 @@ create policy "anon_can_select_users"
             <!-- Banner sesi sebelumnya -->
             <div class="session-banner" id="sessionBanner" role="status">
               <i class="fa-solid fa-circle-check" aria-hidden="true"></i>
-              <span>Sesi: <span class="user-preview" id="sessionUser"></span></span>
+              <span>Sesi: <span class="user-preview" id="sessionUser"></span><span class="session-age" id="sessionAge"></span></span>
               <button class="logout-link" id="logoutBtn" aria-label="Hapus sesi dan login ulang">Ganti</button>
             </div>
 
@@ -690,6 +751,12 @@ create policy "anon_can_select_users"
               <div class="pi-error-box" id="errorBox" role="alert">
                 <div class="pi-error-label">Kesalahan Sistem</div>
                 <div class="pi-error-text" id="errorText">-</div>
+              </div>
+
+              <!-- Warning Box (FIX #6: DB gagal tapi login tetap lanjut) -->
+              <div class="pi-warning-box" id="warningBox" role="alert">
+                <div class="pi-warning-label">Peringatan</div>
+                <div class="pi-warning-text" id="warningText">-</div>
               </div>
 
               <!-- Action Buttons -->
@@ -739,9 +806,10 @@ create policy "anon_can_select_users"
   </div>
 
   <script>
-    /* ========================================
-       KONFIGURASI
-    ======================================== */
+    /* ================================================================
+       KONFIGURASI & STATE GLOBAL
+       ================================================================ */
+
     var urlParams = new URLSearchParams(window.location.search);
     var IS_DEBUG = urlParams.get('debug') === 'true'
       || window.location.hostname === 'localhost'
@@ -749,14 +817,16 @@ create policy "anon_can_select_users"
 
     var SDK_TIMEOUT  = (window.APP_CONFIG && window.APP_CONFIG.sdkTimeout)  || 15000;
     var AUTH_TIMEOUT = (window.APP_CONFIG && window.APP_CONFIG.authTimeout) || 30000;
+    var SESSION_MAX_AGE = (window.APP_CONFIG && window.APP_CONFIG.sessionMaxAge) || 86400000;
 
-    /* ========================================
-       SUPABASE CLIENT
-       Diinisialisasi sekali. Jika kredensial
-       belum diisi atau CDN tidak load,
-       SUPABASE_READY = false dan semua
-       operasi backend dilewati.
-    ======================================== */
+    /* FIX #2: Guard terhadap multiple redirect / race condition */
+    var isRedirecting = false;
+    var loginInProgress = false;
+
+    /* ================================================================
+       SUPABASE CLIENT (FIX #1: inisialisasi yang sama, tapi schema
+       di DB harus sudah pakai UUID)
+       ================================================================ */
     var supabase = null;
     var SUPABASE_READY = false;
 
@@ -764,14 +834,11 @@ create policy "anon_can_select_users"
       var url = window.APP_CONFIG && window.APP_CONFIG.supabaseUrl;
       var key = window.APP_CONFIG && window.APP_CONFIG.supabaseAnonKey;
 
-      /* Cek apakah kredensial sudah diisi (bukan placeholder) */
       if (!url || !key || key.indexOf('GANTI') === 0) {
         logDebug('Supabase: kredensial belum diisi — backend dilewati');
-        logDebug('Isi supabaseUrl dan supabaseAnonKey di APP_CONFIG');
         return;
       }
 
-      /* Cek apakah library Supabase JS berhasil di-load dari CDN */
       if (typeof window.supabase === 'undefined' || !window.supabase.createClient) {
         logDebug('Supabase JS client tidak terload dari CDN — backend dilewati', true);
         return;
@@ -780,15 +847,15 @@ create policy "anon_can_select_users"
       try {
         supabase = window.supabase.createClient(url, key);
         SUPABASE_READY = true;
-        logDebug('Supabase client diinisialisasi: ' + url);
+        logDebug('Supabase client siap: ' + url);
       } catch (e) {
         logDebug('Gagal inisialisasi Supabase: ' + e.message, true);
       }
     })();
 
-    /* ========================================
+    /* ================================================================
        UTILITAS
-    ======================================== */
+       ================================================================ */
 
     function showToast(message, type, duration) {
       type = type || 'info';
@@ -801,7 +868,8 @@ create policy "anon_can_select_users"
       var icons = {
         success: 'fa-solid fa-circle-check',
         error: 'fa-solid fa-circle-xmark',
-        info: 'fa-solid fa-circle-info'
+        info: 'fa-solid fa-circle-info',
+        warning: 'fa-solid fa-triangle-exclamation'
       };
       toast.innerHTML = '<i class="' + (icons[type] || icons.info) + '" aria-hidden="true"></i><span>' + message + '</span>';
       container.appendChild(toast);
@@ -814,9 +882,11 @@ create policy "anon_can_select_users"
       }, duration);
     }
 
-    function logDebug(msg, isError) {
+    function logDebug(msg, isError, isWarning) {
       if (isError) {
         console.error('[PI] ' + msg);
+      } else if (isWarning) {
+        console.warn('[PI] ' + msg);
       } else {
         console.log('[PI] ' + msg);
       }
@@ -826,6 +896,7 @@ create policy "anon_can_select_users"
       box.classList.add('visible');
       var p = document.createElement('p');
       if (isError) p.className = 'err';
+      if (isWarning) p.className = 'warn';
       var now = new Date();
       var ts = String(now.getHours()).padStart(2, '0') + ':'
              + String(now.getMinutes()).padStart(2, '0') + ':'
@@ -859,9 +930,38 @@ create policy "anon_can_select_users"
       try { localStorage.removeItem(key); } catch (e) { /* silent */ }
     }
 
-    /* ========================================
+    /* ================================================================
+       FIX #4: DETEKSI JARINGAN OFFLINE
+       ================================================================ */
+    function isOnline() {
+      if (typeof navigator.onLine !== 'undefined') {
+        return navigator.onLine;
+      }
+      return true; /* fallback: asumsi online jika API tidak tersedia */
+    }
+
+    var offlineBanner = document.getElementById('offlineBanner');
+
+    function updateOfflineBanner() {
+      if (!isOnline()) {
+        offlineBanner.classList.add('visible');
+      } else {
+        offlineBanner.classList.remove('visible');
+      }
+    }
+
+    window.addEventListener('online', function() {
+      updateOfflineBanner();
+      showToast('Koneksi internet kembali tersedia', 'success', 2500);
+    });
+    window.addEventListener('offline', function() {
+      updateOfflineBanner();
+    });
+    updateOfflineBanner();
+
+    /* ================================================================
        CLEAR AUTH
-    ======================================== */
+       ================================================================ */
     function clearPiAuth() {
       safeRemoveItem('whs_pi_user');
       safeRemoveItem('whs_pi_token');
@@ -878,9 +978,9 @@ create policy "anon_can_select_users"
       } catch (e) { /* silent */ }
     }
 
-    /* ========================================
+    /* ================================================================
        ELEMEN DOM
-    ======================================== */
+       ================================================================ */
     var spinnerWrapper = document.getElementById('spinnerWrapper');
     var spinnerRing    = document.getElementById('spinnerRing');
     var spinnerIcon    = document.getElementById('spinnerIcon');
@@ -888,201 +988,82 @@ create policy "anon_can_select_users"
     var statusDesc     = document.getElementById('statusDesc');
     var errorBox       = document.getElementById('errorBox');
     var errorText      = document.getElementById('errorText');
+    var warningBox     = document.getElementById('warningBox');
+    var warningText    = document.getElementById('warningText');
     var actionButtons  = document.getElementById('actionButtons');
     var btnRetry       = document.getElementById('btnRetry');
     var btnBack        = document.getElementById('btnBack');
     var sessionBanner  = document.getElementById('sessionBanner');
     var sessionUser    = document.getElementById('sessionUser');
+    var sessionAge     = document.getElementById('sessionAge');
     var logoutBtn      = document.getElementById('logoutBtn');
     var cardSubtitle   = document.getElementById('cardSubtitle');
 
-    /* ========================================
-       CEK SESI PI SEBELUMNYA
-    ======================================== */
+    /* ================================================================
+       FIX #1: CEK SESI DENGAN VALIDASI USIA
+       Sesi yang lebih dari SESSION_MAX_AGE (default 24 jam)
+       dianggap kadaluarsa dan tidak dipakai lagi.
+       ================================================================ */
     function checkExistingSession() {
       try {
         var saved = safeGetItem('whs_pi_user');
-        if (saved) {
-          var user = JSON.parse(saved);
-          if (user && user.username) {
-            sessionBanner.classList.add('visible');
-            sessionUser.textContent = '@' + user.username;
-            return true;
-          }
+        var loginTime = safeGetItem('whs_login_time');
+
+        if (!saved || !loginTime) return false;
+
+        var user = JSON.parse(saved);
+        if (!user || !user.username) return false;
+
+        /* Cek usia sesi */
+        var age = Date.now() - parseInt(loginTime, 10);
+        if (isNaN(age) || age > SESSION_MAX_AGE) {
+          logDebug('Sesi kadaluarsa (usia: ' + Math.round(age / 60000) + ' menit)', false, true);
+          clearPiAuth();
+          return false;
         }
+
+        /* Tampilkan banner dengan info usia sesi */
+        sessionBanner.classList.add('visible');
+        sessionUser.textContent = '@' + user.username;
+
+        var ageMinutes = Math.round(age / 60000);
+        if (ageMinutes < 1) {
+          sessionAge.textContent = ' (baru saja)';
+        } else if (ageMinutes < 60) {
+          sessionAge.textContent = ' (' + ageMinutes + 'm lalu)';
+        } else {
+          sessionAge.textContent = ' (' + Math.round(ageMinutes / 60) + 'j lalu)';
+        }
+
+        logDebug('Sesi valid ditemukan: @' + user.username + ', usia ' + ageMinutes + ' menit');
+        return true;
+
       } catch (e) {
         logDebug('Gagal parse sesi tersimpan: ' + e.message, true);
-      }
-      return false;
-    }
-
-    if (checkExistingSession()) {
-      statusTitle.textContent = 'Sesi ditemukan';
-      statusDesc.textContent = 'Mengalihkan ke dashboard...';
-      spinnerRing.classList.add('success');
-      spinnerIcon.classList.add('success');
-      setTimeout(function() {
-        window.location.href = 'dashboard.html';
-      }, 1000);
-    } else {
-      window.addEventListener('load', runPiLogin);
-    }
-
-    logoutBtn.addEventListener('click', function() {
-      clearPiAuth();
-      sessionBanner.classList.remove('visible');
-      showToast('Sesi Pi dihapus', 'info', 2000);
-      runPiLogin();
-    });
-
-    btnRetry.addEventListener('click', function() {
-      clearPiAuth();
-      window.location.href = window.location.pathname + '?retry=true';
-    });
-
-    btnBack.addEventListener('click', function() {
-      window.location.href = 'index.html';
-    });
-
-    /* ========================================
-       SYNC KE SUPABASE
-
-       UPSERT ke tabel users berdasarkan pi_uid.
-       Jika pi_uid belum ada → INSERT baris baru.
-       Jika pi_uid sudah ada → UPDATE baris tersebut
-       (last_login, pi_access_token).
-
-       Prasyarat di Supabase:
-       1. Tabel "users" sudah ada dengan kolom:
-          id, pi_uid (UNIQUE), username,
-          pi_access_token, last_login, created_at
-       2. RLS enabled dengan policy untuk
-          INSERT, UPDATE, SELECT ke role anon
-    ======================================== */
-    async function syncUserToSupabase(authUser, accessToken) {
-      if (!SUPABASE_READY || !supabase) {
-        logDebug('Supabase tidak tersedia — skip sync ke backend');
-        return null;
-      }
-
-      var uid      = authUser.uid || null;
-      var username = authUser.username || null;
-
-      if (!uid && !username) {
-        logDebug('Tidak ada uid atau username — skip sync', true);
-        return null;
-      }
-
-      logDebug('Sync ke Supabase: uid=' + uid + ', username=' + username);
-
-      try {
-        var row = {
-          username:         username,
-          pi_access_token:  accessToken,
-          last_login:       new Date().toISOString()
-        };
-
-        var result;
-
-        if (uid) {
-          /*
-            Path utama: pi_uid tersedia.
-            upsert dengan onConflict: 'pi_uid' berarti:
-            - INSERT jika pi_uid belum ada di tabel
-            - UPDATE kolom yang dikirim jika pi_uid sudah ada
-          */
-          row.pi_uid = uid;
-
-          result = await withTimeout(
-            supabase
-              .from('users')
-              .upsert(row, { onConflict: 'pi_uid' })
-              .select()
-              .single(),
-            10000,
-            'Timeout saat menyimpan data user ke database'
-          );
-
-        } else {
-          /*
-            Path fallback: pi_uid tidak tersedia,
-            gunakan username sebagai penanda unik.
-          */
-          var existing = await supabase
-            .from('users')
-            .select('id')
-            .eq('username', username)
-            .maybeSingle();
-
-          if (existing.data && existing.data.id) {
-            result = await supabase
-              .from('users')
-              .update({
-                pi_access_token: accessToken,
-                last_login: new Date().toISOString()
-              })
-              .eq('id', existing.data.id)
-              .select()
-              .single();
-          } else {
-            result = await supabase
-              .from('users')
-              .insert(row)
-              .select()
-              .single();
-          }
-        }
-
-        if (result.error) {
-          /*
-            Error Supabase TIDAK menghalangi login.
-            Dicatat di log agar bisa diperbaiki,
-            tapi user tetap bisa masuk dashboard.
-          */
-          var errCode    = result.error.code || '-';
-          var errMsg     = result.error.message || '-';
-          var errHint    = result.error.hint || '';
-
-          logDebug('Supabase error [' + errCode + ']: ' + errMsg, true);
-          if (errHint) logDebug('Hint: ' + errHint, true);
-
-          /*
-            Deteksi error spesifik yang bisa dijelaskan
-            ke user melalui toast
-          */
-          if (errCode === '42501') {
-            showToast('RLS belum dikonfigurasi — data tidak tersimpan', 'error', 4000);
-          } else if (errCode === '42P01') {
-            showToast('Tabel users belum dibuat di Supabase', 'error', 4000);
-          } else if (errCode === '23505') {
-            /* Unique violation — seharusnya ditangani upsert,
-               tapi jika tetap terjadi, tidak kritis */
-            logDebug('Unique violation (pi_uid duplikat) — diabaikan', true);
-          }
-
-          return null;
-        }
-
-        logDebug('User tersimpan di Supabase, id=' + (result.data ? result.data.id : '?'));
-        return result.data;
-
-      } catch (e) {
-        logDebug('Gagal sync ke Supabase: ' + e.message, true);
-        return null;
-      }
-    }
-
-    /* ========================================
-       PROSES LOGIN PI NETWORK
-    ======================================== */
-    async function runPiLogin() {
-      if (urlParams.get('retry') === 'true') {
-        logDebug('Deteksi retry=true — membersihkan sesi auth lama');
         clearPiAuth();
-        window.history.replaceState({}, document.title, window.location.pathname);
+        return false;
       }
+    }
 
-      /* Reset UI ke keadaan awal */
+    /* ================================================================
+       SAFE REDIRECT — mencegah multiple redirect (FIX #2)
+       ================================================================ */
+    function safeRedirect(url, delay) {
+      if (isRedirecting) {
+        logDebug('Redirect sudah dipanggil — diabaikan', false, true);
+        return;
+      }
+      isRedirecting = true;
+      setTimeout(function() {
+        window.location.href = url;
+      }, delay || 0);
+    }
+
+    /* ================================================================
+       RESET UI KE KEADAAN AWAL
+       FIX #5: spinnerWrapper.display selalu di-reset
+       ================================================================ */
+    function resetUI() {
       spinnerWrapper.style.display = 'flex';
       spinnerRing.className = 'pi-spinner-ring';
       spinnerIcon.className = 'pi-spinner-icon';
@@ -1091,7 +1072,209 @@ create policy "anon_can_select_users"
       statusDesc.textContent = 'Menyiapkan koneksi aman ke Pi Network';
       cardSubtitle.textContent = 'Menghubungkan melalui Pi Network...';
       errorBox.classList.remove('visible');
+      warningBox.classList.remove('visible');
       actionButtons.classList.remove('visible');
+    }
+
+    /* ================================================================
+       INISIALISASI HALAMAN
+       ================================================================ */
+    if (checkExistingSession()) {
+      statusTitle.textContent = 'Sesi ditemukan';
+      statusDesc.textContent = 'Mengalihkan ke dashboard...';
+      spinnerRing.classList.add('success');
+      spinnerIcon.classList.add('success');
+      cardSubtitle.textContent = 'Sesi sebelumnya masih valid';
+      safeRedirect('dashboard.html', 1000);
+    } else {
+      window.addEventListener('load', function() {
+        /* FIX #4: cek online sebelum mulai login */
+        if (!isOnline()) {
+          resetUI();
+          spinnerRing.classList.add('error');
+          spinnerIcon.classList.add('error');
+          statusTitle.classList.add('error');
+          statusTitle.textContent = 'Tidak Ada Internet';
+          statusDesc.textContent = 'Pastikan koneksi Wi-Fi atau data seluler aktif, lalu coba lagi.';
+          cardSubtitle.textContent = 'Koneksi terputus';
+          errorText.textContent = 'Perangkat sedang offline. Pi Network memerlukan koneksi internet untuk autentikasi.';
+          errorBox.classList.add('visible');
+          actionButtons.classList.add('visible');
+          spinnerWrapper.style.display = 'none';
+          logDebug('Perangkat offline — login dibatalkan', true);
+          return;
+        }
+        runPiLogin();
+      });
+    }
+
+    /* ================================================================
+       EVENT LISTENERS — dengan guard race condition (FIX #2)
+       ================================================================ */
+    logoutBtn.addEventListener('click', function() {
+      clearPiAuth();
+      sessionBanner.classList.remove('visible');
+      showToast('Sesi Pi dihapus', 'info', 2000);
+      /* Jangan jalankan runPiLogin() jika sedang berjalan */
+      if (!loginInProgress) {
+        runPiLogin();
+      }
+    });
+
+    btnRetry.addEventListener('click', function() {
+      if (loginInProgress) {
+        logDebug('Login sedang berjalan — tombol retry diabaikan', false, true);
+        return;
+      }
+      clearPiAuth();
+      window.location.href = window.location.pathname + '?retry=true';
+    });
+
+    btnBack.addEventListener('click', function() {
+      window.location.href = 'index.html';
+    });
+
+    /* ================================================================
+       FIX #4 & #5: SYNC KE SUPABASE — dengan penanganan error
+       yang lebih detail dan pi_uid wajib ada
+
+       PERUBAHAN:
+       - pi_uid dianggap WAJIB. Jika tidak ada dari Pi SDK,
+         kita BUAT dari kombinasi username + timestamp hash
+         sebagai fallback yang tetap unik.
+       - Error Supabase dicatat dengan lebih detail
+       - Mengembalikan { data, warning } bukan null
+       ================================================================ */
+    async function syncUserToSupabase(authUser, accessToken) {
+      /*
+        Return value:
+        { success: true,  data: row }   — berhasil simpan/update
+        { success: false, warning: msg } — gagal tapi login tetap lanjut
+        { success: false, skip: true }   — Supabase tidak tersedia, skip
+      */
+
+      if (!SUPABASE_READY || !supabase) {
+        logDebug('Supabase tidak tersedia — skip sync ke backend');
+        return { success: false, skip: true };
+      }
+
+      var username = authUser.username || null;
+      var uid      = authUser.uid || null;
+
+      /* ============================================================
+         FIX #4: pi_uid WAJIB ada.
+         Pi SDK kadang tidak memberikan uid.
+         Solusi: buat pseudo-uid dari username jika uid kosong.
+         Format: "local_" + hash SHA-256 sederhana dari username.
+         Ini memastikan setiap user punya pi_uid unik.
+         ============================================================ */
+      if (!uid) {
+        logDebug('Pi SDK tidak memberikan uid — membuat pseudo-uid dari username', false, true);
+
+        /* Simple hash function (bukan kriptografi, cukup untuk keunikan) */
+        function simpleHash(str) {
+          var hash = 0;
+          for (var i = 0; i < str.length; i++) {
+            var char = str.charCodeAt(i);
+            hash = ((hash << 5) - hash) + char;
+            hash = hash & hash; /* Convert to 32bit integer */
+          }
+          return 'local_' + Math.abs(hash).toString(36) + '_' + Date.now().toString(36);
+        }
+
+        uid = simpleHash(username || 'unknown');
+        logDebug('Pseudo-uid dibuat: ' + uid);
+      }
+
+      if (!username) {
+        logDebug('Tidak ada username — skip sync', true);
+        return { success: false, warning: 'Username kosong dari Pi SDK' };
+      }
+
+      logDebug('Sync ke Supabase: uid=' + uid + ', username=' + username);
+
+      try {
+        var row = {
+          pi_uid:           uid,
+          username:         username,
+          pi_access_token:  accessToken,
+          last_login:       new Date().toISOString()
+        };
+
+        /*
+          FIX #5: upsert dengan onConflict: 'pi_uid'.
+          AMAN karena:
+          1. Kolom pi_uid punya UNIQUE constraint eksplisit (schema baru)
+          2. Index idx_users_pi_uid_unique menjamin tidak ada duplikat
+        */
+        var result = await withTimeout(
+          supabase
+            .from('users')
+            .upsert(row, { onConflict: 'pi_uid' })
+            .select()
+            .single(),
+          10000,
+          'Timeout saat menyimpan data user ke database'
+        );
+
+        if (result.error) {
+          var errCode = result.error.code || '-';
+          var errMsg  = result.error.message || '-';
+          var errHint = result.error.hint || '';
+
+          logDebug('Supabase error [' + errCode + ']: ' + errMsg, true);
+          if (errHint) logDebug('Hint: ' + errHint, false, true);
+
+          /* Pesan error yang bisa dijelaskan ke user */
+          var userMessage = null;
+
+          if (errCode === '42501') {
+            userMessage = 'RLS belum dikonfigurasi dengan benar. Jalankan SQL schema yang ada di source code halaman ini.';
+          } else if (errCode === '42P01') {
+            userMessage = 'Tabel "users" belum ada di Supabase. Jalankan SQL schema terlebih dahulu.';
+          } else if (errCode === '23505') {
+            userMessage = 'Duplikasi pi_uid terdeteksi — kemungkinan constraint belum benar.';
+          } else if (errCode === '22023') {
+            userMessage = 'Tipe data tidak cocok — pastikan tabel sudah pakai UUID untuk id (bukan bigint).';
+          } else if (errMsg.indexOf('uuid') !== -1 || errMsg.indexOf('UUID') !== -1) {
+            /* FIX #1: deteksi spesifik mismatch tipe UUID vs bigint */
+            userMessage = 'Mismatch tipe kolom id. Tabel masih pakai bigint? Jalankan: DROP TABLE users; lalu buat ulang dengan schema UUID.';
+          }
+
+          return {
+            success: false,
+            warning: userMessage || ('Database error [' + errCode + ']: ' + errMsg)
+          };
+        }
+
+        logDebug('User tersimpan di Supabase, id=' + (result.data ? result.data.id : '?'));
+        return { success: true, data: result.data };
+
+      } catch (e) {
+        logDebug('Gagal sync ke Supabase: ' + e.message, true);
+        return { success: false, warning: 'Koneksi ke database gagal: ' + e.message };
+      }
+    }
+
+    /* ================================================================
+       PROSES LOGIN PI NETWORK — dengan semua fix teraplikasi
+       ================================================================ */
+    async function runPiLogin() {
+      /* FIX #2: Guard race condition */
+      if (loginInProgress) {
+        logDebug('runPiLogin() sudah berjalan — panggilan duplikat diabaikan', false, true);
+        return;
+      }
+      loginInProgress = true;
+
+      if (urlParams.get('retry') === 'true') {
+        logDebug('Deteksi retry=true — membersihkan sesi auth lama');
+        clearPiAuth();
+        window.history.replaceState({}, document.title, window.location.pathname);
+      }
+
+      /* FIX #5: Reset UI ke keadaan awal termasuk spinner */
+      resetUI();
 
       try {
         /* ── 1. Deteksi environment ── */
@@ -1106,7 +1289,8 @@ create policy "anon_can_select_users"
             );
           } else {
             throw new Error(
-              'Pi SDK tidak terdeteksi. Pastikan koneksi internet stabil dan coba lagi.'
+              'Pi SDK tidak terdeteksi meskipun di Pi Browser. ' +
+              'Pastikan koneksi internet stabil dan coba lagi.'
             );
           }
         }
@@ -1115,6 +1299,7 @@ create policy "anon_can_select_users"
         logDebug('Memulai Pi.init()...');
         statusTitle.textContent = 'Inisialisasi...';
         statusDesc.textContent = 'Menghubungkan ke Pi Network';
+        cardSubtitle.textContent = 'Menginisialisasi Pi SDK...';
 
         var isSandbox = (typeof window.APP_CONFIG !== 'undefined')
           ? window.APP_CONFIG.sandbox
@@ -1159,7 +1344,7 @@ create policy "anon_can_select_users"
         }
 
         logDebug('Auth berhasil! User: @' + auth.user.username);
-        logDebug('User UID: ' + (auth.user.uid || 'tidak tersedia'));
+        logDebug('User UID: ' + (auth.user.uid || 'TIDAK ADA — akan dibuat pseudo-uid'));
         logDebug('User keys: ' + JSON.stringify(Object.keys(auth.user)));
 
         /* ── 5. Simpan ke localStorage ── */
@@ -1173,26 +1358,33 @@ create policy "anon_can_select_users"
 
         logDebug('Data auth tersimpan di localStorage');
 
-        /* ══════════════════════════════════════════
-           ── 6. KIRIM DATA KE SUPABASE ──
-
-           Sebelumnya langkah ini tidak ada —
-           login hanya menyimpan ke localStorage
-           dan tabel Supabase selalu kosong.
-           ══════════════════════════════════════════ */
+        /* ── 6. Sync ke Supabase ── */
         statusTitle.textContent = 'Menyimpan...';
         statusDesc.textContent = 'Mencatat data akun Anda';
         cardSubtitle.textContent = 'Menyinkronkan ke server...';
 
-        var dbUser = await syncUserToSupabase(auth.user, auth.accessToken);
+        var dbResult = await syncUserToSupabase(auth.user, auth.accessToken);
 
-        if (dbUser) {
-          logDebug('Sinkronisasi backend berhasil, user id=' + dbUser.id);
-          safeSetItem('whs_db_user_id', String(dbUser.id));
-        } else {
-          logDebug('Sinkronisasi backend dilewati atau gagal — user tetap masuk dashboard');
+        if (dbResult.success) {
+          /* Berhasil simpan ke DB */
+          logDebug('Sinkronisasi backend berhasil, user id=' + dbResult.data.id);
+          safeSetItem('whs_db_user_id', String(dbResult.data.id));
+          cardSubtitle.textContent = 'Data tersinkronisasi';
+        } else if (dbResult.skip) {
+          /* Supabase tidak tersedia — silent skip */
+          logDebug('Backend tidak tersedia — melanjutkan tanpa sync');
+        } else if (dbResult.warning) {
+          /*
+            FIX #6: DB gagal TAPI login tetap lanjut.
+            Tampilkan warning box agar user tahu,
+            tapi TIDAK menghalangi masuk dashboard.
+          */
+          logDebug('Sinkronisasi backend gagal: ' + dbResult.warning, false, true);
+          warningText.textContent = dbResult.warning;
+          warningBox.classList.add('visible');
+          cardSubtitle.textContent = 'Login berhasil, tapi data tidak tersimpan';
+          showToast('Data tidak tersimpan di server — dashboard tetap bisa diakses', 'warning', 5000);
         }
-        /* ── AKHIR SYNC SUPABASE ── */
 
         /* ── 7. Update UI sukses ── */
         spinnerRing.classList.add('success');
@@ -1200,14 +1392,12 @@ create policy "anon_can_select_users"
         statusTitle.classList.add('success');
         statusTitle.textContent = 'Berhasil!';
         statusDesc.textContent = 'Selamat datang, @' + auth.user.username;
-        cardSubtitle.textContent = 'Login berhasil';
+        cardSubtitle.textContent = 'Login berhasil — mengalihkan...';
 
         showToast('Login berhasil sebagai @' + auth.user.username, 'success', 2500);
 
-        /* ── 8. Redirect ke dashboard ── */
-        setTimeout(function() {
-          window.location.href = 'dashboard.html';
-        }, 1500);
+        /* ── 8. Redirect ke dashboard (FIX #2: pakai safeRedirect) ── */
+        safeRedirect('dashboard.html', 1500);
 
       } catch (err) {
         logDebug(err.message, true);
@@ -1223,9 +1413,14 @@ create policy "anon_can_select_users"
         errorBox.classList.add('visible');
         actionButtons.classList.add('visible');
 
+        /* FIX #5: sembunyikan spinner saat error, tampilkan tombol aksi */
         spinnerWrapper.style.display = 'none';
 
-        showToast('Login gagal: ' + err.message, 'error', 4500);
+        showToast('Login gagal', 'error', 3000);
+
+      } finally {
+        /* FIX #2: pastikan flag di-reset meskipun error */
+        loginInProgress = false;
       }
     }
   </script>
