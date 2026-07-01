@@ -12,13 +12,11 @@ export default async function handler(req, res) {
   const BSC_API_KEY = process.env.BSC_API_KEY;
 
   if (!BSC_API_KEY) {
-    return res.status(500).json({ error: "API key belum diset di Vercel" });
+    return res.status(500).json({ error: 'API key belum diset' });
   }
 
   try {
-    const safeWallet = encodeURIComponent(wallet);
-
-    const url = `https://api.bscscan.com/api?module=account&action=txlist&address=${safeWallet}&startblock=0&endblock=99999999&sort=asc&apikey=${BSC_API_KEY}`;
+    const url = `https://api.bscscan.com/api?module=account&action=txlist&address=${wallet}&startblock=0&endblock=99999999&sort=asc&apikey=${BSC_API_KEY}`;
 
     const response = await fetch(url);
     const data = await response.json();
@@ -28,10 +26,7 @@ export default async function handler(req, res) {
     }
 
     if (!data || data.status !== '1') {
-      return res.status(500).json({
-        error: "BscScan error",
-        detail: data
-      });
+      return res.status(500).json({ error: 'BscScan error', detail: data });
     }
 
     return res.status(200).json({ txs: data.result });
