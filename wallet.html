@@ -12,262 +12,213 @@
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
 
   <style>
-    :root {
-      --bg-primary: #050911;
-      --bg-secondary: #0a1120;
-      --bg-card: rgba(12, 20, 38, 0.7);
-      --border-color: rgba(45, 212, 191, 0.1);
-      --border-color-hover: rgba(45, 212, 191, 0.28);
-      --border-subtle: rgba(255, 255, 255, 0.05);
-      --accent: #2dd4bf;
-      --accent-dim: rgba(45, 212, 191, 0.1);
-      --accent-glow: rgba(45, 212, 191, 0.18);
-      --accent-secondary: #f59e0b;
-      --accent-secondary-dim: rgba(245, 158, 11, 0.1);
-      --text-primary: #f1f5f9;
-      --text-secondary: #94a3b8;
-      --text-muted: #475569;
-      --success: #22c55e;
-      --success-dim: rgba(34, 197, 94, 0.1);
-      --warning: #f59e0b;
-      --warning-dim: rgba(245, 158, 11, 0.1);
-      --danger: #ef4444;
-      --danger-dim: rgba(239, 68, 68, 0.1);
-      --info: #3b82f6;
-      --info-dim: rgba(59, 130, 246, 0.1);
-      --radius-sm: 8px;
-      --radius-md: 12px;
-      --radius-lg: 16px;
-      --radius-xl: 24px;
-      --radius-full: 9999px;
-      --font-display: 'Space Grotesk', sans-serif;
-      --font-body: 'DM Sans', sans-serif;
-      --topbar-h: 56px;
-      --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
-    }
-    *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
-    html { scroll-behavior: smooth; -webkit-font-smoothing: antialiased; }
-    body { font-family: var(--font-body); background: var(--bg-primary); color: var(--text-primary); line-height: 1.6; overflow-x: hidden; min-height: 100vh; }
-    a { color: inherit; text-decoration: none; }
-    button { font-family: var(--font-body); cursor: pointer; border: none; outline: none; background: none; }
+    :root{--bg-primary:#050911;--bg-secondary:#0a1120;--bg-card:rgba(12,20,38,0.7);--border-color:rgba(45,212,191,0.1);--border-color-hover:rgba(45,212,191,0.28);--border-subtle:rgba(255,255,255,0.05);--accent:#2dd4bf;--accent-dim:rgba(45,212,191,0.1);--accent-glow:rgba(45,212,191,0.18);--accent-secondary:#f59e0b;--accent-secondary-dim:rgba(245,158,11,0.1);--text-primary:#f1f5f9;--text-secondary:#94a3b8;--text-muted:#475569;--success:#22c55e;--success-dim:rgba(34,197,94,0.1);--warning:#f59e0b;--warning-dim:rgba(245,158,11,0.1);--danger:#ef4444;--danger-dim:rgba(239,68,68,0.1);--info:#3b82f6;--info-dim:rgba(59,130,246,0.1);--radius-sm:8px;--radius-md:12px;--radius-lg:16px;--radius-xl:24px;--radius-full:9999px;--font-display:'Space Grotesk',sans-serif;--font-body:'DM Sans',sans-serif;--topbar-h:56px;--ease-out-expo:cubic-bezier(0.16,1,0.3,1)}
+    *,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+    html{scroll-behavior:smooth;-webkit-font-smoothing:antialiased}
+    body{font-family:var(--font-body);background:var(--bg-primary);color:var(--text-primary);line-height:1.6;overflow-x:hidden;min-height:100vh}
+    a{color:inherit;text-decoration:none}
+    button{font-family:var(--font-body);cursor:pointer;border:none;outline:none;background:none}
 
-    .bg-atmosphere { position: fixed; inset: 0; pointer-events: none; z-index: 0; overflow: hidden; }
-    .bg-atmosphere canvas { width: 100%; height: 100%; }
-    .orb { position: absolute; border-radius: 50%; filter: blur(120px); opacity: 0.14; animation: orbDrift 30s ease-in-out infinite; }
-    .orb-a { width: 380px; height: 380px; background: radial-gradient(circle, rgba(45,212,191,0.14), transparent 70%); top: -10%; left: -8%; }
-    .orb-b { width: 280px; height: 280px; background: radial-gradient(circle, rgba(245,158,11,0.07), transparent 70%); bottom: -6%; right: -6%; animation-delay: -12s; animation-duration: 35s; }
-    @keyframes orbDrift { 0%,100%{transform:translate(0,0) scale(1)} 33%{transform:translate(18px,-25px) scale(1.04)} 66%{transform:translate(-12px,18px) scale(0.96)} }
+    .bg-atmosphere{position:fixed;inset:0;pointer-events:none;z-index:0;overflow:hidden}
+    .bg-atmosphere canvas{width:100%;height:100%}
+    .orb{position:absolute;border-radius:50%;filter:blur(120px);opacity:0.14;animation:orbDrift 30s ease-in-out infinite}
+    .orb-a{width:380px;height:380px;background:radial-gradient(circle,rgba(45,212,191,0.14),transparent 70%);top:-10%;left:-8%}
+    .orb-b{width:280px;height:280px;background:radial-gradient(circle,rgba(245,158,11,0.07),transparent 70%);bottom:-6%;right:-6%;animation-delay:-12s;animation-duration:35s}
+    @keyframes orbDrift{0%,100%{transform:translate(0,0) scale(1)}33%{transform:translate(18px,-25px) scale(1.04)}66%{transform:translate(-12px,18px) scale(0.96)}}
 
-    .topbar { height: var(--topbar-h); padding: 0 16px; display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid var(--border-subtle); background: rgba(5,9,17,0.88); backdrop-filter: blur(20px) saturate(1.4); position: sticky; top: 0; z-index: 50; }
-    .topbar-left { display: flex; align-items: center; gap: 12px; min-width: 0; flex: 1; }
-    .back-btn { display: inline-flex; align-items: center; gap: 6px; padding: 7px 14px; font-size: 0.8rem; font-weight: 600; color: var(--accent); border: 1px solid var(--border-color); border-radius: var(--radius-full); transition: all 200ms ease; white-space: nowrap; flex-shrink: 0; background: var(--accent-dim); }
-    .back-btn:hover { background: rgba(45,212,191,0.16); border-color: var(--border-color-hover); box-shadow: 0 0 18px var(--accent-glow); }
-    .topbar-title { font-family: var(--font-display); font-size: 0.95rem; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-    .topbar-right { display: flex; align-items: center; gap: 6px; flex-shrink: 0; }
-    .icon-btn { width: 36px; height: 36px; border-radius: var(--radius-sm); display: flex; align-items: center; justify-content: center; color: var(--text-muted); font-size: 0.88rem; transition: all 200ms ease; }
-    .icon-btn:hover { color: var(--text-primary); background: rgba(255,255,255,0.05); }
-    .icon-btn.spinning i { animation: spin 0.8s linear infinite; }
-    @keyframes spin { to { transform: rotate(360deg); } }
+    .topbar{height:var(--topbar-h);padding:0 16px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--border-subtle);background:rgba(5,9,17,0.88);backdrop-filter:blur(20px) saturate(1.4);position:sticky;top:0;z-index:50}
+    .topbar-left{display:flex;align-items:center;gap:12px;min-width:0;flex:1}
+    .back-btn{display:inline-flex;align-items:center;gap:6px;padding:7px 14px;font-size:0.8rem;font-weight:600;color:var(--accent);border:1px solid var(--border-color);border-radius:var(--radius-full);transition:all 200ms ease;white-space:nowrap;flex-shrink:0;background:var(--accent-dim)}
+    .back-btn:hover{background:rgba(45,212,191,0.16);border-color:var(--border-color-hover);box-shadow:0 0 18px var(--accent-glow)}
+    .topbar-title{font-family:var(--font-display);font-size:0.95rem;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+    .topbar-right{display:flex;align-items:center;gap:6px;flex-shrink:0}
+    .icon-btn{width:36px;height:36px;border-radius:var(--radius-sm);display:flex;align-items:center;justify-content:center;color:var(--text-muted);font-size:0.88rem;transition:all 200ms ease}
+    .icon-btn:hover{color:var(--text-primary);background:rgba(255,255,255,0.05)}
+    .icon-btn.spinning i{animation:spin 0.8s linear infinite}
+    @keyframes spin{to{transform:rotate(360deg)}}
 
-    #mainWrapper { display: flex; flex-direction: column; min-height: 100vh; position: relative; z-index: 1; }
-    .page-content { flex: 1; padding: 20px 16px 48px; max-width: 880px; margin: 0 auto; width: 100%; }
+    #mainWrapper{display:flex;flex-direction:column;min-height:100vh;position:relative;z-index:1}
+    .page-content{flex:1;padding:20px 16px 48px;max-width:880px;margin:0 auto;width:100%}
 
-    .loading-screen { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 16px; min-height: 55vh; text-align: center; }
-    .loader-ring { width: 48px; height: 48px; border-radius: 50%; border: 3px solid rgba(45,212,191,0.12); border-top-color: var(--accent); animation: spin 0.75s linear infinite; }
-    .loading-screen p { font-size: 0.88rem; color: var(--text-muted); }
-    .loading-sub { font-size: 0.75rem; color: var(--accent); opacity: 0.6; margin-top: -10px; }
+    .loading-screen{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;min-height:55vh;text-align:center}
+    .loader-ring{width:48px;height:48px;border-radius:50%;border:3px solid rgba(45,212,191,0.12);border-top-color:var(--accent);animation:spin 0.75s linear infinite}
+    .loading-screen p{font-size:0.88rem;color:var(--text-muted)}
+    .loading-sub{font-size:0.75rem;color:var(--accent);opacity:0.6;margin-top:-10px}
 
-    .guard-screen { display: none; position: fixed; inset: 0; z-index: 500; background: var(--bg-primary); flex-direction: column; align-items: center; justify-content: center; gap: 20px; text-align: center; padding: 24px; }
-    .guard-screen.active { display: flex; }
-    .guard-screen i { font-size: 2.2rem; color: var(--text-muted); opacity: 0.35; }
-    .guard-screen h2 { font-family: var(--font-display); font-size: 1.25rem; font-weight: 600; }
-    .guard-screen p { font-size: 0.88rem; color: var(--text-muted); max-width: 380px; line-height: 1.55; }
-    .guard-screen .guard-detail { font-size: 0.72rem; color: var(--danger); margin-top: -8px; opacity: 0.7; font-family: 'Space Grotesk', monospace; word-break: break-all; max-width: 420px; }
-    .guard-screen .guard-hint { font-size: 0.72rem; color: var(--text-muted); margin-top: -4px; max-width: 400px; line-height: 1.6; opacity: 0.6; }
-    .guard-screen .guard-debug { font-size: 0.62rem; color: var(--text-muted); opacity: 0.5; margin-top: 12px; font-family: 'Space Grotesk', monospace; background: rgba(255,255,255,0.03); padding: 12px 14px; border-radius: 8px; max-width: 440px; text-align: left; word-break: break-all; line-height: 1.9; white-space: pre-wrap; border: 1px solid rgba(255,255,255,0.05); }
-    .btn-primary { display: inline-flex; align-items: center; justify-content: center; gap: 8px; font-weight: 600; font-size: 0.85rem; padding: 11px 26px; border-radius: var(--radius-full); transition: all 250ms ease; color: var(--bg-primary); background: linear-gradient(135deg, var(--accent), #0d9488); box-shadow: 0 0 20px var(--accent-glow); }
-    .btn-primary:hover { transform: translateY(-1px); box-shadow: 0 0 30px var(--accent-glow), 0 6px 20px rgba(45,212,191,0.15); }
+    .guard-screen{display:none;position:fixed;inset:0;z-index:500;background:var(--bg-primary);flex-direction:column;align-items:center;justify-content:center;gap:20px;text-align:center;padding:24px}
+    .guard-screen.active{display:flex}
+    .guard-screen i{font-size:2.2rem;color:var(--text-muted);opacity:0.35}
+    .guard-screen h2{font-family:var(--font-display);font-size:1.25rem;font-weight:600}
+    .guard-screen p{font-size:0.88rem;color:var(--text-muted);max-width:380px;line-height:1.55}
+    .guard-screen .guard-detail{font-size:0.72rem;color:var(--danger);margin-top:-8px;opacity:0.7;font-family:'Space Grotesk',monospace;word-break:break-all;max-width:420px}
+    .guard-screen .guard-hint{font-size:0.72rem;color:var(--text-muted);margin-top:-4px;max-width:400px;line-height:1.6;opacity:0.6}
+    .guard-screen .guard-debug{font-size:0.62rem;color:var(--text-muted);opacity:0.5;margin-top:12px;font-family:'Space Grotesk',monospace;background:rgba(255,255,255,0.03);padding:12px 14px;border-radius:8px;max-width:440px;text-align:left;word-break:break-all;line-height:1.9;white-space:pre-wrap;border:1px solid rgba(255,255,255,0.05)}
+    .btn-primary{display:inline-flex;align-items:center;justify-content:center;gap:8px;font-weight:600;font-size:0.85rem;padding:11px 26px;border-radius:var(--radius-full);transition:all 250ms ease;color:var(--bg-primary);background:linear-gradient(135deg,var(--accent),#0d9488);box-shadow:0 0 20px var(--accent-glow)}
+    .btn-primary:hover{transform:translateY(-1px);box-shadow:0 0 30px var(--accent-glow),0 6px 20px rgba(45,212,191,0.15)}
 
-    .identity-card { background: var(--bg-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-xl); padding: 24px; position: relative; overflow: hidden; margin-bottom: 24px; backdrop-filter: blur(12px); }
-    .identity-card::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 1px; background: linear-gradient(90deg, transparent 5%, var(--accent) 50%, transparent 95%); opacity: 0.4; }
-    .identity-card::after { content: ''; position: absolute; top: -60%; right: -20%; width: 250px; height: 250px; background: radial-gradient(circle, rgba(45,212,191,0.04), transparent 65%); pointer-events: none; }
-    .identity-top { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; flex-wrap: wrap; position: relative; z-index: 1; }
-    .identity-left { display: flex; align-items: center; gap: 14px; flex: 1; min-width: 0; }
-    .identity-avatar { width: 52px; height: 52px; border-radius: 50%; background: linear-gradient(135deg, var(--accent), #0d9488); display: flex; align-items: center; justify-content: center; font-size: 1.5rem; color: var(--bg-primary); font-family: var(--font-display); font-weight: 700; box-shadow: 0 0 24px var(--accent-glow); flex-shrink: 0; position: relative; }
-    .identity-avatar::after { content: ''; position: absolute; inset: -3px; border-radius: 50%; border: 1.5px solid rgba(45,212,191,0.25); animation: avatarPulse 3s ease-in-out infinite; }
-    @keyframes avatarPulse { 0%,100%{opacity:0.3;transform:scale(1)} 50%{opacity:0.7;transform:scale(1.06)} }
-    .identity-info { flex: 1; min-width: 0; }
-    .identity-name { font-family: var(--font-display); font-size: 1.15rem; font-weight: 700; line-height: 1.3; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
-    .src-badge { display: inline-flex; align-items: center; gap: 4px; padding: 2px 8px; border-radius: var(--radius-full); font-size: 0.56rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; }
-    .src-badge.onchain { background: var(--info-dim); border: 1px solid rgba(59,130,246,0.2); color: var(--info); }
-    .src-badge.fallback { background: var(--warning-dim); border: 1px solid rgba(245,158,11,0.2); color: var(--warning); }
-    .identity-wallet-row { display: flex; align-items: center; gap: 6px; margin-top: 6px; }
-    .wallet-badge { display: inline-flex; align-items: center; gap: 4px; padding: 2px 8px; background: var(--accent-dim); border: 1px solid var(--border-color); border-radius: var(--radius-full); font-family: 'Space Grotesk', monospace; font-size: 0.6rem; font-weight: 600; color: var(--accent); }
-    .wallet-addr { font-family: 'Space Grotesk', monospace; font-size: 0.66rem; color: var(--text-muted); word-break: break-all; }
-    .identity-meta { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 10px; font-size: 0.72rem; color: var(--text-muted); }
-    .identity-meta span { display: flex; align-items: center; gap: 5px; }
-    .identity-actions { display: flex; gap: 8px; flex-shrink: 0; align-self: flex-start; }
-    .btn-ghost { display: inline-flex; align-items: center; gap: 5px; padding: 7px 14px; font-size: 0.75rem; font-weight: 500; border-radius: var(--radius-full); transition: all 200ms ease; border: 1px solid var(--border-subtle); color: var(--text-secondary); }
-    .btn-ghost:hover { border-color: var(--border-color); color: var(--accent); background: var(--accent-dim); }
-    .btn-ghost.copied { border-color: var(--success); color: var(--success); background: var(--success-dim); }
+    .identity-card{background:var(--bg-card);border:1px solid var(--border-subtle);border-radius:var(--radius-xl);padding:24px;position:relative;overflow:hidden;margin-bottom:24px;backdrop-filter:blur(12px)}
+    .identity-card::before{content:'';position:absolute;top:0;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent 5%,var(--accent) 50%,transparent 95%);opacity:0.4}
+    .identity-card::after{content:'';position:absolute;top:-60%;right:-20%;width:250px;height:250px;background:radial-gradient(circle,rgba(45,212,191,0.04),transparent 65%);pointer-events:none}
+    .identity-top{display:flex;align-items:flex-start;justify-content:space-between;gap:16px;flex-wrap:wrap;position:relative;z-index:1}
+    .identity-left{display:flex;align-items:center;gap:14px;flex:1;min-width:0}
+    .identity-avatar{width:52px;height:52px;border-radius:50%;background:linear-gradient(135deg,var(--accent),#0d9488);display:flex;align-items:center;justify-content:center;font-size:1.5rem;color:var(--bg-primary);font-family:var(--font-display);font-weight:700;box-shadow:0 0 24px var(--accent-glow);flex-shrink:0;position:relative}
+    .identity-avatar::after{content:'';position:absolute;inset:-3px;border-radius:50%;border:1.5px solid rgba(45,212,191,0.25);animation:avatarPulse 3s ease-in-out infinite}
+    @keyframes avatarPulse{0%,100%{opacity:0.3;transform:scale(1)}50%{opacity:0.7;transform:scale(1.06)}}
+    .identity-info{flex:1;min-width:0}
+    .identity-name{font-family:var(--font-display);font-size:1.15rem;font-weight:700;line-height:1.3;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+    .src-badge{display:inline-flex;align-items:center;gap:4px;padding:2px 8px;border-radius:var(--radius-full);font-size:0.56rem;font-weight:700;text-transform:uppercase;letter-spacing:0.05em}
+    .src-badge.onchain{background:var(--info-dim);border:1px solid rgba(59,130,246,0.2);color:var(--info)}
+    .src-badge.fallback{background:var(--warning-dim);border:1px solid rgba(245,158,11,0.2);color:var(--warning)}
+    .identity-wallet-row{display:flex;align-items:center;gap:6px;margin-top:6px}
+    .wallet-badge{display:inline-flex;align-items:center;gap:4px;padding:2px 8px;background:var(--accent-dim);border:1px solid var(--border-color);border-radius:var(--radius-full);font-family:'Space Grotesk',monospace;font-size:0.6rem;font-weight:600;color:var(--accent)}
+    .wallet-addr{font-family:'Space Grotesk',monospace;font-size:0.66rem;color:var(--text-muted);word-break:break-all}
+    .identity-meta{display:flex;flex-wrap:wrap;gap:12px;margin-top:10px;font-size:0.72rem;color:var(--text-muted)}
+    .identity-meta span{display:flex;align-items:center;gap:5px}
+    .identity-actions{display:flex;gap:8px;flex-shrink:0;align-self:flex-start}
+    .btn-ghost{display:inline-flex;align-items:center;gap:5px;padding:7px 14px;font-size:0.75rem;font-weight:500;border-radius:var(--radius-full);transition:all 200ms ease;border:1px solid var(--border-subtle);color:var(--text-secondary)}
+    .btn-ghost:hover{border-color:var(--border-color);color:var(--accent);background:var(--accent-dim)}
+    .btn-ghost.copied{border-color:var(--success);color:var(--success);background:var(--success-dim)}
 
-    .score-hero { display: grid; grid-template-columns: 1fr; gap: 20px; margin-bottom: 24px; }
-    .gauge-card { background: var(--bg-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-xl); padding: 32px 20px; display: flex; flex-direction: column; align-items: center; position: relative; overflow: hidden; backdrop-filter: blur(12px); }
-    .gauge-card::before { content: ''; position: absolute; bottom: -40%; left: 50%; transform: translateX(-50%); width: 300px; height: 300px; background: radial-gradient(circle, var(--accent-glow), transparent 65%); opacity: 0.35; pointer-events: none; }
-    #scoreGauge { position: relative; z-index: 1; }
-    .gauge-label { font-family: var(--font-display); font-size: 0.82rem; font-weight: 600; color: var(--text-secondary); margin-top: 12px; position: relative; z-index: 1; text-align: center; }
-    .gauge-status { display: inline-flex; align-items: center; gap: 5px; padding: 4px 14px; border-radius: var(--radius-full); font-family: var(--font-display); font-size: 0.78rem; font-weight: 700; margin-top: 8px; position: relative; z-index: 1; }
-    .total-bar-wrap { width: 100%; margin-top: 16px; position: relative; z-index: 1; padding: 0 8px; }
-    .total-bar-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; }
-    .total-bar-label { font-size: 0.68rem; color: var(--text-muted); }
-    .total-bar-vals { font-family: var(--font-display); font-size: 0.72rem; font-weight: 600; }
-    .total-bar-track { height: 6px; background: rgba(255,255,255,0.04); border-radius: var(--radius-full); overflow: visible; position: relative; }
-    .total-bar-fill { height: 100%; border-radius: var(--radius-full); transition: width 1.8s var(--ease-out-expo); width: 0; }
-    .avg-marker { position: absolute; top: -4px; bottom: -4px; width: 2px; background: rgba(255,255,255,0.45); border-radius: 1px; z-index: 2; transition: left 1.8s var(--ease-out-expo); left: 0; }
-    .avg-marker::after { content: 'NET AVG'; position: absolute; bottom: 100%; left: 50%; transform: translateX(-50%); font-size: 0.46rem; font-weight: 700; color: var(--text-muted); letter-spacing: 0.04em; white-space: nowrap; margin-bottom: 3px; }
-    .avg-marker.hidden { display: none; }
+    .score-hero{display:grid;grid-template-columns:1fr;gap:20px;margin-bottom:24px}
+    .gauge-card{background:var(--bg-card);border:1px solid var(--border-subtle);border-radius:var(--radius-xl);padding:32px 20px;display:flex;flex-direction:column;align-items:center;position:relative;overflow:hidden;backdrop-filter:blur(12px)}
+    .gauge-card::before{content:'';position:absolute;bottom:-40%;left:50%;transform:translateX(-50%);width:300px;height:300px;background:radial-gradient(circle,var(--accent-glow),transparent 65%);opacity:0.35;pointer-events:none}
+    #scoreGauge{position:relative;z-index:1}
+    .gauge-label{font-family:var(--font-display);font-size:0.82rem;font-weight:600;color:var(--text-secondary);margin-top:12px;position:relative;z-index:1;text-align:center}
+    .gauge-status{display:inline-flex;align-items:center;gap:5px;padding:4px 14px;border-radius:var(--radius-full);font-family:var(--font-display);font-size:0.78rem;font-weight:700;margin-top:8px;position:relative;z-index:1}
+    .total-bar-wrap{width:100%;margin-top:16px;position:relative;z-index:1;padding:0 8px}
+    .total-bar-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px}
+    .total-bar-label{font-size:0.68rem;color:var(--text-muted)}
+    .total-bar-vals{font-family:var(--font-display);font-size:0.72rem;font-weight:600}
+    .total-bar-track{height:6px;background:rgba(255,255,255,0.04);border-radius:var(--radius-full);overflow:visible;position:relative}
+    .total-bar-fill{height:100%;border-radius:var(--radius-full);transition:width 1.8s var(--ease-out-expo);width:0}
+    .avg-marker{position:absolute;top:-4px;bottom:-4px;width:2px;background:rgba(255,255,255,0.45);border-radius:1px;z-index:2;transition:left 1.8s var(--ease-out-expo);left:0}
+    .avg-marker::after{content:'NET AVG';position:absolute;bottom:100%;left:50%;transform:translateX(-50%);font-size:0.46rem;font-weight:700;color:var(--text-muted);letter-spacing:0.04em;white-space:nowrap;margin-bottom:3px}
+    .avg-marker.hidden{display:none}
 
-    .stats-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; align-content: start; }
-    .stat-card { background: rgba(255,255,255,0.02); border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: 14px 12px; transition: all 250ms var(--ease-out-expo); }
-    .stat-card:hover { border-color: var(--border-color); background: rgba(255,255,255,0.035); transform: translateY(-2px); }
-    .stat-value { font-family: var(--font-display); font-size: 1.3rem; font-weight: 700; line-height: 1.2; }
-    .stat-label { font-size: 0.66rem; color: var(--text-muted); margin-top: 2px; }
+    .stats-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;align-content:start}
+    .stat-card{background:rgba(255,255,255,0.02);border:1px solid var(--border-subtle);border-radius:var(--radius-md);padding:14px 12px;transition:all 250ms var(--ease-out-expo)}
+    .stat-card:hover{border-color:var(--border-color);background:rgba(255,255,255,0.035);transform:translateY(-2px)}
+    .stat-value{font-family:var(--font-display);font-size:1.3rem;font-weight:700;line-height:1.2}
+    .stat-label{font-size:0.66rem;color:var(--text-muted);margin-top:2px}
 
-    .section { margin-bottom: 28px; opacity: 0; transform: translateY(20px); transition: all 600ms var(--ease-out-expo); }
-    .section.visible { opacity: 1; transform: translateY(0); }
-    .section-head { display: flex; align-items: center; gap: 10px; margin-bottom: 14px; }
-    .section-icon { width: 34px; height: 34px; border-radius: var(--radius-sm); display: flex; align-items: center; justify-content: center; font-size: 0.82rem; flex-shrink: 0; }
-    .section-icon.teal { background: var(--accent-dim); color: var(--accent); }
-    .section-icon.amber { background: var(--warning-dim); color: var(--warning); }
-    .section-icon.red { background: var(--danger-dim); color: var(--danger); }
-    .section-icon.green { background: var(--success-dim); color: var(--success); }
-    .section-icon.blue { background: var(--info-dim); color: var(--info); }
-    .section-title { font-family: var(--font-display); font-size: 0.95rem; font-weight: 600; }
-    .section-sub { font-size: 0.7rem; color: var(--text-muted); margin-left: auto; white-space: nowrap; }
-    .card { background: var(--bg-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); overflow: hidden; backdrop-filter: blur(8px); }
-    .card-body { padding: 20px; }
+    .section{margin-bottom:28px;opacity:0;transform:translateY(20px);transition:all 600ms var(--ease-out-expo)}
+    .section.visible{opacity:1;transform:translateY(0)}
+    .section-head{display:flex;align-items:center;gap:10px;margin-bottom:14px}
+    .section-icon{width:34px;height:34px;border-radius:var(--radius-sm);display:flex;align-items:center;justify-content:center;font-size:0.82rem;flex-shrink:0}
+    .section-icon.teal{background:var(--accent-dim);color:var(--accent)}
+    .section-icon.amber{background:var(--warning-dim);color:var(--warning)}
+    .section-icon.red{background:var(--danger-dim);color:var(--danger)}
+    .section-icon.green{background:var(--success-dim);color:var(--success)}
+    .section-icon.blue{background:var(--info-dim);color:var(--info)}
+    .section-title{font-family:var(--font-display);font-size:0.95rem;font-weight:600}
+    .section-sub{font-size:0.7rem;color:var(--text-muted);margin-left:auto;white-space:nowrap}
+    .card{background:var(--bg-card);border:1px solid var(--border-subtle);border-radius:var(--radius-lg);overflow:hidden;backdrop-filter:blur(8px)}
+    .card-body{padding:20px}
 
-    .breakdown-grid { display: grid; grid-template-columns: 1fr; gap: 22px; }
-    .bd-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; gap: 8px; }
-    .bd-label { font-size: 0.82rem; font-weight: 500; color: var(--text-secondary); display: flex; align-items: center; gap: 7px; white-space: nowrap; }
-    .bd-label i { font-size: 0.7rem; width: 16px; text-align: center; }
-    .bd-vals { font-family: var(--font-display); font-size: 0.82rem; font-weight: 600; white-space: nowrap; display: flex; align-items: baseline; gap: 3px; }
-    .bd-vals .sc { color: var(--text-primary); }
-    .bd-vals .mx { color: var(--text-muted); font-weight: 400; font-size: 0.75rem; }
-    .bd-vals .dt { color: var(--text-muted); font-weight: 400; font-size: 0.68rem; margin-left: 6px; }
-    .bd-bar { height: 8px; background: rgba(255,255,255,0.035); border-radius: var(--radius-full); overflow: visible; position: relative; }
-    .bd-fill { height: 100%; border-radius: var(--radius-full); transition: width 1.6s var(--ease-out-expo); width: 0; }
-    .bd-fill.c-teal { background: linear-gradient(90deg, #0d9488, var(--accent), #5eead4); }
-    .bd-fill.c-green { background: linear-gradient(90deg, #16a34a, #4ade80); }
-    .bd-fill.c-amber { background: linear-gradient(90deg, #d97706, #fbbf24); }
-    .bd-fill.c-mix-g { background: linear-gradient(90deg, #16a34a, #4ade80); }
-    .bd-fill.c-mix-a { background: linear-gradient(90deg, #d97706, #fbbf24); }
-    .bd-fill.c-mix-r { background: linear-gradient(90deg, #dc2626, #f87171); }
-    .bd-marker { position: absolute; top: -3px; bottom: -3px; width: 2px; background: rgba(255,255,255,0.45); border-radius: 1px; z-index: 2; transition: left 1.6s var(--ease-out-expo); left: 0; display: none; }
-    .bd-marker.has-avg { display: block; }
-    .bd-marker::after { content: 'AVG'; position: absolute; bottom: 100%; left: 50%; transform: translateX(-50%); font-size: 0.46rem; font-weight: 700; color: var(--text-muted); letter-spacing: 0.04em; white-space: nowrap; margin-bottom: 3px; }
-    .bd-explain { font-size: 0.72rem; color: var(--text-muted); margin-top: 6px; line-height: 1.55; }
-    .bd-no-avg { font-size: 0.6rem; color: var(--text-muted); opacity: 0.5; font-style: italic; margin-top: 3px; }
+    .breakdown-grid{display:grid;grid-template-columns:1fr;gap:22px}
+    .bd-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;gap:8px}
+    .bd-label{font-size:0.82rem;font-weight:500;color:var(--text-secondary);display:flex;align-items:center;gap:7px;white-space:nowrap}
+    .bd-label i{font-size:0.7rem;width:16px;text-align:center}
+    .bd-vals{font-family:var(--font-display);font-size:0.82rem;font-weight:600;white-space:nowrap;display:flex;align-items:baseline;gap:3px}
+    .bd-vals .sc{color:var(--text-primary)}
+    .bd-vals .mx{color:var(--text-muted);font-weight:400;font-size:0.75rem}
+    .bd-vals .dt{color:var(--text-muted);font-weight:400;font-size:0.68rem;margin-left:6px}
+    .bd-bar{height:8px;background:rgba(255,255,255,0.035);border-radius:var(--radius-full);overflow:visible;position:relative}
+    .bd-fill{height:100%;border-radius:var(--radius-full);transition:width 1.6s var(--ease-out-expo);width:0}
+    .bd-fill.c-teal{background:linear-gradient(90deg,#0d9488,var(--accent),#5eead4)}
+    .bd-fill.c-green{background:linear-gradient(90deg,#16a34a,#4ade80)}
+    .bd-fill.c-amber{background:linear-gradient(90deg,#d97706,#fbbf24)}
+    .bd-fill.c-mix-g{background:linear-gradient(90deg,#16a34a,#4ade80)}
+    .bd-fill.c-mix-a{background:linear-gradient(90deg,#d97706,#fbbf24)}
+    .bd-fill.c-mix-r{background:linear-gradient(90deg,#dc2626,#f87171)}
+    .bd-marker{position:absolute;top:-3px;bottom:-3px;width:2px;background:rgba(255,255,255,0.45);border-radius:1px;z-index:2;transition:left 1.6s var(--ease-out-expo);left:0;display:none}
+    .bd-marker.has-avg{display:block}
+    .bd-marker::after{content:'AVG';position:absolute;bottom:100%;left:50%;transform:translateX(-50%);font-size:0.46rem;font-weight:700;color:var(--text-muted);letter-spacing:0.04em;white-space:nowrap;margin-bottom:3px}
+    .bd-explain{font-size:0.72rem;color:var(--text-muted);margin-top:6px;line-height:1.55}
+    .bd-no-avg{font-size:0.6rem;color:var(--text-muted);opacity:0.5;font-style:italic;margin-top:3px}
 
-    .why-grid { display: grid; grid-template-columns: 1fr; gap: 10px; }
-    .why-card { padding: 16px; border-radius: var(--radius-md); border: 1px solid var(--border-subtle); background: rgba(255,255,255,0.015); transition: all 250ms ease; }
-    .why-card:hover { border-color: rgba(255,255,255,0.1); background: rgba(255,255,255,0.025); }
-    .why-top { display: flex; align-items: flex-start; gap: 12px; }
-    .why-icon { width: 36px; height: 36px; border-radius: var(--radius-sm); display: flex; align-items: center; justify-content: center; font-size: 0.85rem; flex-shrink: 0; }
-    .why-icon.pos { background: var(--success-dim); color: var(--success); }
-    .why-icon.neg { background: var(--danger-dim); color: var(--danger); }
-    .why-icon.neu { background: var(--info-dim); color: var(--info); }
-    .why-body { flex: 1; min-width: 0; }
-    .why-title { font-family: var(--font-display); font-size: 0.85rem; font-weight: 600; margin-bottom: 3px; }
-    .why-text { font-size: 0.78rem; color: var(--text-secondary); line-height: 1.55; }
-    .why-impact { display: inline-flex; align-items: center; gap: 4px; font-size: 0.68rem; font-weight: 600; margin-top: 8px; padding: 2px 9px; border-radius: var(--radius-full); }
-    .why-impact.pos { color: var(--success); background: var(--success-dim); }
-    .why-impact.neg { color: var(--danger); background: var(--danger-dim); }
-    .why-impact.neu { color: var(--info); background: var(--info-dim); }
+    .why-grid{display:grid;grid-template-columns:1fr;gap:10px}
+    .why-card{padding:16px;border-radius:var(--radius-md);border:1px solid var(--border-subtle);background:rgba(255,255,255,0.015);transition:all 250ms ease}
+    .why-card:hover{border-color:rgba(255,255,255,0.1);background:rgba(255,255,255,0.025)}
+    .why-top{display:flex;align-items:flex-start;gap:12px}
+    .why-icon{width:36px;height:36px;border-radius:var(--radius-sm);display:flex;align-items:center;justify-content:center;font-size:0.85rem;flex-shrink:0}
+    .why-icon.pos{background:var(--success-dim);color:var(--success)}
+    .why-icon.neg{background:var(--danger-dim);color:var(--danger)}
+    .why-icon.neu{background:var(--info-dim);color:var(--info)}
+    .why-body{flex:1;min-width:0}
+    .why-title{font-family:var(--font-display);font-size:0.85rem;font-weight:600;margin-bottom:3px}
+    .why-text{font-size:0.78rem;color:var(--text-secondary);line-height:1.55}
+    .why-impact{display:inline-flex;align-items:center;gap:4px;font-size:0.68rem;font-weight:600;margin-top:8px;padding:2px 9px;border-radius:var(--radius-full)}
+    .why-impact.pos{color:var(--success);background:var(--success-dim)}
+    .why-impact.neg{color:var(--danger);background:var(--danger-dim)}
+    .why-impact.neu{color:var(--info);background:var(--info-dim)}
 
-    .risk-metrics { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 16px; }
-    .risk-m { padding: 14px 8px; background: rgba(255,255,255,0.015); border: 1px solid var(--border-subtle); border-radius: var(--radius-md); text-align: center; transition: all 250ms ease; }
-    .risk-m:hover { border-color: rgba(255,255,255,0.08); }
-    .risk-m-val { font-family: var(--font-display); font-size: 1.4rem; font-weight: 700; }
-    .risk-m-lbl { font-size: 0.66rem; color: var(--text-muted); margin-top: 2px; }
-    .risk-list { display: flex; flex-direction: column; gap: 10px; }
-    .risk-flag { display: flex; gap: 12px; padding: 14px; border-radius: var(--radius-md); cursor: pointer; transition: all 250ms ease; }
-    .risk-flag:hover { filter: brightness(1.1); }
-    .risk-flag.sev-critical { background: rgba(239,68,68,0.04); border: 1px solid rgba(239,68,68,0.12); border-left: 3px solid #ef4444; }
-    .risk-flag.sev-high { background: rgba(249,115,22,0.04); border: 1px solid rgba(249,115,22,0.12); border-left: 3px solid #f97316; }
-    .risk-flag.sev-medium { background: rgba(245,158,11,0.04); border: 1px solid rgba(245,158,11,0.12); border-left: 3px solid #f59e0b; }
-    .risk-flag.sev-low { background: rgba(59,130,246,0.04); border: 1px solid rgba(59,130,246,0.12); border-left: 3px solid #3b82f6; }
-    .rf-icon { width: 34px; height: 34px; border-radius: var(--radius-sm); display: flex; align-items: center; justify-content: center; flex-shrink: 0; font-size: 0.8rem; }
-    .sev-critical .rf-icon { background: rgba(239,68,68,0.15); color: #f87171; }
-    .sev-high .rf-icon { background: rgba(249,115,22,0.15); color: #fb923c; }
-    .sev-medium .rf-icon { background: rgba(245,158,11,0.15); color: #fbbf24; }
-    .sev-low .rf-icon { background: rgba(59,130,246,0.15); color: #60a5fa; }
-    .rf-body { flex: 1; min-width: 0; }
-    .rf-head { display: flex; align-items: center; gap: 8px; margin-bottom: 3px; flex-wrap: wrap; }
-    .rf-label { font-size: 0.82rem; font-weight: 600; }
-    .sev-tag { font-size: 0.58rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; padding: 1px 7px; border-radius: 4px; }
-    .sev-tag.critical { background: rgba(239,68,68,0.2); color: #f87171; }
-    .sev-tag.high { background: rgba(249,115,22,0.2); color: #fb923c; }
-    .sev-tag.medium { background: rgba(245,158,11,0.2); color: #fbbf24; }
-    .sev-tag.low { background: rgba(59,130,246,0.2); color: #60a5fa; }
-    .rf-desc { font-size: 0.75rem; color: var(--text-muted); line-height: 1.5; }
-    .rf-detail { max-height: 0; overflow: hidden; transition: max-height 400ms ease, margin-top 400ms ease; }
-    .rf-detail.open { max-height: 200px; margin-top: 10px; }
-    .rf-detail-inner { font-size: 0.72rem; color: var(--text-secondary); line-height: 1.6; padding: 10px; background: rgba(255,255,255,0.02); border-radius: var(--radius-sm); }
-    .rf-penalty { font-family: var(--font-display); font-size: 0.82rem; font-weight: 700; color: var(--danger); white-space: nowrap; align-self: flex-start; margin-top: 2px; }
-    .no-flags { text-align: center; padding: 40px 20px; background: rgba(34,197,94,0.03); border: 1px solid rgba(34,197,94,0.1); border-radius: var(--radius-md); }
-    .no-flags i { font-size: 2rem; color: var(--success); opacity: 0.4; margin-bottom: 12px; display: block; }
-    .no-flags h4 { font-family: var(--font-display); font-size: 0.95rem; font-weight: 600; margin-bottom: 4px; }
-    .no-flags p { font-size: 0.82rem; color: var(--text-muted); }
+    .risk-metrics{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:16px}
+    .risk-m{padding:14px 8px;background:rgba(255,255,255,0.015);border:1px solid var(--border-subtle);border-radius:var(--radius-md);text-align:center;transition:all 250ms ease}
+    .risk-m:hover{border-color:rgba(255,255,255,0.08)}
+    .risk-m-val{font-family:var(--font-display);font-size:1.4rem;font-weight:700}
+    .risk-m-lbl{font-size:0.66rem;color:var(--text-muted);margin-top:2px}
+    .risk-list{display:flex;flex-direction:column;gap:10px}
+    .risk-flag{display:flex;gap:12px;padding:14px;border-radius:var(--radius-md);cursor:pointer;transition:all 250ms ease}
+    .risk-flag:hover{filter:brightness(1.1)}
+    .risk-flag.sev-critical{background:rgba(239,68,68,0.04);border:1px solid rgba(239,68,68,0.12);border-left:3px solid #ef4444}
+    .risk-flag.sev-high{background:rgba(249,115,22,0.04);border:1px solid rgba(249,115,22,0.12);border-left:3px solid #f97316}
+    .risk-flag.sev-medium{background:rgba(245,158,11,0.04);border:1px solid rgba(245,158,11,0.12);border-left:3px solid #f59e0b}
+    .risk-flag.sev-low{background:rgba(59,130,246,0.04);border:1px solid rgba(59,130,246,0.12);border-left:3px solid #3b82f6}
+    .rf-icon{width:34px;height:34px;border-radius:var(--radius-sm);display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:0.8rem}
+    .sev-critical .rf-icon{background:rgba(239,68,68,0.15);color:#f87171}
+    .sev-high .rf-icon{background:rgba(249,115,22,0.15);color:#fb923c}
+    .sev-medium .rf-icon{background:rgba(245,158,11,0.15);color:#fbbf24}
+    .sev-low .rf-icon{background:rgba(59,130,246,0.15);color:#60a5fa}
+    .rf-body{flex:1;min-width:0}
+    .rf-head{display:flex;align-items:center;gap:8px;margin-bottom:3px;flex-wrap:wrap}
+    .rf-label{font-size:0.82rem;font-weight:600}
+    .sev-tag{font-size:0.58rem;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;padding:1px 7px;border-radius:4px}
+    .sev-tag.critical{background:rgba(239,68,68,0.2);color:#f87171}
+    .sev-tag.high{background:rgba(249,115,22,0.2);color:#fb923c}
+    .sev-tag.medium{background:rgba(245,158,11,0.2);color:#fbbf24}
+    .sev-tag.low{background:rgba(59,130,246,0.2);color:#60a5fa}
+    .rf-desc{font-size:0.75rem;color:var(--text-muted);line-height:1.5}
+    .rf-detail{max-height:0;overflow:hidden;transition:max-height 400ms ease,margin-top 400ms ease}
+    .rf-detail.open{max-height:200px;margin-top:10px}
+    .rf-detail-inner{font-size:0.72rem;color:var(--text-secondary);line-height:1.6;padding:10px;background:rgba(255,255,255,0.02);border-radius:var(--radius-sm)}
+    .rf-penalty{font-family:var(--font-display);font-size:0.82rem;font-weight:700;color:var(--danger);white-space:nowrap;align-self:flex-start;margin-top:2px}
+    .no-flags{text-align:center;padding:40px 20px;background:rgba(34,197,94,0.03);border:1px solid rgba(34,197,94,0.1);border-radius:var(--radius-md)}
+    .no-flags i{font-size:2rem;color:var(--success);opacity:0.4;margin-bottom:12px;display:block}
+    .no-flags h4{font-family:var(--font-display);font-size:0.95rem;font-weight:600;margin-bottom:4px}
+    .no-flags p{font-size:0.82rem;color:var(--text-muted)}
 
-    .tx-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; }
-    .tx-card { padding: 14px; background: rgba(255,255,255,0.02); border: 1px solid var(--border-subtle); border-radius: var(--radius-md); text-align: center; }
-    .tx-val { font-family: var(--font-display); font-size: 1.15rem; font-weight: 700; }
-    .tx-lbl { font-size: 0.66rem; color: var(--text-muted); margin-top: 2px; }
-    .tx-fail-bar { margin-top: 14px; }
-    .tx-fail-head { display: flex; justify-content: space-between; font-size: 0.72rem; color: var(--text-muted); margin-bottom: 5px; }
-    .tx-fail-track { height: 6px; background: rgba(255,255,255,0.04); border-radius: var(--radius-full); overflow: hidden; display: flex; }
-    .tx-fail-ok { background: var(--success); transition: width 1.4s var(--ease-out-expo); width: 0; }
-    .tx-fail-fail { background: var(--danger); transition: width 1.4s var(--ease-out-expo); width: 0; }
+    .tx-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}
+    .tx-card{padding:14px;background:rgba(255,255,255,0.02);border:1px solid var(--border-subtle);border-radius:var(--radius-md);text-align:center}
+    .tx-val{font-family:var(--font-display);font-size:1.15rem;font-weight:700}
+    .tx-lbl{font-size:0.66rem;color:var(--text-muted);margin-top:2px}
+    .tx-fail-bar{margin-top:14px}
+    .tx-fail-head{display:flex;justify-content:space-between;font-size:0.72rem;color:var(--text-muted);margin-bottom:5px}
+    .tx-fail-track{height:6px;background:rgba(255,255,255,0.04);border-radius:var(--radius-full);overflow:hidden;display:flex}
+    .tx-fail-ok{background:var(--success);transition:width 1.4s var(--ease-out-expo);width:0}
+    .tx-fail-fail{background:var(--danger);transition:width 1.4s var(--ease-out-expo);width:0}
 
-    .ds-warning { display: flex; align-items: flex-start; gap: 10px; padding: 12px 14px; background: var(--warning-dim); border: 1px solid rgba(245,158,11,0.15); border-radius: var(--radius-md); margin-bottom: 20px; font-size: 0.75rem; color: var(--text-secondary); line-height: 1.55; }
-    .ds-warning i { color: var(--warning); margin-top: 2px; flex-shrink: 0; }
+    .ds-warning{display:flex;align-items:flex-start;gap:10px;padding:12px 14px;background:var(--warning-dim);border:1px solid rgba(245,158,11,0.15);border-radius:var(--radius-md);margin-bottom:20px;font-size:0.75rem;color:var(--text-secondary);line-height:1.55}
+    .ds-warning i{color:var(--warning);margin-top:2px;flex-shrink:0}
 
-    .toast-wrap { position: fixed; top: 68px; left: 16px; right: 16px; z-index: 200; display: flex; flex-direction: column; gap: 8px; pointer-events: none; }
-    .toast { display: flex; align-items: center; gap: 10px; padding: 12px 16px; background: var(--bg-secondary); border: 1px solid var(--border-subtle); border-radius: var(--radius-md); box-shadow: 0 8px 32px rgba(0,0,0,0.6); font-size: 0.82rem; color: var(--text-primary); transform: translateY(-20px); opacity: 0; transition: all 300ms var(--ease-out-expo); pointer-events: auto; }
-    .toast.show { transform: translateY(0); opacity: 1; }
-    .toast i { font-size: 1rem; flex-shrink: 0; }
-    .toast.success { border-left: 3px solid var(--success); } .toast.success i { color: var(--success); }
-    .toast.error { border-left: 3px solid var(--danger); } .toast.error i { color: var(--danger); }
-    .toast.info { border-left: 3px solid var(--info); } .toast.info i { color: var(--info); }
-    .toast.warning { border-left: 3px solid var(--warning); } .toast.warning i { color: var(--warning); }
+    .toast-wrap{position:fixed;top:68px;left:16px;right:16px;z-index:200;display:flex;flex-direction:column;gap:8px;pointer-events:none}
+    .toast{display:flex;align-items:center;gap:10px;padding:12px 16px;background:var(--bg-secondary);border:1px solid var(--border-subtle);border-radius:var(--radius-md);box-shadow:0 8px 32px rgba(0,0,0,0.6);font-size:0.82rem;color:var(--text-primary);transform:translateY(-20px);opacity:0;transition:all 300ms var(--ease-out-expo);pointer-events:auto}
+    .toast.show{transform:translateY(0);opacity:1}
+    .toast i{font-size:1rem;flex-shrink:0}
+    .toast.success{border-left:3px solid var(--success)}.toast.success i{color:var(--success)}
+    .toast.error{border-left:3px solid var(--danger)}.toast.error i{color:var(--danger)}
+    .toast.info{border-left:3px solid var(--info)}.toast.info i{color:var(--info)}
+    .toast.warning{border-left:3px solid var(--warning)}.toast.warning i{color:var(--warning)}
 
-    .error-state { text-align: center; padding: 60px 20px; }
-    .error-state i { font-size: 2.2rem; color: var(--danger); opacity: 0.4; margin-bottom: 14px; display: block; }
-    .error-state h3 { font-family: var(--font-display); margin-bottom: 8px; }
-    .error-state p { color: var(--text-muted); font-size: 0.82rem; max-width: 340px; margin: 0 auto 20px; line-height: 1.6; }
-    .error-detail { font-size: 0.68rem; color: var(--text-muted); margin-top: 14px; opacity: 0.5; word-break: break-all; }
+    .error-state{text-align:center;padding:60px 20px}
+    .error-state i{font-size:2.2rem;color:var(--danger);opacity:0.4;margin-bottom:14px;display:block}
+    .error-state h3{font-family:var(--font-display);margin-bottom:8px}
+    .error-state p{color:var(--text-muted);font-size:0.82rem;max-width:340px;margin:0 auto 20px;line-height:1.6}
+    .error-detail{font-size:0.68rem;color:var(--text-muted);margin-top:14px;opacity:0.5;word-break:break-all}
 
-    @media (min-width: 600px) {
-      .page-content { padding: 24px 20px 56px; }
-      .topbar { padding: 0 24px; }
-      .identity-card { padding: 28px; }
-      .card-body { padding: 24px; }
-      .score-hero { grid-template-columns: auto 1fr; gap: 24px; }
-      .gauge-card { padding: 28px 32px; }
-      .breakdown-grid { grid-template-columns: 1fr 1fr; gap: 24px; }
-      .why-grid { grid-template-columns: 1fr 1fr; gap: 12px; }
-      .tx-grid { grid-template-columns: repeat(4, 1fr); }
-    }
-    @media (min-width: 900px) {
-      .page-content { padding: 32px 32px 64px; }
-      .identity-card { padding: 32px; }
-      .identity-avatar { width: 60px; height: 60px; font-size: 1.7rem; }
-      .identity-name { font-size: 1.3rem; }
-      .stat-value { font-size: 1.5rem; }
-      .section-title { font-size: 1.05rem; }
-    }
-    @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; } }
+    @media(min-width:600px){.page-content{padding:24px 20px 56px}.topbar{padding:0 24px}.identity-card{padding:28px}.card-body{padding:24px}.score-hero{grid-template-columns:auto 1fr;gap:24px}.gauge-card{padding:28px 32px}.breakdown-grid{grid-template-columns:1fr 1fr;gap:24px}.why-grid{grid-template-columns:1fr 1fr;gap:12px}.tx-grid{grid-template-columns:repeat(4,1fr)}}
+    @media(min-width:900px){.page-content{padding:32px 32px 64px}.identity-card{padding:32px}.identity-avatar{width:60px;height:60px;font-size:1.7rem}.identity-name{font-size:1.3rem}.stat-value{font-size:1.5rem}.section-title{font-size:1.05rem}}
+    @media(prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:0.01ms!important;transition-duration:0.01ms!important}}
   </style>
 </head>
 <body>
@@ -280,10 +231,10 @@
 
   <div class="guard-screen" id="guardScreen">
     <i class="fa-solid fa-link-slash"></i>
-    <h2>Wallet Address Tidak Ditemukan</h2>
-    <p>Halaman ini memerlukan wallet address yang valid dari proses login.</p>
+    <h2>Wallet Tidak Ditemukan</h2>
+    <p>Wallet address tidak tersedia untuk melanjutkan analisis</p>
     <p class="guard-detail" id="guardDetail"></p>
-    <p class="guard-hint">Wallet address dikirim dari login.html melalui URL parameter atau storage.</p>
+    <p class="guard-hint">Silakan login kembali dan coba lagi </p>
     <div class="guard-debug" id="guardDebug"></div>
     <a href="login.html" class="btn-primary"><i class="fa-solid fa-arrow-right-to-bracket"></i> Login via Pi Network</a>
   </div>
@@ -311,9 +262,7 @@
   </div>
 
   <script>
-    /* ═══════════════════════════════════════════════════════════
-       UTILITAS DASAR
-       ═══════════════════════════════════════════════════════════ */
+    /* ═════════════ UTILITAS ═══════════════ */
 
     function esc(s) {
       var d = document.createElement('div');
@@ -325,9 +274,7 @@
       return (n || 0).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ',');
     }
 
-    /* ═══════════════════════════════════════════════════════════
-       TOAST
-       ═══════════════════════════════════════════════════════════ */
+    /* ═══════════════ TOAST ═══════════════ */
 
     function showToast(msg, type, dur) {
       type = type || 'info';
@@ -336,12 +283,7 @@
       if (!c) return;
       var t = document.createElement('div');
       t.className = 'toast ' + type;
-      var icons = {
-        success: 'fa-circle-check',
-        error: 'fa-circle-xmark',
-        info: 'fa-circle-info',
-        warning: 'fa-triangle-exclamation'
-      };
+      var icons = { success: 'fa-circle-check', error: 'fa-circle-xmark', info: 'fa-circle-info', warning: 'fa-triangle-exclamation' };
       t.innerHTML = '<i class="fa-solid ' + (icons[type] || icons.info) + '"></i><span>' + msg + '</span>';
       c.appendChild(t);
       requestAnimationFrame(function () {
@@ -353,9 +295,7 @@
       }, dur);
     }
 
-    /* ═══════════════════════════════════════════════════════════
-       PARTIKEL LATAR
-       ═══════════════════════════════════════════════════════════ */
+    /* ═══════════════ PARTIKEL LATAR ═══════════════ */
 
     (function () {
       var canvas = document.getElementById('particleCanvas');
@@ -363,52 +303,28 @@
       var ctx = canvas.getContext('2d');
       var particles = [];
       var COUNT = 28;
-
-      function resize() {
-        canvas.width = window.innerWidth;
-        canvas.height = window.innerHeight;
-      }
+      function resize() { canvas.width = window.innerWidth; canvas.height = window.innerHeight; }
       resize();
       window.addEventListener('resize', resize);
-
       for (var i = 0; i < COUNT; i++) {
-        particles.push({
-          x: Math.random() * canvas.width,
-          y: Math.random() * canvas.height,
-          r: Math.random() * 1.1 + 0.3,
-          vx: (Math.random() - 0.5) * 0.1,
-          vy: (Math.random() - 0.5) * 0.1,
-          a: Math.random() * 0.2 + 0.04
-        });
+        particles.push({ x: Math.random() * canvas.width, y: Math.random() * canvas.height, r: Math.random() * 1.1 + 0.3, vx: (Math.random() - 0.5) * 0.1, vy: (Math.random() - 0.5) * 0.1, a: Math.random() * 0.2 + 0.04 });
       }
-
       function draw() {
         ctx.clearRect(0, 0, canvas.width, canvas.height);
         for (var i = 0; i < particles.length; i++) {
-          var p = particles[i];
-          p.x += p.vx;
-          p.y += p.vy;
-          if (p.x < 0) p.x = canvas.width;
-          if (p.x > canvas.width) p.x = 0;
-          if (p.y < 0) p.y = canvas.height;
-          if (p.y > canvas.height) p.y = 0;
-          ctx.beginPath();
-          ctx.arc(p.x, p.y, Math.max(0.1, p.r), 0, Math.PI * 2);
-          ctx.fillStyle = 'rgba(45,212,191,' + p.a + ')';
-          ctx.fill();
+          var p = particles[i]; p.x += p.vx; p.y += p.vy;
+          if (p.x < 0) p.x = canvas.width; if (p.x > canvas.width) p.x = 0;
+          if (p.y < 0) p.y = canvas.height; if (p.y > canvas.height) p.y = 0;
+          ctx.beginPath(); ctx.arc(p.x, p.y, Math.max(0.1, p.r), 0, Math.PI * 2);
+          ctx.fillStyle = 'rgba(45,212,191,' + p.a + ')'; ctx.fill();
         }
         for (var i = 0; i < particles.length; i++) {
           for (var j = i + 1; j < particles.length; j++) {
-            var dx = particles[i].x - particles[j].x;
-            var dy = particles[i].y - particles[j].y;
+            var dx = particles[i].x - particles[j].x, dy = particles[i].y - particles[j].y;
             var dist = Math.sqrt(dx * dx + dy * dy);
             if (dist < 100) {
-              ctx.beginPath();
-              ctx.moveTo(particles[i].x, particles[i].y);
-              ctx.lineTo(particles[j].x, particles[j].y);
-              ctx.strokeStyle = 'rgba(45,212,191,' + (0.03 * (1 - dist / 100)) + ')';
-              ctx.lineWidth = 0.5;
-              ctx.stroke();
+              ctx.beginPath(); ctx.moveTo(particles[i].x, particles[i].y); ctx.lineTo(particles[j].x, particles[j].y);
+              ctx.strokeStyle = 'rgba(45,212,191,' + (0.03 * (1 - dist / 100)) + ')'; ctx.lineWidth = 0.5; ctx.stroke();
             }
           }
         }
@@ -417,820 +333,465 @@
       draw();
     })();
 
-    /* ═══════════════════════════════════════════════════════════
-       WALLET ADDRESS RESOLVER
-
+    /* ═══════════════ WALLET ADDRESS RESOLVER ═══════════════
        Membaca dari sumber yang DITULIS oleh login.html:
        1. URL param ?wallet=...
        2. sessionStorage 'wallet_address'
        3. sessionStorage 'whs_pi_user' (JSON)
        4. localStorage 'whs_pi_user' (JSON)
+       ══════════════════════════════════════════════════════ */
 
-       Login.html menulis ke semua sumber di atas setelah
-       Pi.authenticate() berhasil.
-       ═══════════════════════════════════════════════════════════ */
+    function safeSSGet(key) { try { return sessionStorage.getItem(key); } catch (e) { return null; } }
+    function safeLSGet(key) { try { return localStorage.getItem(key); } catch (e) { return null; } }
+    function safeSSSet(key, val) { try { sessionStorage.setItem(key, val); } catch (e) {} }
 
-    function safeSessionGet(key) {
-      try { return sessionStorage.getItem(key); }
-      catch (e) { return null; }
-    }
-
-    function safeLocalGet(key) {
-      try { return localStorage.getItem(key); }
-      catch (e) { return null; }
-    }
-
-    function safeSessionSet(key, val) {
-      try { sessionStorage.setItem(key, val); }
-      catch (e) { /* ignore */ }
-    }
-
-    function extractFromUserJson(jsonStr) {
-      /* Parse JSON dari login.html's auth.user object.
-         Mengambil wallet_address > uid > username (fallback bertingkat) */
+    function extractUserWallet(jsonStr) {
       if (!jsonStr) return null;
       try {
-        var parsed = JSON.parse(jsonStr);
-        var w = parsed.wallet_address || parsed.uid || parsed.username;
-        if (w && w.trim && w.trim().length > 2) {
-          return w.trim();
-        }
-      } catch (e) {
-        /* JSON parse gagal, abaikan */
-      }
+        var p = JSON.parse(jsonStr);
+        var w = p.wallet_address || p.uid || p.username;
+        if (w && w.trim && w.trim().length > 2) return w.trim();
+      } catch (e) {}
       return null;
     }
 
     function resolveWalletAddress() {
-      var debugLines = [];
+      var dbg = [];
 
-      // 1. URL parameter: ?wallet=...
-      var urlParams = new URLSearchParams(window.location.search);
-      var fromUrl = urlParams.get('wallet');
-      debugLines.push('URL ?wallet= ' + (fromUrl ? '"' + fromUrl.substring(0, 50) + '"' : 'null'));
-
+      // 1. URL param
+      var urlP = new URLSearchParams(window.location.search);
+      var fromUrl = urlP.get('wallet');
+      dbg.push('URL ?wallet= ' + (fromUrl ? '"' + fromUrl.substring(0, 60) + '"' : 'null'));
       if (fromUrl && fromUrl.trim().length > 2) {
-        var addr = fromUrl.trim();
-        safeSessionSet('wallet_address', addr);
-        debugLines.push('DIPAKAI dari URL param');
-        return { address: addr, source: 'url_param', debug: debugLines };
+        var a = fromUrl.trim();
+        safeSSSet('wallet_address', a);
+        dbg.push('=> DIPAKAI dari URL');
+        return { address: a, source: 'url_param', debug: dbg };
       }
 
-      // 2. sessionStorage 'wallet_address'
-      var ssAddr = safeSessionGet('wallet_address');
-      debugLines.push('SS wallet_address= ' + (ssAddr ? '"' + ssAddr.substring(0, 50) + '"' : 'null'));
+      // 2. sessionStorage wallet_address
+      var ssa = safeSSGet('wallet_address');
+      dbg.push('SS.wallet_address= ' + (ssa ? '"' + ssa.substring(0, 60) + '"' : 'null'));
+      if (ssa && ssa.trim().length > 2) { dbg.push('=> DIPAKAI dari SS.wallet_address'); return { address: ssa.trim(), source: 'session_storage', debug: dbg }; }
 
-      if (ssAddr && ssAddr.trim().length > 2) {
-        debugLines.push('DIPAKAI dari SS.wallet_address');
-        return { address: ssAddr.trim(), source: 'session_storage', debug: debugLines };
-      }
+      // 3. sessionStorage whs_pi_user
+      var ssu = safeSSGet('whs_pi_user');
+      dbg.push('SS.whs_pi_user= ' + (ssu ? 'ada(' + ssu.length + ')' : 'null'));
+      if (ssu) { var w3 = extractUserWallet(ssu); if (w3) { dbg.push('=> DIPAKAI dari SS.whs_pi_user'); return { address: w3, source: 'session (whs_pi_user)', debug: dbg }; } }
 
-      // 3. sessionStorage 'whs_pi_user' (JSON)
-      var ssUser = safeSessionGet('whs_pi_user');
-      debugLines.push('SS whs_pi_user= ' + (ssUser ? 'ada(' + ssUser.length + 'char)' : 'null'));
+      // 4. localStorage whs_pi_user
+      var lsu = safeLSGet('whs_pi_user');
+      dbg.push('LS.whs_pi_user= ' + (lsu ? 'ada(' + lsu.length + ')' : 'null'));
+      if (lsu) { var w4 = extractUserWallet(lsu); if (w4) { dbg.push('=> DIPAKAI dari LS.whs_pi_user'); return { address: w4, source: 'local (whs_pi_user)', debug: dbg }; } }
 
-      if (ssUser) {
-        var w3 = extractFromUserJson(ssUser);
-        if (w3) {
-          debugLines.push('DIPAKAI dari SS.whs_pi_user');
-          return { address: w3, source: 'session_storage (whs_pi_user)', debug: debugLines };
-        }
-      }
-
-      // 4. localStorage 'whs_pi_user' (JSON)
-      var lsUser = safeLocalGet('whs_pi_user');
-      debugLines.push('LS whs_pi_user= ' + (lsUser ? 'ada(' + lsUser.length + 'char)' : 'null'));
-
-      if (lsUser) {
-        var w4 = extractFromUserJson(lsUser);
-        if (w4) {
-          debugLines.push('DIPAKAI dari LS.whs_pi_user');
-          return { address: w4, source: 'local_storage (whs_pi_user)', debug: debugLines };
-        }
-      }
-
-      // Tidak ditemukan
-      debugLines.push('TIDAK DITEMUKAN');
+      dbg.push('=> TIDAK DITEMUKAN');
       return null;
     }
 
-    /* ═══════════════════════════════════════════════════════════
-       CHAIN DATA SERVICE
-       ═══════════════════════════════════════════════════════════ */
+    /* ═══════════════ CHAIN DATA SERVICE ═══════════════
+       Menggunakan manual timeout BUKAN AbortSignal.timeout()
+       karena Pi Browser / WebView lama tidak support.
+       ═════════════════════════════════════════════════ */
 
     var API_BASE = '/api/pi-chain';
     var CACHE_PREFIX = 'whs_chain_';
     var CACHE_TTL = 45000;
 
-    function getCached(walletAddr) {
+    function getCached(w) {
       try {
-        var raw = safeSessionGet(CACHE_PREFIX + walletAddr);
+        var raw = safeSSGet(CACHE_PREFIX + w);
         if (!raw) return null;
         var p = JSON.parse(raw);
-        if (Date.now() - p.ts > CACHE_TTL) {
-          sessionStorage.removeItem(CACHE_PREFIX + walletAddr);
-          return null;
-        }
+        if (Date.now() - p.ts > CACHE_TTL) { sessionStorage.removeItem(CACHE_PREFIX + w); return null; }
         return p.data;
       } catch (e) { return null; }
     }
+    function setCached(w, d) {
+      try { sessionStorage.setItem(CACHE_PREFIX + w, JSON.stringify({ data: d, ts: Date.now() })); } catch (e) {}
+    }
 
-    function setCached(walletAddr, data) {
-      try {
-        sessionStorage.setItem(CACHE_PREFIX + walletAddr, JSON.stringify({ data: data, ts: Date.now() }));
-      } catch (e) { /* ignore */ }
+    /* Manual timeout — kompatibel semua browser */
+    function fetchWithTimeout(url, ms) {
+      return new Promise(function (resolve, reject) {
+        var timer = setTimeout(function () {
+          reject(new Error('Fetch timeout setelah ' + ms + 'ms'));
+        }, ms);
+
+        fetch(url, { headers: { 'Accept': 'application/json' } })
+          .then(function (res) {
+            clearTimeout(timer);
+            resolve(res);
+          })
+          .catch(function (err) {
+            clearTimeout(timer);
+            reject(err);
+          });
+      });
     }
 
     function getMockChainData(walletAddr) {
       return {
-        source: 'pi_blockchain',
-        fetched_at: new Date().toISOString(),
-        wallet: walletAddr,
-        username: null,
+        source: 'pi_blockchain', fetched_at: new Date().toISOString(), wallet: walletAddr, username: null,
         metrics: {
-          tx_total: 147,
-          tx_success: 139,
-          tx_failed: 6,
-          tx_pending: 2,
-          success_rate: 94.6,
-          unique_counterparties: 23,
-          avg_tx_per_day: 0.42,
-          first_tx_timestamp: '2023-06-14T08:22:00Z',
-          last_tx_timestamp: '2025-01-10T14:05:00Z',
-          age_days_on_chain: 576,
-          time_distribution_entropy: 0.72,
-          velocity_24h: 3,
-          velocity_7d: 12
+          tx_total: 147, tx_success: 139, tx_failed: 6, tx_pending: 2,
+          success_rate: 94.6, unique_counterparties: 23, avg_tx_per_day: 0.42,
+          first_tx_timestamp: '2023-06-14T08:22:00Z', last_tx_timestamp: '2025-01-10T14:05:00Z',
+          age_days_on_chain: 576, time_distribution_entropy: 0.72, velocity_24h: 3, velocity_7d: 12
         },
         risk: {
           total_penalty: 40,
           flags: [
-            {
-              severity: 'medium',
-              label: 'Velocity Spike',
-              description: '3 transaksi dalam 24 jam terakhir, di atas rata-rata 0.42 tx/hari.',
-              detail: 'Pola: 2 transfer keluar + 1 transfer masuk dalam interval 4 jam. Bisa jadi aktivitas normal atau potensial wash trading.',
-              penalty: 25
-            },
-            {
-              severity: 'low',
-              label: 'Time Pattern Slightly Regular',
-              description: 'Distribusi waktu transaksi menunjukkan sedikit kebiasaan (entropy 0.72).',
-              detail: 'Sebagian transaksi terjadi di jam yang sama. Entropy 0.72 dari skala 0-1.',
-              penalty: 15
-            }
+            { severity: 'medium', label: 'Velocity Spike', description: '3 transaksi dalam 24 jam terakhir, di atas rata-rata.', detail: '2 transfer keluar + 1 masuk dalam 4 jam.', penalty: 25 },
+            { severity: 'low', label: 'Time Pattern Regular', description: 'Distribusi waktu sedikit kebiasaan (entropy 0.72).', detail: 'Entropy 0.72 dari skala 0-1.', penalty: 15 }
           ]
         },
-        network_average: null,
-        network_average_breakdown: null
+        network_average: null, network_average_breakdown: null
       };
     }
 
     async function fetchChainData(walletAddr) {
+      // Cek cache
       var cached = getCached(walletAddr);
       if (cached) return { data: cached, fromCache: true };
 
+      // Coba API — pakai manual timeout, BUKAN AbortSignal.timeout()
       try {
-        var res = await fetch(API_BASE + '?wallet=' + encodeURIComponent(walletAddr), {
-          headers: { 'Accept': 'application/json' },
-          signal: AbortSignal.timeout(8000)
-        });
+        var res = await fetchWithTimeout(API_BASE + '?wallet=' + encodeURIComponent(walletAddr), 8000);
         if (res.ok) {
           var json = await res.json();
           setCached(walletAddr, json);
           return { data: json, fromCache: false };
         }
       } catch (e) {
-        console.warn('[ChainService] API unreachable, mock fallback:', e.message);
+        console.warn('[ChainService] API unreachable, fallback mock:', e.message);
       }
 
+      // Fallback mock
       var mock = getMockChainData(walletAddr);
       mock.source = 'mock_fallback';
       setCached(walletAddr, mock);
       return { data: mock, fromCache: false };
     }
 
-    /* ═══════════════════════════════════════════════════════════
-       CHAIN ANALYZER (di produksi: pindah ke backend)
-       ═══════════════════════════════════════════════════════════ */
+    /* ═══════════════ CHAIN ANALYZER ═══════════════ */
 
     var ChainAnalyzer = {
-      calcSuccessRate: function (rate) {
-        if (rate >= 98) return 250;
-        if (rate >= 95) return 230 + Math.round((rate - 95) / 3 * 20);
-        if (rate >= 90) return 195 + Math.round((rate - 90) / 5 * 35);
-        if (rate >= 80) return 145 + Math.round((rate - 80) / 10 * 50);
-        if (rate >= 60) return 80 + Math.round((rate - 60) / 20 * 65);
-        if (rate >= 40) return 30 + Math.round((rate - 40) / 20 * 50);
-        return Math.round(rate / 40 * 30);
-      },
+      calcSR: function (r) { if (r >= 98) return 250; if (r >= 95) return 230 + Math.round((r - 95) / 3 * 20); if (r >= 90) return 195 + Math.round((r - 90) / 5 * 35); if (r >= 80) return 145 + Math.round((r - 80) / 10 * 50); if (r >= 60) return 80 + Math.round((r - 60) / 20 * 65); if (r >= 40) return 30 + Math.round((r - 40) / 20 * 50); return Math.round(r / 40 * 30); },
+      calcVol: function (m) { var cp = m.unique_counterparties || 0; var cpS = cp === 0 ? 0 : Math.min(150, Math.round(Math.log2(cp + 1) / Math.log2(100) * 150)); var tx = m.tx_total || 0; var txS = tx === 0 ? 0 : Math.min(70, Math.round(Math.log2(tx + 1) / Math.log2(500) * 70)); var eb = Math.round((m.time_distribution_entropy || 0) * 30); return Math.min(250, cpS + txS + eb); },
+      calcAge: function (d) { if (d >= 730) return 250; if (d >= 548) return 235; if (d >= 365) return 210; if (d >= 270) return 180; if (d >= 180) return 145; if (d >= 90) return 100; if (d >= 30) return 55; if (d > 0) return 25; return 0; },
+      calcRisk: function (p) { return Math.max(0, 250 - (p || 0)); },
+      fmtAge: function (d) { if (d >= 365) { var y = Math.floor(d / 365); var m2 = Math.floor((d % 365) / 30); return y + ' tahun' + (m2 > 0 ? ' ' + m2 + ' bln' : ''); } if (d >= 30) return Math.floor(d / 30) + ' bln'; if (d > 0) return d + ' hari'; return 'N/A'; },
 
-      calcVolume: function (m) {
-        var cp = m.unique_counterparties || 0;
-        var cpScore = cp === 0 ? 0 : Math.min(150, Math.round(Math.log2(cp + 1) / Math.log2(100) * 150));
-        var tx = m.tx_total || 0;
-        var txScore = tx === 0 ? 0 : Math.min(70, Math.round(Math.log2(tx + 1) / Math.log2(500) * 70));
-        var entropy = m.time_distribution_entropy || 0;
-        var entropyBonus = Math.round(entropy * 30);
-        return Math.min(250, cpScore + txScore + entropyBonus);
-      },
-
-      calcAge: function (days) {
-        if (days >= 730) return 250;
-        if (days >= 548) return 235;
-        if (days >= 365) return 210;
-        if (days >= 270) return 180;
-        if (days >= 180) return 145;
-        if (days >= 90) return 100;
-        if (days >= 30) return 55;
-        if (days > 0) return 25;
-        return 0;
-      },
-
-      calcRisk: function (penalty) {
-        return Math.max(0, 250 - (penalty || 0));
-      },
-
-      formatAge: function (d) {
-        if (d >= 365) {
-          var y = Math.floor(d / 365);
-          var m2 = Math.floor((d % 365) / 30);
-          return y + ' tahun' + (m2 > 0 ? ' ' + m2 + ' bulan' : '');
+      analyze: function (cd) {
+        /* Guard: pastikan struktur data lengkap sebelum akses properti */
+        if (!cd || !cd.metrics || !cd.risk) {
+          throw new Error('Struktur data chain tidak valid — missing metrics atau risk');
         }
-        if (d >= 30) return Math.floor(d / 30) + ' bulan';
-        if (d > 0) return d + ' hari';
-        return 'N/A';
-      },
 
-      analyze: function (chainData) {
-        var m = chainData.metrics;
-        var r = chainData.risk;
-        var srScore = this.calcSuccessRate(m.success_rate);
-        var volScore = this.calcVolume(m);
-        var ageScore = this.calcAge(m.age_days_on_chain);
-        var riskScore = this.calcRisk(r.total_penalty);
+        var m = cd.metrics;
+        var r = cd.risk;
+
+        /* Normalisasi semua field yang dipakai toFixed() — pastikan number */
+        var sr = typeof m.success_rate === 'number' ? m.success_rate : 0;
+        var txTotal = typeof m.tx_total === 'number' ? m.tx_total : 0;
+        var txOk = typeof m.tx_success === 'number' ? m.tx_success : 0;
+        var txFail = typeof m.tx_failed === 'number' ? m.tx_failed : 0;
+        var txPend = typeof m.tx_pending === 'number' ? m.tx_pending : 0;
+        var avgTxD = typeof m.avg_tx_per_day === 'number' ? m.avg_tx_per_day : 0;
+        var ageD = typeof m.age_days_on_chain === 'number' ? m.age_days_on_chain : 0;
+        var ucp = typeof m.unique_counterparties === 'number' ? m.unique_counterparties : 0;
+        var ent = typeof m.time_distribution_entropy === 'number' ? m.time_distribution_entropy : 0;
+        var rPen = typeof r.total_penalty === 'number' ? r.total_penalty : 0;
+        var flags = Array.isArray(r.flags) ? r.flags : [];
+
+        var srScore = this.calcSR(sr);
+        var volScore = this.calcVol({ unique_counterparties: ucp, tx_total: txTotal, time_distribution_entropy: ent });
+        var ageScore = this.calcAge(ageD);
+        var riskScore = this.calcRisk(rPen);
         var total = srScore + volScore + ageScore + riskScore;
 
-        var netAvg = chainData.network_average;
-        var hasNetAvg = netAvg !== null && netAvg !== undefined;
-        var vsNetwork = hasNetAvg ? total - netAvg : null;
+        var netAvg = cd.network_average;
+        var hasNet = netAvg !== null && netAvg !== undefined;
+        var vsNet = hasNet ? total - netAvg : null;
 
-        var status, statusColor;
-        if (total >= 800) { status = 'Excellent'; statusColor = 'var(--success)'; }
-        else if (total >= 600) { status = 'Good'; statusColor = 'var(--accent)'; }
-        else if (total >= 400) { status = 'Fair'; statusColor = 'var(--warning)'; }
-        else { status = 'Poor'; statusColor = 'var(--danger)'; }
+        var status, sc;
+        if (total >= 800) { status = 'Excellent'; sc = 'var(--success)'; }
+        else if (total >= 600) { status = 'Good'; sc = 'var(--accent)'; }
+        else if (total >= 400) { status = 'Fair'; sc = 'var(--warning)'; }
+        else { status = 'Poor'; sc = 'var(--danger)'; }
 
-        var nb = chainData.network_average_breakdown || null;
+        var nb = cd.network_average_breakdown || null;
 
         return {
-          score: total, maxScore: 1000,
-          status: status, statusColor: statusColor,
-          networkAverage: netAvg, hasNetworkAverage: hasNetAvg,
-          vsNetwork: vsNetwork,
+          score: total, maxScore: 1000, status: status, statusColor: sc,
+          networkAverage: netAvg, hasNetworkAverage: hasNet, vsNetwork: vsNet,
           breakdown: {
-            successRate: { label: 'Success Rate', score: srScore, max: 250, displayVal: m.success_rate.toFixed(1) + '%', netAvg: nb ? nb.successRate : null },
-            volume: { label: 'Activity Weight', score: volScore, max: 250, displayVal: fmtNum(m.unique_counterparties) + ' counterparties', detail: fmtNum(m.tx_total) + ' tx total', netAvg: nb ? nb.volume : null },
-            age: { label: 'On-Chain Age', score: ageScore, max: 250, displayVal: this.formatAge(m.age_days_on_chain), netAvg: nb ? nb.age : null },
-            risk: { label: 'Risk Assessment', score: riskScore, max: 250, penalty: r.total_penalty, displayVal: r.total_penalty > 0 ? '-' + r.total_penalty + ' penalty' : 'Bersih', netAvg: nb ? nb.risk : null }
+            successRate: { label: 'Success Rate', score: srScore, max: 250, displayVal: sr.toFixed(1) + '%', netAvg: nb ? nb.successRate : null },
+            volume: { label: 'Activity Weight', score: volScore, max: 250, displayVal: fmtNum(ucp) + ' counterparties', detail: fmtNum(txTotal) + ' tx total', netAvg: nb ? nb.volume : null },
+            age: { label: 'On-Chain Age', score: ageScore, max: 250, displayVal: this.fmtAge(ageD), netAvg: nb ? nb.age : null },
+            risk: { label: 'Risk Assessment', score: riskScore, max: 250, penalty: rPen, displayVal: rPen > 0 ? '-' + rPen + ' penalty' : 'Bersih', netAvg: nb ? nb.risk : null }
           },
-          rawMetrics: m,
-          riskFlags: r.flags || []
+          rawMetrics: { tx_total: txTotal, tx_success: txOk, tx_failed: txFail, tx_pending: txPend, success_rate: sr, unique_counterparties: ucp, avg_tx_per_day: avgTxD, age_days_on_chain: ageD },
+          riskFlags: flags
         };
       }
     };
 
-    /* ═══════════════════════════════════════════════════════════
-       UI RENDERER
-       ═══════════════════════════════════════════════════════════ */
+    /* ═══════════════ UI RENDERER ═══════════════ */
 
     var UI = {
-      drawGauge: function (id, score, maxScore, color) {
-        var canvas = document.getElementById(id);
-        if (!canvas) return;
-        var ctx = canvas.getContext('2d');
-        var dpr = window.devicePixelRatio || 1;
-        var size = 200;
-        canvas.width = size * dpr;
-        canvas.height = size * dpr;
-        canvas.style.width = size + 'px';
-        canvas.style.height = size + 'px';
-        ctx.scale(dpr, dpr);
-
-        var cx = size / 2, cy = size / 2;
-        var radius = Math.max(1, size / 2 - 24);
-        var lineW = 10;
-        var startA = Math.PI * 0.75;
-        var endA = Math.PI * 2.25;
-        var totalArc = endA - startA;
-        var pct = Math.min(1, Math.max(0, score / maxScore));
-
-        // Background arc
-        ctx.beginPath();
-        ctx.arc(cx, cy, radius, startA, endA);
-        ctx.strokeStyle = 'rgba(255,255,255,0.06)';
-        ctx.lineWidth = lineW;
-        ctx.lineCap = 'round';
-        ctx.stroke();
-
-        // Tick marks
-        for (var i = 0; i <= 10; i++) {
-          var a = startA + (totalArc / 10) * i;
-          var inn = radius - lineW / 2 - 6;
-          var out = radius - lineW / 2 - 2;
-          ctx.beginPath();
-          ctx.moveTo(cx + Math.cos(a) * inn, cy + Math.sin(a) * inn);
-          ctx.lineTo(cx + Math.cos(a) * out, cy + Math.sin(a) * out);
-          ctx.strokeStyle = 'rgba(255,255,255,0.08)';
-          ctx.lineWidth = 1;
-          ctx.lineCap = 'butt';
-          ctx.stroke();
-        }
-
-        // Animate
-        var startTime = null;
-        var dur = 1400;
-
+      drawGauge: function (id, score, max, color) {
+        var cv = document.getElementById(id); if (!cv) return;
+        var ctx = cv.getContext('2d'), dpr = window.devicePixelRatio || 1, sz = 200;
+        cv.width = sz * dpr; cv.height = sz * dpr; cv.style.width = sz + 'px'; cv.style.height = sz + 'px'; ctx.scale(dpr, dpr);
+        var cx = sz / 2, cy = sz / 2, rad = Math.max(1, sz / 2 - 24), lw = 10;
+        var sA = Math.PI * 0.75, eA = Math.PI * 2.25, tA = eA - sA;
+        var pct = Math.min(1, Math.max(0, score / max));
+        ctx.beginPath(); ctx.arc(cx, cy, rad, sA, eA); ctx.strokeStyle = 'rgba(255,255,255,0.06)'; ctx.lineWidth = lw; ctx.lineCap = 'round'; ctx.stroke();
+        for (var i = 0; i <= 10; i++) { var a = sA + (tA / 10) * i, inn = rad - lw / 2 - 6, out = rad - lw / 2 - 2; ctx.beginPath(); ctx.moveTo(cx + Math.cos(a) * inn, cy + Math.sin(a) * inn); ctx.lineTo(cx + Math.cos(a) * out, cy + Math.sin(a) * out); ctx.strokeStyle = 'rgba(255,255,255,0.08)'; ctx.lineWidth = 1; ctx.lineCap = 'butt'; ctx.stroke(); }
+        var st = null;
         function anim(ts) {
-          if (!startTime) startTime = ts;
-          var p = Math.min(1, (ts - startTime) / dur);
-          var ease = 1 - Math.pow(1 - p, 3);
-          var curA = startA + totalArc * pct * ease;
-
-          ctx.save();
-          ctx.beginPath();
-          ctx.arc(cx, cy, radius + lineW, 0, Math.PI * 2);
-          ctx.clip();
-          ctx.clearRect(0, 0, size, size);
-          ctx.restore();
-
-          // Redraw bg
-          ctx.beginPath();
-          ctx.arc(cx, cy, radius, startA, endA);
-          ctx.strokeStyle = 'rgba(255,255,255,0.06)';
-          ctx.lineWidth = lineW;
-          ctx.lineCap = 'round';
-          ctx.stroke();
-
-          // Redraw ticks
-          for (var j = 0; j <= 10; j++) {
-            var a2 = startA + (totalArc / 10) * j;
-            var inn2 = radius - lineW / 2 - 6;
-            var out2 = radius - lineW / 2 - 2;
-            ctx.beginPath();
-            ctx.moveTo(cx + Math.cos(a2) * inn2, cy + Math.sin(a2) * inn2);
-            ctx.lineTo(cx + Math.cos(a2) * out2, cy + Math.sin(a2) * out2);
-            ctx.strokeStyle = 'rgba(255,255,255,0.08)';
-            ctx.lineWidth = 1;
-            ctx.lineCap = 'butt';
-            ctx.stroke();
-          }
-
-          // Fill arc
-          if (curA > startA + 0.01) {
-            ctx.beginPath();
-            ctx.arc(cx, cy, radius, startA, curA);
-            ctx.strokeStyle = color;
-            ctx.lineWidth = lineW;
-            ctx.lineCap = 'round';
-            ctx.stroke();
-
-            // Glow
-            ctx.beginPath();
-            ctx.arc(cx, cy, radius, startA, curA);
-            ctx.strokeStyle = color.replace('rgb', 'rgba').replace(')', ',0.25)');
-            ctx.lineWidth = lineW + 8;
-            ctx.lineCap = 'round';
-            ctx.stroke();
-          }
-
-          // Score text
-          ctx.fillStyle = '#f1f5f9';
-          ctx.font = '700 42px "Space Grotesk",sans-serif';
-          ctx.textAlign = 'center';
-          ctx.textBaseline = 'middle';
-          ctx.fillText(Math.round(score * ease), cx, cy - 8);
-
-          ctx.fillStyle = '#475569';
-          ctx.font = '500 12px "DM Sans",sans-serif';
-          ctx.fillText('/ ' + maxScore, cx, cy + 18);
-
+          if (!st) st = ts; var p = Math.min(1, (ts - st) / 1400), e = 1 - Math.pow(1 - p, 3), cA = sA + tA * pct * e;
+          ctx.save(); ctx.beginPath(); ctx.arc(cx, cy, rad + lw, 0, Math.PI * 2); ctx.clip(); ctx.clearRect(0, 0, sz, sz); ctx.restore();
+          ctx.beginPath(); ctx.arc(cx, cy, rad, sA, eA); ctx.strokeStyle = 'rgba(255,255,255,0.06)'; ctx.lineWidth = lw; ctx.lineCap = 'round'; ctx.stroke();
+          for (var j = 0; j <= 10; j++) { var a2 = sA + (tA / 10) * j, i2 = rad - lw / 2 - 6, o2 = rad - lw / 2 - 2; ctx.beginPath(); ctx.moveTo(cx + Math.cos(a2) * i2, cy + Math.sin(a2) * i2); ctx.lineTo(cx + Math.cos(a2) * o2, cy + Math.sin(a2) * o2); ctx.strokeStyle = 'rgba(255,255,255,0.08)'; ctx.lineWidth = 1; ctx.lineCap = 'butt'; ctx.stroke(); }
+          if (cA > sA + 0.01) { ctx.beginPath(); ctx.arc(cx, cy, rad, sA, cA); ctx.strokeStyle = color; ctx.lineWidth = lw; ctx.lineCap = 'round'; ctx.stroke(); ctx.beginPath(); ctx.arc(cx, cy, rad, sA, cA); ctx.strokeStyle = color.replace('rgb', 'rgba').replace(')', ',0.25)'); ctx.lineWidth = lw + 8; ctx.lineCap = 'round'; ctx.stroke(); }
+          ctx.fillStyle = '#f1f5f9'; ctx.font = '700 42px "Space Grotesk",sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText(Math.round(score * e), cx, cy - 8);
+          ctx.fillStyle = '#475569'; ctx.font = '500 12px "DM Sans",sans-serif'; ctx.fillText('/ ' + max, cx, cy + 18);
           if (p < 1) requestAnimationFrame(anim);
         }
         requestAnimationFrame(anim);
       },
 
-      render: function (walletAddr, resolveSource, chainData, analysis) {
-        var pc = document.getElementById('pageContent');
-        var sd = analysis;
-        var m = sd.rawMetrics;
-        var isOnChain = chainData.source === 'pi_blockchain';
-        var isFallback = !isOnChain;
-        var safeAddr = esc(walletAddr);
-        var username = chainData.username || walletAddr.substring(0, 10) + '...';
-        var ageStr = ChainAnalyzer.formatAge(m.age_days_on_chain);
-
-        var gaugeColor = sd.statusColor === 'var(--success)' ? 'rgb(34,197,94)' :
-          sd.statusColor === 'var(--accent)' ? 'rgb(45,212,191)' :
-            sd.statusColor === 'var(--warning)' ? 'rgb(245,158,11)' : 'rgb(239,68,68)';
-
+      render: function (wa, src, cd, an) {
+        var pc = document.getElementById('pageContent'), m = an.rawMetrics;
+        var isOC = cd.source === 'pi_blockchain';
+        var gc = an.statusColor === 'var(--success)' ? 'rgb(34,197,94)' : an.statusColor === 'var(--accent)' ? 'rgb(45,212,191)' : an.statusColor === 'var(--warning)' ? 'rgb(245,158,11)' : 'rgb(239,68,68)';
+        var un = cd.username || wa.substring(0, 10) + '...';
+        var age = ChainAnalyzer.fmtAge(m.age_days_on_chain);
         var h = '';
 
-        // Fallback warning
-        if (isFallback) {
-          h += '<div class="ds-warning"><i class="fa-solid fa-triangle-exclamation"></i><div><strong>Mode Fallback</strong> — Backend API tidak dapat dijangkau. Data yang ditampilkan adalah <em>mock development</em>, bukan data on-chain sesungguhnya.</div></div>';
-        }
+        if (!isOC) h += '<div class="ds-warning"><i class="fa-solid fa-triangle-exclamation"></i><div><strong>Mode Fallback</strong> — Backend API tidak dapat dijangkau. Data yang ditampilkan adalah <em>mock development</em>.</div></div>';
 
-        // Identity Card
         h += '<div class="identity-card"><div class="identity-top"><div class="identity-left"><div class="identity-avatar">&pi;</div><div class="identity-info">';
-        h += '<div class="identity-name">' + esc('@' + username) + '<span class="src-badge ' + (isOnChain ? 'onchain' : 'fallback') + '"><i class="fa-solid ' + (isOnChain ? 'fa-link' : 'fa-database') + '"></i> ' + esc(chainData.source) + '</span></div>';
-        h += '<div class="identity-wallet-row"><span class="wallet-badge"><i class="fa-solid fa-fingerprint"></i> Wallet</span><span class="wallet-addr">' + safeAddr + '</span></div>';
-        h += '<div class="identity-meta">';
-        h += '<span><i class="fa-solid fa-shield-halved" style="color:' + sd.statusColor + '"></i> <b style="color:' + sd.statusColor + '">' + sd.status + '</b></span>';
-        h += '<span><i class="fa-regular fa-clock"></i> ' + ageStr + ' on-chain</span>';
-        h += '<span><i class="fa-solid fa-route"></i> via ' + esc(resolveSource) + '</span>';
-        h += '</div></div></div>';
-        h += '<div class="identity-actions"><button class="btn-ghost" id="copyWalletBtn"><i class="fa-regular fa-copy"></i> Salin</button></div></div></div>';
+        h += '<div class="identity-name">' + esc('@' + un) + '<span class="src-badge ' + (isOC ? 'onchain' : 'fallback') + '"><i class="fa-solid ' + (isOC ? 'fa-link' : 'fa-database') + '"></i> ' + esc(cd.source) + '</span></div>';
+        h += '<div class="identity-wallet-row"><span class="wallet-badge"><i class="fa-solid fa-fingerprint"></i> Wallet</span><span class="wallet-addr">' + esc(wa) + '</span></div>';
+        h += '<div class="identity-meta"><span><i class="fa-solid fa-shield-halved" style="color:' + an.statusColor + '"></i> <b style="color:' + an.statusColor + '">' + an.status + '</b></span><span><i class="fa-regular fa-clock"></i> ' + age + ' on-chain</span><span><i class="fa-solid fa-route"></i> via ' + esc(src) + '</span></div>';
+        h += '</div></div><div class="identity-actions"><button class="btn-ghost" id="copyBtn"><i class="fa-regular fa-copy"></i> Salin</button></div></div></div>';
 
-        // Score Hero
-        h += '<div class="score-hero"><div class="gauge-card"><canvas id="scoreGauge"></canvas>';
-        h += '<div class="gauge-label">Total Health Score</div>';
+        h += '<div class="score-hero"><div class="gauge-card"><canvas id="scoreGauge"></canvas><div class="gauge-label">Total Health Score</div>';
+        var sBg = an.statusColor.replace('var(--success)', 'rgba(34,197,94,0.12)').replace('var(--accent)', 'rgba(45,212,191,0.12)').replace('var(--warning)', 'rgba(245,158,11,0.12)').replace('var(--danger)', 'rgba(239,68,68,0.12)');
+        var sBd = an.statusColor.replace('var(--success)', 'rgba(34,197,94,0.2)').replace('var(--accent)', 'rgba(45,212,191,0.2)').replace('var(--warning)', 'rgba(245,158,11,0.2)').replace('var(--danger)', 'rgba(239,68,68,0.2)');
+        h += '<div class="gauge-status" style="color:' + an.statusColor + ';background:' + sBg + ';border:1px solid ' + sBd + '"><i class="fa-solid fa-circle-check"></i> ' + an.status + '</div>';
+        var tPct = Math.round(an.score / an.maxScore * 100), aPct = an.hasNetworkAverage ? Math.round(an.networkAverage / an.maxScore * 100) : 0;
+        h += '<div class="total-bar-wrap"><div class="total-bar-head"><span class="total-bar-label">Progress</span><span class="total-bar-vals">' + an.score + ' / ' + an.maxScore + ' (' + tPct + '%)</span></div>';
+        h += '<div class="total-bar-track"><div class="total-bar-fill" data-width="' + tPct + '" style="background:linear-gradient(90deg,' + gc + ',' + gc.replace('rgb', 'rgba').replace(')', ',0.6)') + ')"></div>';
+        h += '<div class="avg-marker ' + (an.hasNetworkAverage ? '' : 'hidden') + '" data-left="' + aPct + '"></div></div></div></div>';
 
-        var statusBg = sd.statusColor.replace('var(--success)', 'rgba(34,197,94,0.12)').replace('var(--accent)', 'rgba(45,212,191,0.12)').replace('var(--warning)', 'rgba(245,158,11,0.12)').replace('var(--danger)', 'rgba(239,68,68,0.12)');
-        var statusBd = sd.statusColor.replace('var(--success)', 'rgba(34,197,94,0.2)').replace('var(--accent)', 'rgba(45,212,191,0.2)').replace('var(--warning)', 'rgba(245,158,11,0.2)').replace('var(--danger)', 'rgba(239,68,68,0.2)');
-        h += '<div class="gauge-status" style="color:' + sd.statusColor + ';background:' + statusBg + ';border:1px solid ' + statusBd + '"><i class="fa-solid fa-circle-check"></i> ' + sd.status + '</div>';
-
-        var totalPct = Math.round(sd.score / sd.maxScore * 100);
-        var avgPct = sd.hasNetworkAverage ? Math.round(sd.networkAverage / sd.maxScore * 100) : 0;
-
-        h += '<div class="total-bar-wrap"><div class="total-bar-head"><span class="total-bar-label">Progress</span><span class="total-bar-vals">' + sd.score + ' / ' + sd.maxScore + ' (' + totalPct + '%)</span></div>';
-        h += '<div class="total-bar-track"><div class="total-bar-fill" data-width="' + totalPct + '" style="background:linear-gradient(90deg,' + gaugeColor + ',' + gaugeColor.replace('rgb', 'rgba').replace(')', ',0.6)') + ')"></div>';
-        h += '<div class="avg-marker ' + (sd.hasNetworkAverage ? '' : 'hidden') + '" data-left="' + avgPct + '"></div></div></div></div>';
-
-        // Stats grid
         h += '<div class="stats-grid">';
         h += '<div class="stat-card"><div class="stat-value" style="color:var(--accent)" id="animTx">0</div><div class="stat-label">Total Transaksi</div></div>';
         h += '<div class="stat-card"><div class="stat-value" id="animRate">0%</div><div class="stat-label">Success Rate</div></div>';
-        h += '<div class="stat-card"><div class="stat-value" style="color:' + (sd.riskFlags.length > 0 ? 'var(--danger)' : 'var(--success)') + '">' + sd.riskFlags.length + '</div><div class="stat-label">Risk Flags</div></div>';
-        var vsColor = sd.vsNetwork !== null ? (sd.vsNetwork >= 0 ? 'var(--success)' : 'var(--danger)') : 'var(--text-muted)';
-        var vsText = sd.vsNetwork !== null ? (sd.vsNetwork >= 0 ? '+' : '') + sd.vsNetwork : 'N/A';
-        h += '<div class="stat-card"><div class="stat-value" style="color:' + vsColor + '">' + vsText + '</div><div class="stat-label">vs Network Avg</div></div></div></div>';
+        h += '<div class="stat-card"><div class="stat-value" style="color:' + (an.riskFlags.length > 0 ? 'var(--danger)' : 'var(--success)') + '">' + an.riskFlags.length + '</div><div class="stat-label">Risk Flags</div></div>';
+        var vsC = an.vsNetwork !== null ? (an.vsNetwork >= 0 ? 'var(--success)' : 'var(--danger)') : 'var(--text-muted)';
+        var vsT = an.vsNetwork !== null ? (an.vsNetwork >= 0 ? '+' : '') + an.vsNetwork : 'N/A';
+        h += '<div class="stat-card"><div class="stat-value" style="color:' + vsC + '">' + vsT + '</div><div class="stat-label">vs Network Avg</div></div></div></div>';
 
         // TX Overview
-        h += '<div class="section" data-reveal><div class="section-head"><div class="section-icon teal"><i class="fa-solid fa-arrow-right-arrow-left"></i></div><h2 class="section-title">Transaction Overview</h2></div><div class="card"><div class="card-body">';
-        h += '<div class="tx-grid">';
+        h += '<div class="section" data-reveal><div class="section-head"><div class="section-icon teal"><i class="fa-solid fa-arrow-right-arrow-left"></i></div><h2 class="section-title">Transaction Overview</h2></div><div class="card"><div class="card-body"><div class="tx-grid">';
         h += '<div class="tx-card"><div class="tx-val">' + fmtNum(m.tx_success) + '</div><div class="tx-lbl">Berhasil</div></div>';
         h += '<div class="tx-card"><div class="tx-val" style="color:var(--danger)">' + fmtNum(m.tx_failed) + '</div><div class="tx-lbl">Gagal</div></div>';
         h += '<div class="tx-card"><div class="tx-val" style="color:var(--warning)">' + fmtNum(m.tx_pending) + '</div><div class="tx-lbl">Pending</div></div>';
         h += '<div class="tx-card"><div class="tx-val">' + m.avg_tx_per_day.toFixed(2) + '</div><div class="tx-lbl">Rata-rata Tx/Hari</div></div></div>';
-        var okPct = m.tx_total > 0 ? Math.round(m.tx_success / m.tx_total * 100) : 100;
-        var failPct = m.tx_total > 0 ? Math.round(m.tx_failed / m.tx_total * 100) : 0;
-        h += '<div class="tx-fail-bar"><div class="tx-fail-head"><span>Berhasil vs Gagal</span><span>' + okPct + '% OK / ' + failPct + '% gagal</span></div>';
-        h += '<div class="tx-fail-track"><div class="tx-fail-ok" data-width="' + okPct + '"></div><div class="tx-fail-fail" data-width="' + failPct + '"></div></div></div>';
-        h += '</div></div></div>';
+        var okP = m.tx_total > 0 ? Math.round(m.tx_success / m.tx_total * 100) : 100;
+        var flP = m.tx_total > 0 ? Math.round(m.tx_failed / m.tx_total * 100) : 0;
+        h += '<div class="tx-fail-bar"><div class="tx-fail-head"><span>Berhasil vs Gagal</span><span>' + okP + '% OK / ' + flP + '% gagal</span></div><div class="tx-fail-track"><div class="tx-fail-ok" data-width="' + okP + '"></div><div class="tx-fail-fail" data-width="' + flP + '"></div></div></div></div></div></div>';
 
         // Breakdown
         h += '<div class="section" data-reveal><div class="section-head"><div class="section-icon blue"><i class="fa-solid fa-chart-bar"></i></div><h2 class="section-title">Breakdown Skor</h2><span class="section-sub">Maks 250/kategori</span></div><div class="card"><div class="card-body"><div class="breakdown-grid">';
-        var bd = sd.breakdown;
-        h += this.renderBd(bd.successRate, 'c-teal', 'fa-circle-check', bd.successRate.displayVal, 'Persentase transaksi confirmed. Curve logarithmic.');
-        h += this.renderBd(bd.volume, 'c-green', 'fa-users', bd.volume.displayVal, 'Unique counterparties (log-scaled) + total tx (diminishing returns) + entropy bonus.', bd.volume.detail);
-        h += this.renderBd(bd.age, 'c-amber', 'fa-clock', bd.age.displayVal, 'Dihitung dari timestamp transaksi pertama di blockchain.');
-        var rPct = Math.round(bd.risk.score / bd.risk.max * 100);
-        var rCol = rPct >= 70 ? 'c-mix-g' : rPct >= 40 ? 'c-mix-a' : 'c-mix-r';
-        var rExp = bd.risk.penalty === 0 ? 'Tidak ada penalty dari risk engine.' : bd.risk.penalty <= 30 ? 'Penalti ringan.' : bd.risk.penalty <= 80 ? 'Penalti sedang.' : 'Penalti berat.';
-        h += this.renderBd(bd.risk, rCol, 'fa-shield-halved', bd.risk.displayVal, rExp);
+        var bd = an.breakdown;
+        h += this.rBd(bd.successRate, 'c-teal', 'fa-circle-check', bd.successRate.displayVal, 'Persentase transaksi confirmed. Curve logarithmic.');
+        h += this.rBd(bd.volume, 'c-green', 'fa-users', bd.volume.displayVal, 'Unique counterparties (log) + total tx (diminishing) + entropy bonus.', bd.volume.detail);
+        h += this.rBd(bd.age, 'c-amber', 'fa-clock', bd.age.displayVal, 'Dari timestamp transaksi pertama di blockchain.');
+        var rP = Math.round(bd.risk.score / bd.risk.max * 100);
+        var rC = rP >= 70 ? 'c-mix-g' : rP >= 40 ? 'c-mix-a' : 'c-mix-r';
+        var rE = bd.risk.penalty === 0 ? 'Tidak ada penalty.' : bd.risk.penalty <= 30 ? 'Penalti ringan.' : bd.risk.penalty <= 80 ? 'Penalti sedang.' : 'Penalti berat.';
+        h += this.rBd(bd.risk, rC, 'fa-shield-halved', bd.risk.displayVal, rE);
         h += '</div></div></div></div>';
 
         // Why
-        h += '<div class="section" data-reveal><div class="section-head"><div class="section-icon green"><i class="fa-solid fa-lightbulb"></i></div><h2 class="section-title">Mengapa Skor Ini?</h2></div><div class="why-grid">' + this.genWhy(sd, m) + '</div></div>';
+        h += '<div class="section" data-reveal><div class="section-head"><div class="section-icon green"><i class="fa-solid fa-lightbulb"></i></div><h2 class="section-title">Mengapa Skor Ini?</h2></div><div class="why-grid">' + this.gW(an, m) + '</div></div>';
 
         // Risk
-        var critC = 0, highC = 0;
-        for (var r = 0; r < sd.riskFlags.length; r++) {
-          if (sd.riskFlags[r].severity === 'critical') critC++;
-          if (sd.riskFlags[r].severity === 'high') highC++;
-        }
-
-        h += '<div class="section" data-reveal><div class="section-head"><div class="section-icon red"><i class="fa-solid fa-triangle-exclamation"></i></div><h2 class="section-title">Analisis Risiko On-Chain</h2><span class="section-sub">' + sd.riskFlags.length + ' flag</span></div><div class="card"><div class="card-body">';
-        h += '<div class="risk-metrics">';
-        h += '<div class="risk-m"><div class="risk-m-val" style="color:' + (critC > 0 ? 'var(--danger)' : 'var(--success)') + '">' + critC + '</div><div class="risk-m-lbl">Critical</div></div>';
-        h += '<div class="risk-m"><div class="risk-m-val" style="color:' + (highC > 0 ? 'var(--warning)' : 'var(--success)') + '">' + highC + '</div><div class="risk-m-lbl">High</div></div>';
-        h += '<div class="risk-m"><div class="risk-m-val" style="color:' + (sd.breakdown.risk.penalty > 0 ? 'var(--danger)' : 'var(--success)') + '">-' + sd.breakdown.risk.penalty + '</div><div class="risk-m-lbl">Total Penalty</div></div></div>';
-
-        if (sd.riskFlags.length === 0) {
-          h += '<div class="no-flags"><i class="fa-solid fa-shield-halved"></i><h4>Wallet Bersih</h4><p>Tidak ada indikasi risiko dari analisa on-chain.</p></div>';
-        } else {
+        var cC = 0, hC = 0;
+        for (var i = 0; i < an.riskFlags.length; i++) { if (an.riskFlags[i].severity === 'critical') cC++; if (an.riskFlags[i].severity === 'high') hC++; }
+        h += '<div class="section" data-reveal><div class="section-head"><div class="section-icon red"><i class="fa-solid fa-triangle-exclamation"></i></div><h2 class="section-title">Analisis Risiko On-Chain</h2><span class="section-sub">' + an.riskFlags.length + ' flag</span></div><div class="card"><div class="card-body">';
+        h += '<div class="risk-metrics"><div class="risk-m"><div class="risk-m-val" style="color:' + (cC > 0 ? 'var(--danger)' : 'var(--success)') + '">' + cC + '</div><div class="risk-m-lbl">Critical</div></div><div class="risk-m"><div class="risk-m-val" style="color:' + (hC > 0 ? 'var(--warning)' : 'var(--success)') + '">' + hC + '</div><div class="risk-m-lbl">High</div></div><div class="risk-m"><div class="risk-m-val" style="color:' + (an.breakdown.risk.penalty > 0 ? 'var(--danger)' : 'var(--success)') + '">-' + an.breakdown.risk.penalty + '</div><div class="risk-m-lbl">Total Penalty</div></div></div>';
+        if (an.riskFlags.length === 0) { h += '<div class="no-flags"><i class="fa-solid fa-shield-halved"></i><h4>Wallet Bersih</h4><p>Tidak ada indikasi risiko.</p></div>'; }
+        else {
           h += '<div class="risk-list">';
           var sI = { critical: 'fa-skull-crossbones', high: 'fa-circle-exclamation', medium: 'fa-triangle-exclamation', low: 'fa-circle-info' };
-          for (var f = 0; f < sd.riskFlags.length; f++) {
-            var fl = sd.riskFlags[f];
-            var sv = fl.severity || 'low';
-            h += '<div class="risk-flag sev-' + sv + '" data-toggle-detail><div class="rf-icon"><i class="fa-solid ' + (sI[sv] || 'fa-circle-info') + '"></i></div><div class="rf-body"><div class="rf-head"><span class="rf-label">' + esc(fl.label) + '</span><span class="sev-tag ' + sv + '">' + sv + '</span></div><div class="rf-desc">' + esc(fl.description) + '</div>';
-            if (fl.detail) h += '<div class="rf-detail"><div class="rf-detail-inner">' + esc(fl.detail) + '</div></div>';
-            h += '</div><div class="rf-penalty">-' + (fl.penalty || 0) + '</div></div>';
-          }
+          for (var f = 0; f < an.riskFlags.length; f++) { var fl = an.riskFlags[f], sv = fl.severity || 'low'; h += '<div class="risk-flag sev-' + sv + '" data-toggle-detail><div class="rf-icon"><i class="fa-solid ' + (sI[sv] || 'fa-circle-info') + '"></i></div><div class="rf-body"><div class="rf-head"><span class="rf-label">' + esc(fl.label) + '</span><span class="sev-tag ' + sv + '">' + sv + '</span></div><div class="rf-desc">' + esc(fl.description) + '</div>'; if (fl.detail) h += '<div class="rf-detail"><div class="rf-detail-inner">' + esc(fl.detail) + '</div></div>'; h += '</div><div class="rf-penalty">-' + (fl.penalty || 0) + '</div></div>'; }
           h += '</div>';
         }
         h += '</div></div></div>';
-
         pc.innerHTML = h;
-        this.postRender(walletAddr, sd, m, gaugeColor);
+        this.pR(wa, an, m, gc);
       },
 
-      renderBd: function (item, colorCls, icon, dispVal, explain, extra) {
-        var pct = Math.round(item.score / item.max * 100);
-        var hasAvg = item.netAvg !== null && item.netAvg !== undefined;
-        var avgPct = hasAvg ? Math.round(item.netAvg / item.max * 100) : 0;
-        var cVar = colorCls === 'c-teal' ? 'var(--accent)' :
-          colorCls === 'c-green' || colorCls === 'c-mix-g' ? 'var(--success)' :
-            colorCls === 'c-amber' ? 'var(--warning)' : 'var(--danger)';
-
-        var s = '<div><div class="bd-head"><span class="bd-label"><i class="fa-solid ' + icon + '" style="color:' + cVar + '"></i> ' + item.label + '</span>';
-        s += '<span class="bd-vals"><span class="sc">' + item.score + '</span><span class="mx">/' + item.max + '</span>';
-        if (extra) s += '<span class="dt">(' + esc(extra) + ')</span>';
-        else s += '<span class="dt">(' + esc(dispVal) + ')</span>';
-        s += '</span></div><div class="bd-bar"><div class="bd-fill ' + colorCls + '" data-width="' + pct + '"></div>';
-        s += '<div class="bd-marker ' + (hasAvg ? 'has-avg' : '') + '" data-left="' + avgPct + '"></div></div>';
-        s += '<div class="bd-explain">' + explain + '</div>';
-        if (!hasAvg) s += '<div class="bd-no-avg">Network average belum tersedia dari backend</div>';
-        s += '</div>';
-        return s;
+      rBd: function (it, cc, ic, dv, ex, extra) {
+        var pct = Math.round(it.score / it.max * 100), ha = it.netAvg !== null && it.netAvg !== undefined, ap = ha ? Math.round(it.netAvg / it.max * 100) : 0;
+        var cv = cc === 'c-teal' ? 'var(--accent)' : cc === 'c-green' || cc === 'c-mix-g' ? 'var(--success)' : cc === 'c-amber' ? 'var(--warning)' : 'var(--danger)';
+        var s = '<div><div class="bd-head"><span class="bd-label"><i class="fa-solid ' + ic + '" style="color:' + cv + '"></i> ' + it.label + '</span><span class="bd-vals"><span class="sc">' + it.score + '</span><span class="mx">/' + it.max + '</span>';
+        s += extra ? '<span class="dt">(' + esc(extra) + ')</span>' : '<span class="dt">(' + esc(dv) + ')</span>';
+        s += '</span></div><div class="bd-bar"><div class="bd-fill ' + cc + '" data-width="' + pct + '"></div><div class="bd-marker ' + (ha ? 'has-avg' : '') + '" data-left="' + ap + '"></div></div><div class="bd-explain">' + ex + '</div>';
+        if (!ha) s += '<div class="bd-no-avg">Network average belum tersedia dari backend</div>';
+        return s + '</div>';
       },
 
-      genWhy: function (sd, m) {
-        var cards = [];
-        if (m.tx_total === 0) {
-          cards.push({ icon: 'fa-hourglass-start', type: 'neu', title: 'Belum Ada Transaksi', text: 'Wallet ini belum memiliki riwayat transaksi di Pi Blockchain.', impact: '0 / 500 poin', it: 'neu' });
-        } else {
-          if (m.success_rate >= 90) cards.push({ icon: 'fa-circle-check', type: 'pos', title: 'Tingkat Keberhasilan Tinggi', text: m.success_rate.toFixed(1) + '% dari ' + fmtNum(m.tx_total) + ' transaksi confirmed. Scoring logarithmic.', impact: '+' + sd.breakdown.successRate.score + ' poin', it: 'pos' });
-          else if (m.success_rate < 70) cards.push({ icon: 'fa-circle-xmark', type: 'neg', title: 'Banyak Transaksi Gagal', text: fmtNum(m.tx_failed) + ' gagal dari ' + fmtNum(m.tx_total) + '.', impact: '+' + sd.breakdown.successRate.score + ' poin (rendah)', it: 'neg' });
-          if (m.unique_counterparties >= 15) cards.push({ icon: 'fa-users', type: 'pos', title: 'Jaringan Counterparty Luas', text: m.unique_counterparties + ' alamat berbeda. Indikator aktivitas organik.', impact: '+' + sd.breakdown.volume.score + ' poin', it: 'pos' });
-          else if (m.unique_counterparties < 5 && m.tx_total > 10) cards.push({ icon: 'fa-user-group', type: 'neg', title: 'Counterparty Sempit', text: 'Hanya ' + m.unique_counterparties + ' counterparty dari ' + fmtNum(m.tx_total) + ' tx.', impact: '+' + sd.breakdown.volume.score + ' poin (rendah)', it: 'neg' });
+      gW: function (an, m) {
+        var c = [];
+        if (m.tx_total === 0) c.push({ i: 'fa-hourglass-start', t: 'neu', ti: 'Belum Ada Transaksi', tx: 'Wallet belum memiliki riwayat transaksi.', im: '0 / 500 poin' });
+        else {
+          if (m.success_rate >= 90) c.push({ i: 'fa-circle-check', t: 'pos', ti: 'Success Rate Tinggi', tx: m.success_rate.toFixed(1) + '% dari ' + fmtNum(m.tx_total) + ' tx confirmed.', im: '+' + an.breakdown.successRate.score + ' poin' });
+          else if (m.success_rate < 70) c.push({ i: 'fa-circle-xmark', t: 'neg', ti: 'Banyak Tx Gagal', tx: fmtNum(m.tx_failed) + ' gagal dari ' + fmtNum(m.tx_total) + '.', im: '+' + an.breakdown.successRate.score + ' poin (rendah)' });
+          if (m.unique_counterparties >= 15) c.push({ i: 'fa-users', t: 'pos', ti: 'Counterparty Luas', tx: m.unique_counterparties + ' alamat berbeda. Aktivitas organik.', im: '+' + an.breakdown.volume.score + ' poin' });
+          else if (m.unique_counterparties < 5 && m.tx_total > 10) c.push({ i: 'fa-user-group', t: 'neg', ti: 'Counterparty Sempit', tx: 'Hanya ' + m.unique_counterparties + ' dari ' + fmtNum(m.tx_total) + ' tx.', im: '+' + an.breakdown.volume.score + ' poin (rendah)' });
         }
-        if (m.age_days_on_chain >= 180) cards.push({ icon: 'fa-calendar-check', type: 'pos', title: 'Wallet Mapan', text: 'Aktif di blockchain selama ' + ChainAnalyzer.formatAge(m.age_days_on_chain) + '.', impact: '+' + sd.breakdown.age.score + ' poin', it: 'pos' });
-        else if (m.age_days_on_chain === 0) cards.push({ icon: 'fa-clock', type: 'neu', title: 'Usia Unknown', text: 'Belum ada transaksi pertama.', impact: '+' + sd.breakdown.age.score + ' poin', it: 'neu' });
-        if (sd.riskFlags.length === 0) cards.push({ icon: 'fa-shield-halved', type: 'pos', title: 'Profil Risiko Bersih', text: 'Risk engine tidak menemukan indikasi penyalahgunaan.', impact: 'Penuh (250/250)', it: 'pos' });
-        else cards.push({ icon: 'fa-triangle-exclamation', type: 'neg', title: sd.riskFlags.length + ' Risk Flag', text: 'Backend risk engine mendeteksi pola mencurigakan.', impact: '-' + sd.breakdown.risk.penalty + ' poin', it: 'neg' });
-
+        if (m.age_days_on_chain >= 180) c.push({ i: 'fa-calendar-check', t: 'pos', ti: 'Wallet Mapan', tx: 'Aktif ' + ChainAnalyzer.fmtAge(m.age_days_on_chain) + '.', im: '+' + an.breakdown.age.score + ' poin' });
+        else if (m.age_days_on_chain === 0) c.push({ i: 'fa-clock', t: 'neu', ti: 'Usia Unknown', tx: 'Belum ada tx pertama.', im: '+' + an.breakdown.age.score + ' poin' });
+        if (an.riskFlags.length === 0) c.push({ i: 'fa-shield-halved', t: 'pos', ti: 'Risiko Bersih', tx: 'Risk engine tidak menemukan indikasi penyalahgunaan.', im: 'Penuh (250/250)' });
+        else c.push({ i: 'fa-triangle-exclamation', t: 'neg', ti: an.riskFlags.length + ' Risk Flag', tx: 'Risk engine mendeteksi pola mencurigakan.', im: '-' + an.breakdown.risk.penalty + ' poin' });
         var s = '';
-        for (var i = 0; i < cards.length; i++) {
-          var c = cards[i];
-          var arrI = c.it === 'pos' ? 'fa-arrow-up' : c.it === 'neg' ? 'fa-arrow-down' : 'fa-minus';
-          s += '<div class="why-card"><div class="why-top"><div class="why-icon ' + c.it + '"><i class="fa-solid ' + c.icon + '"></i></div><div class="why-body"><div class="why-title">' + c.title + '</div><div class="why-text">' + c.text + '</div><div class="why-impact ' + c.it + '"><i class="fa-solid ' + arrI + '"></i> ' + c.impact + '</div></div></div></div>';
-        }
+        for (var j = 0; j < c.length; j++) { var x = c[j], ai = x.t === 'pos' ? 'fa-arrow-up' : x.t === 'neg' ? 'fa-arrow-down' : 'fa-minus'; s += '<div class="why-card"><div class="why-top"><div class="why-icon ' + x.t + '"><i class="fa-solid ' + x.i + '"></i></div><div class="why-body"><div class="why-title">' + x.ti + '</div><div class="why-text">' + x.tx + '</div><div class="why-impact ' + x.t + '"><i class="fa-solid ' + ai + '"></i> ' + x.im + '</div></div></div></div>'; }
         return s;
       },
 
-      postRender: function (walletAddr, sd, m, gaugeColor) {
-        this.drawGauge('scoreGauge', sd.score, sd.maxScore, gaugeColor);
-
-        var copyBtn = document.getElementById('copyWalletBtn');
-        if (copyBtn) {
-          copyBtn.addEventListener('click', function () {
-            var btn = this;
-            if (navigator.clipboard && navigator.clipboard.writeText) {
-              navigator.clipboard.writeText(walletAddr).then(function () {
-                btn.classList.add('copied');
-                btn.innerHTML = '<i class="fa-solid fa-check"></i> Disalin';
-                showToast('Wallet address disalin', 'success', 2000);
-                setTimeout(function () { btn.classList.remove('copied'); btn.innerHTML = '<i class="fa-regular fa-copy"></i> Salin'; }, 2000);
-              }).catch(function () { fallbackCopy(walletAddr, btn); });
-            } else { fallbackCopy(walletAddr, btn); }
-          });
-        }
-
-        var flags = document.querySelectorAll('[data-toggle-detail]');
-        for (var i = 0; i < flags.length; i++) {
-          (function (el) {
-            el.addEventListener('click', function () {
-              var d = el.querySelector('.rf-detail');
-              if (d) d.classList.toggle('open');
-            });
-          })(flags[i]);
-        }
-
-        this.animC('animTx', 0, m.tx_total, 1200);
-        this.animC('animRate', 0, m.success_rate, 1000, '%', 1);
-
-        var selfRef = this;
+      pR: function (wa, an, m, gc) {
+        this.drawGauge('scoreGauge', an.score, an.maxScore, gc);
+        var cb = document.getElementById('copyBtn');
+        if (cb) cb.addEventListener('click', function () { var b = this; if (navigator.clipboard && navigator.clipboard.writeText) { navigator.clipboard.writeText(wa).then(function () { b.classList.add('copied'); b.innerHTML = '<i class="fa-solid fa-check"></i> Disalin'; showToast('Disalin', 'success', 2000); setTimeout(function () { b.classList.remove('copied'); b.innerHTML = '<i class="fa-regular fa-copy"></i> Salin'; }, 2000); }).catch(function () { fCopy(wa, b); }); } else { fCopy(wa, b); } });
+        var fl = document.querySelectorAll('[data-toggle-detail]');
+        for (var i = 0; i < fl.length; i++) { (function (el) { el.addEventListener('click', function () { var d = el.querySelector('.rf-detail'); if (d) d.classList.toggle('open'); }); })(fl[i]); }
+        this.aC('animTx', 0, m.tx_total, 1200);
+        this.aC('animRate', 0, m.success_rate, 1000, '%', 1);
         setTimeout(function () {
-          var fills = document.querySelectorAll('[data-width]');
-          for (var j = 0; j < fills.length; j++) {
-            var el = fills[j];
-            if (el.classList.contains('bd-fill') || el.classList.contains('total-bar-fill') || el.classList.contains('tx-fail-ok') || el.classList.contains('tx-fail-fail')) {
-              el.style.width = el.getAttribute('data-width') + '%';
-            }
-          }
-          var markers = document.querySelectorAll('[data-left]');
-          for (var k = 0; k < markers.length; k++) {
-            markers[k].style.left = markers[k].getAttribute('data-left') + '%';
-          }
+          var els = document.querySelectorAll('[data-width]');
+          for (var j = 0; j < els.length; j++) { var e = els[j]; if (e.classList.contains('bd-fill') || e.classList.contains('total-bar-fill') || e.classList.contains('tx-fail-ok') || e.classList.contains('tx-fail-fail')) e.style.width = e.getAttribute('data-width') + '%'; }
+          var mks = document.querySelectorAll('[data-left]');
+          for (var k = 0; k < mks.length; k++) mks[k].style.left = mks[k].getAttribute('data-left') + '%';
         }, 300);
-
-        this.initReveal();
+        this.iR();
       },
 
-      animC: function (id, start, end, dur, suf, dec) {
-        suf = suf || ''; dec = dec || 0;
-        var el = document.getElementById(id);
-        if (!el) return;
-        var range = end - start;
-        var st = null;
-        function step(ts) {
-          if (!st) st = ts;
-          var p = Math.min(1, (ts - st) / dur);
-          var ease = 1 - Math.pow(1 - p, 3);
-          var cur = start + range * ease;
-          el.textContent = (dec > 0 ? cur.toFixed(dec) : Math.floor(cur)) + suf;
-          if (p < 1) requestAnimationFrame(step);
-          else el.textContent = (dec > 0 ? end.toFixed(dec) : end) + suf;
-        }
+      aC: function (id, s, e, d, sf, dc) {
+        sf = sf || ''; dc = dc || 0; var el = document.getElementById(id); if (!el) return; var rng = e - s, st = null;
+        function step(ts) { if (!st) st = ts; var p = Math.min(1, (ts - st) / d), ea = 1 - Math.pow(1 - p, 3), cur = s + rng * ea; el.textContent = (dc > 0 ? cur.toFixed(dc) : Math.floor(cur)) + sf; if (p < 1) requestAnimationFrame(step); else el.textContent = (dc > 0 ? e.toFixed(dc) : e) + sf; }
         requestAnimationFrame(step);
       },
 
-      initReveal: function () {
-        var secs = document.querySelectorAll('[data-reveal]');
-        if (!secs.length) return;
-        var obs = new IntersectionObserver(function (entries) {
-          for (var i = 0; i < entries.length; i++) {
-            if (entries[i].isIntersecting) {
-              entries[i].target.classList.add('visible');
-              obs.unobserve(entries[i].target);
-            }
-          }
-        }, { threshold: 0.1, rootMargin: '0px 0px -40px 0px' });
-        for (var j = 0; j < secs.length; j++) obs.observe(secs[j]);
+      iR: function () {
+        var ss = document.querySelectorAll('[data-reveal]'); if (!ss.length) return;
+        var ob = new IntersectionObserver(function (en) { for (var i = 0; i < en.length; i++) { if (en[i].isIntersecting) { en[i].target.classList.add('visible'); ob.unobserve(en[i].target); } } }, { threshold: 0.1, rootMargin: '0px 0px -40px 0px' });
+        for (var j = 0; j < ss.length; j++) ob.observe(ss[j]);
       }
     };
 
-    function fallbackCopy(text, btn) {
-      var ta = document.createElement('textarea');
-      ta.value = text;
-      ta.style.position = 'fixed';
-      ta.style.left = '-9999px';
-      document.body.appendChild(ta);
-      ta.focus();
-      ta.select();
-      try {
-        document.execCommand('copy');
-        if (btn) {
-          btn.classList.add('copied');
-          btn.innerHTML = '<i class="fa-solid fa-check"></i> Disalin';
-          setTimeout(function () { btn.classList.remove('copied'); btn.innerHTML = '<i class="fa-regular fa-copy"></i> Salin'; }, 2000);
-        }
-        showToast('Wallet address disalin', 'success', 2000);
-      } catch (e) { showToast('Gagal menyalin', 'error', 2000); }
+    function fCopy(t, b) {
+      var ta = document.createElement('textarea'); ta.value = t; ta.style.position = 'fixed'; ta.style.left = '-9999px'; document.body.appendChild(ta); ta.focus(); ta.select();
+      try { document.execCommand('copy'); if (b) { b.classList.add('copied'); b.innerHTML = '<i class="fa-solid fa-check"></i> Disalin'; setTimeout(function () { b.classList.remove('copied'); b.innerHTML = '<i class="fa-regular fa-copy"></i> Salin'; }, 2000); } showToast('Disalin', 'success', 2000); }
+      catch (e) { showToast('Gagal menyalin', 'error', 2000); }
       document.body.removeChild(ta);
     }
 
-    /* ═══════════════════════════════════════════════════════════
-       APP INIT
-       ═══════════════════════════════════════════════════════════ */
+    /* ═══════════════ APP INIT ═══════════════ */
 
-    var currentWallet = null;
-    var currentSource = null;
+    var curW = null, curS = null;
 
-    function clearAllSession() {
-      var lsKeys = ['whs_pi_user', 'whs_pi_token', 'whs_login_time', 'whs_incomplete_payment', 'whs_wallet', 'whs_db_user_id', 'pi_user', 'pi_auth'];
-      var ssKeys = ['wallet_address', 'whs_pi_user', 'currentWallet', 'walletData'];
-      if (currentWallet) ssKeys.push(CACHE_PREFIX + currentWallet);
-
-      for (var i = 0; i < lsKeys.length; i++) {
-        try { localStorage.removeItem(lsKeys[i]); } catch (e) { /* ignore */ }
-      }
-      for (var j = 0; j < ssKeys.length; j++) {
-        try { sessionStorage.removeItem(ssKeys[j]); } catch (e) { /* ignore */ }
-      }
+    function clearAll() {
+      ['whs_pi_user', 'whs_pi_token', 'whs_login_time', 'whs_incomplete_payment', 'whs_wallet', 'whs_db_user_id', 'pi_user', 'pi_auth'].forEach(function (k) { try { localStorage.removeItem(k); } catch (e) {} });
+      ['wallet_address', 'whs_pi_user', 'currentWallet', 'walletData'].forEach(function (k) { try { sessionStorage.removeItem(k); } catch (e) {} });
+      if (curW) try { sessionStorage.removeItem(CACHE_PREFIX + curW); } catch (e) {}
     }
 
-    /* Helper untuk guard debug — tidak pakai IIFE yang bisa crash */
-    function buildGuardDebug() {
-      var lines = [];
-      lines.push('URL: ' + window.location.href);
-
-      var ssAddr = safeSessionGet('wallet_address');
-      lines.push('SS.wallet_address: ' + (ssAddr ? '"' + ssAddr + '"' : 'null'));
-
-      var ssUser = safeSessionGet('whs_pi_user');
-      lines.push('SS.whs_pi_user: ' + (ssUser ? '"' + ssUser.substring(0, 80) + '..."' : 'null'));
-
-      var lsUser = safeLocalGet('whs_pi_user');
-      lines.push('LS.whs_pi_user: ' + (lsUser ? '"' + lsUser.substring(0, 80) + '..."' : 'null'));
-
-      return lines.join('\n');
+    function buildDbg() {
+      var l = [];
+      l.push('URL: ' + window.location.href);
+      var a = safeSSGet('wallet_address'); l.push('SS.wallet_address: ' + (a ? '"' + a + '"' : 'null'));
+      var b = safeSSGet('whs_pi_user'); l.push('SS.whs_pi_user: ' + (b ? '"' + b.substring(0, 80) + '..."' : 'null'));
+      var c = safeLSGet('whs_pi_user'); l.push('LS.whs_pi_user: ' + (c ? '"' + c.substring(0, 80) + '..."' : 'null'));
+      return l.join('\n');
     }
 
     async function initApp() {
-      var guardScreen = document.getElementById('guardScreen');
-      var mainWrapper = document.getElementById('mainWrapper');
-      var loadingScreen = document.getElementById('loadingScreen');
-      var loadingSub = document.getElementById('loadingSub');
-      var guardDetail = document.getElementById('guardDetail');
-      var guardDebug = document.getElementById('guardDebug');
+      var gs = document.getElementById('guardScreen');
+      var mw = document.getElementById('mainWrapper');
+      var ls = document.getElementById('loadingScreen');
+      var sub = document.getElementById('loadingSub');
 
-      // STEP 1: Resolve wallet address
       var resolved = resolveWalletAddress();
 
       if (!resolved) {
-        // Tampilkan guard screen dengan debug info
-        mainWrapper.style.display = 'none';
-        guardScreen.classList.add('active');
-        loadingScreen.style.display = 'none';
-        guardDetail.textContent = 'Tidak ada wallet address di URL atau storage.';
-        guardDebug.textContent = buildGuardDebug();
+        mw.style.display = 'none'; gs.classList.add('active'); ls.style.display = 'none';
+        document.getElementById('guardDetail').textContent = 'Tidak ada wallet address di URL atau storage.';
+        document.getElementById('guardDebug').textContent = buildDbg();
         return;
       }
 
-      currentWallet = resolved.address;
-      currentSource = resolved.source;
+      curW = resolved.address;
+      curS = resolved.source;
 
-      // Bersihkan URL param setelah dibaca
       if (resolved.source === 'url_param') {
-        try { window.history.replaceState({}, '', window.location.pathname); } catch (e) { /* ignore */ }
+        try { window.history.replaceState({}, '', window.location.pathname); } catch (e) {}
       }
 
-      // STEP 2: Fetch chain data
-      loadingSub.textContent = 'Mengambil data untuk ' + currentWallet.substring(0, 14) + '...';
+      sub.textContent = 'Mengambil data untuk ' + curW.substring(0, 14) + '...';
 
       try {
-        var result = await fetchChainData(currentWallet);
+        var result = await fetchChainData(curW);
         var chainData = result.data;
 
-        if (result.fromCache) {
-          loadingSub.textContent = 'Menggunakan data cache...';
-        } else {
-          loadingSub.textContent = 'Menganalisis ' + chainData.source + '...';
+        if (result.fromCache) sub.textContent = 'Menggunakan data cache...';
+        else sub.textContent = 'Menganalisis ' + chainData.source + '...';
+
+        await new Promise(function (r) { setTimeout(r, 400); });
+
+        /* Guard: validasi data SEBELUM analisa */
+        if (!chainData || !chainData.metrics || !chainData.risk) {
+          throw new Error('Data dari API tidak memiliki struktur yang valid (missing metrics/risk)');
         }
 
-        // Simulasi delay analisis
-        await new Promise(function (r) { setTimeout(r, 500); });
-
-        // STEP 3: Analisa
         var analysis = ChainAnalyzer.analyze(chainData);
 
-        // STEP 4: Render
-        mainWrapper.style.display = 'flex';
-        loadingScreen.style.display = 'none';
+        mw.style.display = 'flex';
+        ls.style.display = 'none';
+        UI.render(curW, curS, chainData, analysis);
 
-        UI.render(currentWallet, currentSource, chainData, analysis);
-
-        // Toast
-        if (chainData.source === 'pi_blockchain') {
-          showToast('Data on-chain berhasil dianalisis', 'success', 3000);
-        } else if (chainData.source === 'mock_fallback') {
-          showToast('Mode fallback — bukan data asli', 'warning', 4000);
-        } else {
-          showToast('Data dianalisis dari: ' + chainData.source, 'info', 3000);
-        }
-        if (result.fromCache) {
-          showToast('Data dari cache (' + Math.round(CACHE_TTL / 1000) + 's)', 'info', 2000);
-        }
+        if (chainData.source === 'pi_blockchain') showToast('Data on-chain berhasil dianalisis', 'success', 3000);
+        else if (chainData.source === 'mock_fallback') showToast('Mode fallback — bukan data asli', 'warning', 4000);
+        else showToast('Data dari: ' + chainData.source, 'info', 3000);
+        if (result.fromCache) showToast('Dari cache (' + Math.round(CACHE_TTL / 1000) + 's)', 'info', 2000);
 
       } catch (e) {
         console.error('[App] Fatal:', e);
-        mainWrapper.style.display = 'flex';
-        loadingScreen.style.display = 'none';
+        mw.style.display = 'flex';
+        ls.style.display = 'none';
         document.getElementById('pageContent').innerHTML =
-          '<div class="error-state">' +
-          '<i class="fa-solid fa-link-slash"></i>' +
-          '<h3>Gagal Memproses Data</h3>' +
-          '<p>Terjadi kesalahan saat mengambil atau menganalisa data.</p>' +
-          '<button class="btn-primary" onclick="location.reload()"><i class="fa-solid fa-arrows-rotate"></i> Coba Lagi</button>' +
-          '<p class="error-detail">' + esc(e.message) + '</p>' +
-          '</div>';
+          '<div class="error-state"><i class="fa-solid fa-link-slash"></i><h3>Gagal Memproses Data</h3><p>Terjadi kesalahan saat mengambil atau menganalisa data.</p><button class="btn-primary" onclick="location.reload()"><i class="fa-solid fa-arrows-rotate"></i> Coba Lagi</button><p class="error-detail">' + esc(e.message) + '</p></div>';
       }
     }
 
-    // Refresh button
     document.getElementById('refreshBtn').addEventListener('click', function () {
-      if (!currentWallet) return;
-      var btn = this;
-      if (btn.classList.contains('spinning')) return;
-      btn.classList.add('spinning');
-      btn.disabled = true;
-
-      try { sessionStorage.removeItem(CACHE_PREFIX + currentWallet); } catch (e) { /* ignore */ }
-
-      fetchChainData(currentWallet).then(function (result) {
-        var analysis = ChainAnalyzer.analyze(result.data);
-        UI.render(currentWallet, currentSource, result.data, analysis);
-        showToast('Data diperbarui' + (result.fromCache ? ' (cache)' : ''), 'success');
-      }).catch(function (e) {
-        showToast('Gagal refresh: ' + e.message, 'error');
-      }).finally(function () {
-        btn.classList.remove('spinning');
-        btn.disabled = false;
-      });
+      if (!curW) return; var btn = this; if (btn.classList.contains('spinning')) return;
+      btn.classList.add('spinning'); btn.disabled = true;
+      try { sessionStorage.removeItem(CACHE_PREFIX + curW); } catch (e) {}
+      fetchChainData(curW).then(function (r) { var a = ChainAnalyzer.analyze(r.data); UI.render(curW, curS, r.data, a); showToast('Diperbarui' + (r.fromCache ? ' (cache)' : ''), 'success'); }).catch(function (e) { showToast('Gagal: ' + e.message, 'error'); }).finally(function () { btn.classList.remove('spinning'); btn.disabled = false; });
     });
 
-    // Logout button
     document.getElementById('logoutBtn').addEventListener('click', function () {
-      clearAllSession();
-      showToast('Sesi berakhir', 'info', 1500);
+      clearAll(); showToast('Sesi berakhir', 'info', 1500);
       setTimeout(function () { window.location.href = 'login.html'; }, 800);
     });
 
-    // START
     document.addEventListener('DOMContentLoaded', initApp);
   </script>
 </body>
