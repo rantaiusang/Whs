@@ -13,11 +13,15 @@
   <script src="https://sdk.minepi.com/pi-sdk.js"></script>
   
   <!-- 
-    FIX RAJA CDN UNTUK PI BROWSER: 
-    Pakai path UMD eksplisit versi stabil (2.39.7) tanpa defer. 
-    Ini memaksa Pi Browser memuat format JS lama yang kompatibel.
+    ╔══════════════════════════════════════════════════════════════╗
+    ║  FIX UTAMA: CDN SUPABASE DIHAPUS TOTAL                      ║
+    ║                                                              ║
+    ║  Sebelumnya: memuat @supabase/supabase-js dari jsdelivr      ║
+    ║  Masalah:   Pi Browser tidak bisa load script dari CDN       ║
+    ║  Solusi:    Langsung pakai fetch() ke Supabase REST API      ║
+    ║             Tanpa library eksternal — 100% native browser    ║
+    ╚══════════════════════════════════════════════════════════════╝
   -->
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.39.7/dist/umd/supabase.min.js"></script>
 
   <style>
     :root {
@@ -272,37 +276,125 @@
   </div>
 
   <script>
-    var SUPABASE_URL = 'https://valpwlebldnkedrznaym.supabase.co';
-    var SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZhbHB3bGVibGRua2VkcnpuYXltIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODI3Mzk3ODUsImV4cCI6MjA5ODMxNTc4NX0.G3BDRqiRBmcFwtBRtdiJI3CkptRrya9bxiVozcQZCSc';
-    var supabase = null;
+    /* ╔════════════════════════════════════════════════════════════════╗
+       ║  KONFIGURASI SUPABASE                                        ║
+       ╚════════════════════════════════════════════════════════════════╝ */
+    var SUPABASE_URL  = 'https://valpwlebldnkedrznaym.supabase.co';
+    var SUPABASE_KEY  = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZhbHB3bGVibGRua2VkcnpuYXltIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODI3Mzk3ODUsImV4cCI6MjA5ODMxNTc4NX0.G3BDRqiRBmcFwtBRtdiJI3CkptRrya9bxiVozcQZCSc';
+    var SUPABASE_REST = SUPABASE_URL + '/rest/v1';
 
-    /* 
-     * FIX RAJA CDN UNTUK PI BROWSER: 
-     * Karena kita memaksa UMD di <head>, di sini kita tinggal langsung pakai.
-     * Tetap kita bungkus try-catch untuk keamanan.
-     */
-    function ensureSupabase() {
-      if (supabase && typeof supabase.from === 'function') return true;
-      
-      try {
-        if (window.supabase && typeof window.supabase.createClient === 'function') {
-          supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-          
-          // DEBUG LOG UNTUK MEMASTIKAN .from() ADA
-          console.log('[INIT] Supabase Client dibuat. Apakah .from ada? ', typeof supabase.from);
-          
-          if (typeof supabase.from === 'function') {
-            return true;
-          } else {
-             console.error("[INIT] Client dibuat tapi .from tidak ada! CDN UMD gagal di Pi Browser.");
-            return false;
-          }
-        }
-      } catch (e) {
-        console.error('[INIT] Gagal init Supabase:', e.message);
+    /* ╔════════════════════════════════════════════════════════════════╗
+       ║  SUPABASE REST WRAPPER — TANPA CDN, 100% NATIVE FETCH        ║
+       ║                                                              ║
+       ║  Mengapa pendekatan ini?                                      ║
+       ║  • Pi Browser tidak bisa load script dari CDN eksternal       ║
+       ║  • Supabase REST API bisa dipanggil langsung via fetch()      ║
+       ║  • Tidak perlu library — cukup header apikey + Bearer token   ║
+       ║  • Kompatibel dengan SEMUA browser yang support fetch         ║
+       ╚════════════════════════════════════════════════════════════════╝ */
+
+    function sbHeaders(extra) {
+      var h = {
+        'apikey':        SUPABASE_KEY,
+        'Authorization': 'Bearer ' + SUPABASE_KEY,
+        'Content-Type':  'application/json',
+        'Prefer':        'return=representation'
+      };
+      if (extra) {
+        for (var k in extra) { if (extra.hasOwnProperty(k)) h[k] = extra[k]; }
       }
-      return false;
+      return h;
     }
+
+    /**
+     * SELECT satu baris: GET /rest/v1/{table}?{col}=eq.{val}&limit=1
+     * @returns {object|null} baris data, atau null jika tidak ketemu
+     */
+    async function sbSelectOne(table, col, val) {
+      var url = SUPABASE_REST + '/' + table 
+        + '?' + col + '=eq.' + encodeURIComponent(val) 
+        + '&limit=1';
+      
+      var res = await fetch(url, { 
+        method: 'GET', 
+        headers: sbHeaders() 
+      });
+      
+      if (!res.ok) {
+        var errBody = '';
+        try { errBody = await res.text(); } catch(e) {}
+        throw new Error('HTTP ' + res.status + (errBody ? ': ' + errBody.substring(0, 200) : ''));
+      }
+      
+      var data = await res.json();
+      return (Array.isArray(data) && data.length > 0) ? data[0] : null;
+    }
+
+    /**
+     * INSERT satu baris: POST /rest/v1/{table}
+     * @returns {object|null} baris yang di-insert (karena Prefer: return=representation)
+     */
+    async function sbInsert(table, row) {
+      var res = await fetch(SUPABASE_REST + '/' + table, {
+        method: 'POST',
+        headers: sbHeaders(),
+        body: JSON.stringify(row)
+      });
+
+      if (!res.ok) {
+        var errBody = '';
+        try { errBody = await res.text(); } catch(e) {}
+        throw new Error('HTTP ' + res.status + (errBody ? ': ' + errBody.substring(0, 200) : ''));
+      }
+
+      var data = await res.json();
+      return (Array.isArray(data) && data.length > 0) ? data[0] : null;
+    }
+
+    /**
+     * UPDATE baris: PATCH /rest/v1/{table}?{col}=eq.{val}
+     * @returns {boolean} true jika berhasil
+     */
+    async function sbUpdate(table, col, val, updates) {
+      var url = SUPABASE_REST + '/' + table 
+        + '?' + col + '=eq.' + encodeURIComponent(val);
+      
+      var res = await fetch(url, {
+        method: 'PATCH',
+        headers: sbHeaders(),
+        body: JSON.stringify(updates)
+      });
+
+      if (!res.ok) {
+        var errBody = '';
+        try { errBody = await res.text(); } catch(e) {}
+        throw new Error('HTTP ' + res.status + (errBody ? ': ' + errBody.substring(0, 200) : ''));
+      }
+
+      return true;
+    }
+
+    /**
+     * Connectivity check — ping Supabase REST endpoint
+     * Dipanggil sekali saat init untuk deteksi masalah jaringan awal
+     */
+    async function sbPing() {
+      try {
+        // Hit endpoint yang ringan, cek saja header response
+        var res = await fetch(SUPABASE_REST + '/wallet?limit=0', { 
+          method: 'GET', 
+          headers: sbHeaders() 
+        });
+        return res.ok || res.status === 401; // 401 masih berarti server reachable
+      } catch (e) {
+        console.error('[PING] Gagal reach Supabase:', e.message);
+        return false;
+      }
+    }
+
+    /* ╔════════════════════════════════════════════════════════════════╗
+       ║  UTILITAS UMUM                                               ║
+       ╚════════════════════════════════════════════════════════════════╝ */
 
     function showToast(msg, type, dur) {
       type = type || 'info'; dur = dur || 3000;
@@ -341,57 +433,76 @@
       return { ok: true, uid: uid, username: localUser.username };
     }
 
+    /* ╔════════════════════════════════════════════════════════════════╗
+       ║  FETCH OR CREATE WALLET — REWRITTEN UNTUK REST API           ║
+       ╚════════════════════════════════════════════════════════════════╝ */
+
     async function fetchOrCreateWallet(uid, username) {
-      if (!ensureSupabase()) return { error: 'no_supabase' };
-
+      // Langsung pakai REST — tidak ada lagi ensureSupabase() yang bergantung CDN
       try {
-        var { data: existing, error: fetchErr } = await supabase
-          .from('wallet')
-          .select('*')
-          .eq('wallet_address', uid)
-          .single();
-
-        if (fetchErr && fetchErr.code !== 'PGRST116') {
-          return { error: 'fetch_failed', detail: fetchErr.message };
-        }
+        // 1. Cek apakah wallet sudah ada
+        var existing = await sbSelectOne('wallet', 'wallet_address', uid);
 
         if (existing) {
-          await supabase.from('wallet')
-            .update({ last_login: new Date().toISOString() })
-            .eq('wallet_address', uid);
+          // 2a. Wallet ada → update last_login
+          try {
+            await sbUpdate('wallet', 'wallet_address', uid, {
+              last_login: new Date().toISOString()
+            });
+          } catch (updateErr) {
+            // Update last_login gagal bukan fatal, log saja
+            console.warn('[DB] Update last_login gagal (non-fatal):', updateErr.message);
+          }
           return { data: existing, isNew: false };
         }
 
-        var { data: created, error: insertErr } = await supabase
-          .from('wallet')
-          .insert({
-            user_id:          uid,
-            wallet_address:   uid, 
-            score:            0,
-            success_rate:     0,
-            tx_total:         0,
-            risk_flags:       [],
-            risk_penalty:     0,
-            wallet_age_days:  0,
-            last_login:       new Date().toISOString()
-          })
-          .select()
-          .single();
+        // 2b. Wallet belum ada → insert baru
+        var created = await sbInsert('wallet', {
+          user_id:          uid,
+          wallet_address:   uid,
+          score:            0,
+          success_rate:     0,
+          tx_total:         0,
+          risk_flags:       [],
+          risk_penalty:     0,
+          wallet_age_days:  0,
+          last_login:       new Date().toISOString()
+        });
 
-        if (insertErr) {
-          return { error: 'insert_failed', detail: insertErr.message };
+        if (!created) {
+          return { error: 'insert_failed', detail: 'Server tidak mengembalikan data setelah insert' };
         }
 
         return { data: created, isNew: true };
 
-      } catch(e) {
-        return { error: 'exception', detail: e.message };
+      } catch (e) {
+        // Tangani error spesifik untuk diagnosa yang lebih baik
+        var msg = e.message || '';
+        
+        if (msg.indexOf('Failed to fetch') !== -1 || msg.indexOf('NetworkError') !== -1 || msg.indexOf('net::') !== -1) {
+          return { error: 'network_error', detail: 'Tidak bisa terhubung ke server Supabase. Periksa koneksi internet Anda.' };
+        }
+        if (msg.indexOf('HTTP 401') !== -1 || msg.indexOf('JWT') !== -1) {
+          return { error: 'auth_error', detail: 'API key tidak valid atau sudah expired.' };
+        }
+        if (msg.indexOf('HTTP 403') !== -1 || msg.indexOf('RLS') !== -1) {
+          return { error: 'permission_error', detail: 'Akses ditolak. Pastikan tabel "wallet" memiliki RLS policy yang benar untuk anon key.' };
+        }
+        if (msg.indexOf('HTTP 500') !== -1 || msg.indexOf('502') !== -1 || msg.indexOf('503') !== -1) {
+          return { error: 'server_error', detail: 'Server Supabase sedang bermasalah. Coba lagi beberapa saat.' };
+        }
+
+        return { error: 'exception', detail: msg };
       }
     }
 
+    /* ╔════════════════════════════════════════════════════════════════╗
+       ║  INIT APP                                                    ║
+       ╚════════════════════════════════════════════════════════════════╝ */
+
     async function initApp() {
-      var guardScreen = document.getElementById('guardScreen');
-      var mainWrapper = document.getElementById('mainWrapper');
+      var guardScreen  = document.getElementById('guardScreen');
+      var mainWrapper  = document.getElementById('mainWrapper');
       var loadingScreen = document.getElementById('loadingScreen');
       var guardDetail  = document.getElementById('guardDetail');
 
@@ -414,14 +525,51 @@
           console.error('[DB] ' + walletResult.error + ': ' + (walletResult.detail || ''));
           mainWrapper.style.display = 'flex';
           loadingScreen.style.display = 'none';
-          if (walletResult.error === 'no_supabase') {
-            document.getElementById('pageContent').innerHTML = '<div style="text-align:center;padding:60px 20px;"><i class="fa-solid fa-database" style="font-size:2rem;color:var(--danger);opacity:0.5;margin-bottom:12px;display:block;"></i><h3 style="font-family:var(--font-display);margin-bottom:8px;">Backend Tidak Tersedia</h3><p style="color:var(--text-muted);font-size:0.88rem;max-width:320px;margin:0 auto;">CDN Supabase tidak kompatibel dengan Pi Browser saat ini.</p></div>';
-          } else {
-            showToast('Gagal memuat data: ' + (walletResult.detail || 'Error'), 'warning', 5000);
+
+          // Tampilkan error page yang INFORMATIF berdasarkan jenis error
+          var errTitle = 'Gagal Memuat Data';
+          var errDesc  = walletResult.detail || 'Terjadi kesalahan tidak diketahui.';
+          var errIcon  = 'fa-circle-xmark';
+          var errColor = 'var(--danger)';
+
+          switch (walletResult.error) {
+            case 'network_error':
+              errTitle = 'Tidak Ada Koneksi';
+              errIcon  = 'fa-wifi';
+              errDesc  = 'Pi Browser tidak dapat terhubung ke server Supabase. Pastikan koneksi internet aktif dan coba lagi.';
+              break;
+            case 'auth_error':
+              errTitle = 'API Key Bermasalah';
+              errIcon  = 'fa-key';
+              errDesc  = 'API key Supabase tidak valid. Hubungi developer.';
+              break;
+            case 'permission_error':
+              errTitle = 'Akses Ditolak';
+              errIcon  = 'fa-ban';
+              errDesc  = 'Tabel "wallet" menolak akses anon. Pastikan RLS policy sudah diatur dengan benar di Supabase Dashboard.';
+              break;
+            case 'server_error':
+              errTitle = 'Server Bermasalah';
+              errIcon  = 'fa-server';
+              errDesc  = 'Supabase sedang mengalami gangguan. Coba lagi dalam beberapa menit.';
+              errColor = 'var(--warning)';
+              break;
           }
+
+          document.getElementById('pageContent').innerHTML = 
+            '<div style="text-align:center;padding:60px 20px;">' +
+              '<i class="fa-solid ' + errIcon + '" style="font-size:2.5rem;color:' + errColor + ';opacity:0.5;margin-bottom:16px;display:block;"></i>' +
+              '<h3 style="font-family:var(--font-display);margin-bottom:10px;font-size:1.1rem;">' + errTitle + '</h3>' +
+              '<p style="color:var(--text-muted);font-size:0.88rem;max-width:340px;margin:0 auto 20px;line-height:1.6;">' + escapeHtml(errDesc) + '</p>' +
+              '<button class="btn-primary" onclick="location.reload()" style="font-size:0.82rem;padding:10px 24px;">' +
+                '<i class="fa-solid fa-arrows-rotate"></i> Coba Lagi' +
+              '</button>' +
+              '<p style="color:var(--text-muted);font-size:0.7rem;margin-top:16px;opacity:0.6;">Error: ' + escapeHtml(walletResult.error) + '</p>' +
+            '</div>';
           return;
         }
 
+        // Berhasil — render UI
         mainWrapper.style.display = 'flex';
         loadingScreen.style.display = 'none';
 
@@ -436,9 +584,18 @@
         console.error('[INIT] Fatal error:', e);
         mainWrapper.style.display = 'flex';
         loadingScreen.style.display = 'none';
-        document.getElementById('pageContent').innerHTML = '<div style="text-align:center;padding:60px 20px;"><p style="color:var(--danger);">Error: ' + escapeHtml(e.message) + '</p></div>';
+        document.getElementById('pageContent').innerHTML = 
+          '<div style="text-align:center;padding:60px 20px;">' +
+            '<i class="fa-solid fa-bug" style="font-size:2rem;color:var(--danger);opacity:0.5;margin-bottom:12px;display:block;"></i>' +
+            '<h3 style="font-family:var(--font-display);margin-bottom:8px;">Unexpected Error</h3>' +
+            '<p style="color:var(--text-muted);font-size:0.82rem;max-width:320px;margin:0 auto;word-break:break-all;">' + escapeHtml(e.message) + '</p>' +
+          '</div>';
       }
     }
+
+    /* ╔════════════════════════════════════════════════════════════════╗
+       ║  NORMALIZE & RENDER — TIDAK BERUBAH                         ║
+       ╚════════════════════════════════════════════════════════════════╝ */
 
     function normalizeWalletData(dbRow, isNew, realUsername) {
       var riskFlags = [];
@@ -623,8 +780,8 @@
       var btn = this; var icon = btn.querySelector('i'); icon.classList.add('fa-spin'); btn.disabled = true;
       fetchOrCreateWallet(verifiedUser.uid, verifiedUser.username).then(function(res) {
         if (!res.error && res.data) { var data = normalizeWalletData(res.data, false, verifiedUser.username); render(data); showToast('Data diperbarui (Real-time)', 'success'); }
-        else { showToast('Gagal memperbarui data', 'error'); }
-      }).catch(function() { showToast('Error koneksi', 'error'); }).finally(function() { icon.classList.remove('fa-spin'); btn.disabled = false; });
+        else { showToast('Gagal memperbarui: ' + (res.detail || 'Error'), 'error', 5000); }
+      }).catch(function(e) { showToast('Error koneksi: ' + e.message, 'error'); }).finally(function() { icon.classList.remove('fa-spin'); btn.disabled = false; });
     });
 
     document.getElementById('logoutBtn').addEventListener('click', function() {
