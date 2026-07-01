@@ -10,8 +10,10 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=DM+Sans:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
-  <script src="https://sdk.minepi.com/pi-sdk.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  
+  <!-- PENTING: Tambahkan DEFER agar tidak nge-block UI, tapi JS kita nanti yang menunggunya -->
+  <script src="https://sdk.minepi.com/pi-sdk.js" defer></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" defer></script>
 
   <style>
     :root {
@@ -270,12 +272,32 @@
     var SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZhbHB3bGVibGRua2VkcnpuYXltIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODI3Mzk3ODUsImV4cCI6MjA5ODMxNTc4NX0.G3BDRqiRBmcFwtBRtdiJI3CkptRrya9bxiVozcQZCSc';
     var supabase = null;
 
-    try {
-      if (window.supabase && window.supabase.createClient) {
-        supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+    /* ====================================================================
+       FIX RAJA: LAZY INITIALIZATION UNTUK SUPABASE (MENGHANCURKAN RACE CONDITION)
+       Karena script CDN memakai 'defer', kode ini dijamin berjalan SETELAH 
+       library selesai di-download, TAPI kita buat double safety net 
+       dengan fungsi init yang dipanggil tepat saat dibutuhkan.
+       ==================================================================== */
+    function ensureSupabase() {
+      if (supabase) return true; 
+      
+      console.log('[INIT] Mengecek ketersediaan Supabase CDN...');
+      console.log('[INIT] window.supabase:', typeof window.supabase);
+      console.log('[INIT] createClient:', typeof (window.supabase ? window.supabase.createClient : undefined));
+
+      if (window.supabase && typeof window.supabase.createClient === 'function') {
+        try {
+          supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+          console.log('[INIT] Supabase Client berhasil dibuat!');
+          return true;
+        } catch (e) {
+          console.error('[INIT] Gagal membuat Supabase Client:', e.message);
+          return false;
+        }
+      } else {
+        console.error('[INIT] Supabase CDN belum siap atau gagal dimuat oleh Pi Browser.');
+        return false;
       }
-    } catch(e) {
-      console.error('[DB] Gagal init Supabase:', e.message);
     }
 
     function showToast(msg, type, dur) {
@@ -302,35 +324,23 @@
 
     var verifiedUser = null;
 
-    /* 
-     * AUTH GUARD FIXED: 
-     * Tidak akan pernah crash atau menampilkan "Backend tidak tersedia" 
-     * hanya karena tabel users di Supabase bermasalah. 
-     * Yang dipakai HANYALAH hasil login dari login.html (whs_pi_user)
-     */
+    /* AUTH GUARD: 100% Lokal, tidak crash walau DB turun */
     function verifySession() {
       var raw = safeGet('whs_pi_user');
       var localUser = null;
-      try { 
-        if (raw) localUser = JSON.parse(raw); 
-      } catch(e) {}
+      try { if (raw) localUser = JSON.parse(raw); } catch(e) {}
 
       if (!localUser || !localUser.username) {
         return { ok: false, reason: 'no_local_data' };
       }
 
-      // Ambil UID (Pi SDK kadang tidak mengembalikan uid, fallback ke username)
       var uid = localUser.uid || localUser.username;
-
-      return { 
-        ok: true, 
-        uid: uid, 
-        username: localUser.username 
-      };
+      return { ok: true, uid: uid, username: localUser.username };
     }
 
     async function fetchOrCreateWallet(uid, username) {
-      if (!supabase) return { error: 'no_supabase' };
+      /* PANGGIL LAZY INIT DI SINI! */
+      if (!ensureSupabase()) return { error: 'no_supabase' };
 
       try {
         var { data: existing, error: fetchErr } = await supabase
@@ -403,7 +413,7 @@
           mainWrapper.style.display = 'flex';
           loadingScreen.style.display = 'none';
           if (walletResult.error === 'no_supabase') {
-            document.getElementById('pageContent').innerHTML = '<div style="text-align:center;padding:60px 20px;"><i class="fa-solid fa-database" style="font-size:2rem;color:var(--danger);opacity:0.5;margin-bottom:12px;display:block;"></i><h3 style="font-family:var(--font-display);margin-bottom:8px;">Backend Tidak Tersedia</h3><p style="color:var(--text-muted);font-size:0.88rem;max-width:320px;margin:0 auto;">Supabase tidak dapat dijangkau.</p></div>';
+            document.getElementById('pageContent').innerHTML = '<div style="text-align:center;padding:60px 20px;"><i class="fa-solid fa-database" style="font-size:2rem;color:var(--danger);opacity:0.5;margin-bottom:12px;display:block;"></i><h3 style="font-family:var(--font-display);margin-bottom:8px;">Backend Tidak Tersedia</h3><p style="color:var(--text-muted);font-size:0.88rem;max-width:320px;margin:0 auto;">Supabase CDN gagal dimuat di Pi Browser. Coba refresh halaman atau buka ulang aplikasi.</p></div>';
           } else {
             showToast('Gagal memuat data: ' + (walletResult.detail || 'Error'), 'warning', 5000);
           }
@@ -429,7 +439,7 @@
     }
 
     /* ====================================================================
-       NORMALIZE FIXED: SKOR REAL-TIME, UMUR DARI created_at
+       NORMALIZE: SKOR REAL-TIME, UMUR DARI created_at
        ==================================================================== */
     function normalizeWalletData(dbRow, isNew, realUsername) {
       var riskFlags = [];
@@ -439,13 +449,11 @@
       var txTotal = dbRow.tx_total || 0;
       var riskPenalty = dbRow.risk_penalty || 0;
 
-      /* 1. Hitung Usia Wallet Real-time dari created_at DB */
       var ageDays = 0;
       if (dbRow.created_at) {
         ageDays = Math.max(0, Math.floor((Date.now() - new Date(dbRow.created_at).getTime()) / 86400000));
       }
 
-      /* 2. Hitung Skor Per Kategori (Maks 250) */
       var srScore = Math.min(250, Math.round((successRate / 100) * 250));
       var volScore = Math.min(250, Math.round(txTotal * 2.5)); 
       
@@ -456,7 +464,6 @@
 
       var riskScore = Math.max(0, 250 - riskPenalty);
 
-      /* 3. Total Skor = Jumlah Breakdown (Selalu Sinkron) */
       var totalScore = srScore + volScore + ageScore + riskScore;
 
       var networkAvg = 580; 
@@ -768,6 +775,7 @@
       setTimeout(function() { window.location.href = 'login.html'; }, 800);
     });
 
+    /* DOMContentLoaded memastikan HTML 100% selesai dibaca sebelum eksekusi script */
     document.addEventListener('DOMContentLoaded', initApp);
   </script>
 </body>
