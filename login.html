@@ -517,9 +517,9 @@ CREATE POLICY "allow_anon_select_own"
         var savedUid = safeGet('whs_pi_uid');
         var savedUsername = safeGet('whs_pi_username');
         var lt = safeGet('whs_login_time');
-        
+
         if (!savedUid || !lt) return false;
-        
+
         var age = Date.now() - parseInt(lt, 10);
         if (isNaN(age) || age > SESSION_MAX_AGE) {
           logDebug('Sesi kadaluarsa', false, true);
@@ -541,19 +541,80 @@ CREATE POLICY "allow_anon_select_own"
     }
 
     /* ================================================================
-       PROSES OTIENTIKASI UTAMA (STRICT UID-BASED)
+       INISIALISASI PI SDK — MENANGANI VERSI 1.X DAN 2.X
+       ================================================================ */
+    var sdkReady = false;
+
+    function initPiSDK() {
+      return new Promise(function(resolve, reject) {
+        /* Jika SDK sudah pernah di-init sebelumnya (stateful), langsung resolve */
+        if (sdkReady && window.Pi && window.Pi._initialized) {
+          logDebug('Pi SDK sudah terinisialisasi sebelumnya, melewati init ulang');
+          resolve();
+          return;
+        }
+
+        if (!window.Pi) {
+          reject(new Error('Pi SDK tidak ditemukan. Pastikan halaman dibuka dari dalam Pi Browser.'));
+          return;
+        }
+
+        logDebug('Memulai inisialisasi Pi SDK...');
+        statusTitle.textContent = 'Memuat SDK...';
+        statusDesc.textContent = 'Menginisialisasi Pi Network SDK';
+
+        try {
+          var initResult = window.Pi.init({
+            version: "2.0",
+            sandbox: window.APP_CONFIG.sandbox
+          });
+
+          /* Pi SDK v2.x: init() mengembalikan Promise */
+          if (initResult && typeof initResult.then === 'function') {
+            logDebug('Pi SDK v2.x terdeteksi — menunggu init() resolve...');
+            withTimeout(initResult, SDK_TIMEOUT, 'Pi SDK v2 init() tidak merespons dalam ' + (SDK_TIMEOUT/1000) + ' detik.')
+              .then(function() {
+                sdkReady = true;
+                window.Pi._initialized = true;
+                logDebug('Pi SDK v2 init() berhasil di-resolve');
+                resolve();
+              })
+              .catch(function(err) {
+                logDebug('Pi SDK v2 init() gagal: ' + err.message, true);
+                reject(err);
+              });
+            return;
+          }
+
+          /* Pi SDK v1.x: init() synchronous — cek apakah sudah siap */
+          sdkReady = true;
+          window.Pi._initialized = true;
+          logDebug('Pi SDK v1.x terdeteksi — init() synchronous selesai');
+          resolve();
+
+        } catch (e) {
+          logDebug('Pi.init() melempar error: ' + e.message, true);
+          reject(new Error('Gagal menjalankan Pi.init(): ' + e.message));
+        }
+      });
+    }
+
+    /* ================================================================
+       PROSES OTENTIKASI UTAMA (STRICT UID-BASED)
        ================================================================ */
     function startPiLogin() {
       if (loginInProgress) return;
       loginInProgress = true;
       resetUI();
 
+      /* ---- Cek koneksi internet ---- */
       if (!navigator.onLine) {
         showError('Koneksi Gagal', 'Anda sedang offline.', 'Koneksi internet diperlukan', 'Silakan aktifkan data internet Anda terlebih dahulu.');
         loginInProgress = false;
         return;
       }
 
+      /* ---- Cek sesi yang masih valid ---- */
       if (checkExistingSession()) {
         logDebug('Sesi valid ditemukan, mengalihkan ke dashboard...');
         statusTitle.textContent = 'Menghubungkan Sesi...';
@@ -562,61 +623,75 @@ CREATE POLICY "allow_anon_select_own"
         return;
       }
 
+      /* ---- Cek keberadaan objek Pi global ---- */
       if (!window.Pi) {
-        showError('SDK Tidak Ditemukan', 'Gagal memuat script Pi Network.', 'Inisialisasi SDK Gagal', 'Buka aplikasi ini dari dalam Pi Browser untuk otentikasi resmi.');
+        showError('SDK Tidak Ditemukan', 'Gagal memuat script Pi Network SDK.', 'Inisialisasi SDK Gagal', 'Buka aplikasi ini dari dalam Pi Browser untuk otentikasi resmi. Pastikan js SDK (sdk.minepi.com/pi-sdk.js) berhasil dimuat.');
         loginInProgress = false;
         return;
       }
 
-      logDebug('Menginisialisasi Pi SDK...');
-      try {
-        window.Pi.init({ version: "2.0", sandbox: window.APP_CONFIG.sandbox });
-        logDebug('Pi SDK Terinisialisasi');
-      } catch(e) {
-        showError('Gagal Init SDK', 'Gagal memetakan konfigurasi internal SDK.', 'Kesalahan Fatal', e.message);
+      /* ---- Cek keberadaan metode authenticate ---- */
+      if (typeof window.Pi.authenticate !== 'function') {
+        showError('SDK Tidak Valid', 'Objek Pi ditemukan tapi metode authenticate() tidak tersedia.', 'Struktur SDK Tidak Sesuai', 'Kemungkinan versi SDK tidak kompatibel atau script terblokir. Coba muat ulang halaman dari Pi Browser.');
         loginInProgress = false;
         return;
       }
 
-      logDebug('Meminta otentikasi user ke Pi SDK...');
-      statusTitle.textContent = 'Meminta Otorisasi...';
-      statusDesc.textContent = 'Konfirmasi login pada pop-up Pi Browser jika muncul';
+      /* ============================================================
+         LANGKAH 1: INISIALISASI SDK (await sebelum authenticate)
+         ============================================================ */
+      initPiSDK()
+        .then(function() {
+          /* ========================================================
+             LANGKAH 2: BARU SETELAH INIT SELESAI, panggil authenticate
+             ======================================================== */
+          logDebug('SDK siap. Meminta otentikasi user...');
+          statusTitle.textContent = 'Meminta Otorisasi...';
+          statusDesc.textContent = 'Konfirmasi login pada pop-up Pi Browser jika muncul';
 
-      var authScopes = window.APP_CONFIG.authScopes;
-      
-      var authPromise = window.Pi.authenticate(authScopes, function onIncompletePayment(payment) {
-        logDebug('Ditemukan pembayaran tertunda: ' + (payment ? payment.identifier : 'tanpa ID'), false, true);
-        if (payment && payment.identifier) {
-          safeSet('whs_incomplete_payment', payment.identifier);
-        }
-      });
+          var authScopes = window.APP_CONFIG.authScopes;
 
-      withTimeout(authPromise, AUTH_TIMEOUT, 'Batas waktu otentikasi habis. Pi SDK tidak merespons.')
+          var authPromise = window.Pi.authenticate(authScopes, function onIncompletePayment(payment) {
+            logDebug('Ditemukan pembayaran tertunda: ' + (payment ? payment.identifier : 'tanpa ID'), false, true);
+            if (payment && payment.identifier) {
+              safeSet('whs_incomplete_payment', payment.identifier);
+            }
+          });
+
+          return withTimeout(authPromise, AUTH_TIMEOUT, 'Batas waktu otentikasi habis. Pi SDK tidak merespons dalam ' + (AUTH_TIMEOUT/1000) + ' detik.');
+        })
         .then(function(auth) {
           logDebug('Menerima callback respons dari Pi SDK');
-          
-          // PROTEKSI KETAT: Cek ketersediaan objek user dan UID secara absolut
-          if (!auth || !auth.user || !auth.user.uid) {
-            throw new Error('Sistem menolak login: Pi SDK tidak mengirimkan UID unik akun Anda.');
+
+          /* PROTEKSI KETAT: Cek ketersediaan objek user dan UID secara absolut */
+          if (!auth) {
+            throw new Error('Pi SDK mengembalikan respons kosong (null/undefined). Coba lagi.');
+          }
+          if (!auth.user) {
+            throw new Error('Pi SDK tidak mengirimkan data user. Kemungkinan otentikasi dibatalkan di sisi Pi.');
+          }
+          if (!auth.user.uid) {
+            throw new Error('Pi SDK mengirimkan user tanpa UID. Ini adalah respons tidak valid dari server Pi.');
           }
 
           var uid = auth.user.uid;
           var username = auth.user.username || "PiUser";
           var token = auth.accessToken;
 
-          logDebug('Otentikasi sukses. UID terverifikasi aman.');
+          logDebug('Otentikasi sukses. UID terverifikasi: ' + uid.substring(0, 8) + '...');
           statusTitle.className = 'pi-status-title success';
           spinnerRing.className = 'pi-spinner-ring success';
           spinnerIcon.className = 'pi-spinner-icon success';
           statusTitle.textContent = 'Otentikasi Berhasil';
           statusDesc.textContent = 'Sinkronisasi data ke database...';
 
-          // Simpan identitas utama berbasis UID
+          /* Simpan identitas utama berbasis UID */
           safeSet('whs_pi_uid', uid);
-          safeSet('whs_pi_username', username); // Username hanya disimpan sebagai cache kosmetik/UI display
+          safeSet('whs_pi_username', username);
           safeSet('whs_pi_token', token);
           safeSet('whs_login_time', Date.now());
 
+          /* Upsert ke Supabase jika tersedia */
           if (SUPABASE_READY && supabase) {
             return supabase.from('users').upsert({
               pi_uid: uid,
@@ -633,13 +708,25 @@ CREATE POLICY "allow_anon_select_own"
           if (dbResult && dbResult.error) {
             throw new Error('Gagal mengamankan sesi di database: ' + dbResult.error.message);
           }
-          logDebug('Proses login selesai penuh. Mengalihkan...');
+          logDebug('Proses login selesai penuh. Mengalihkan ke dashboard...');
           showToast('Selamat datang kembali!', 'success', 2000);
           safeRedirect('dashboard.html', 1000);
         })
         .catch(function(err) {
           clearPiAuth();
-          showError('Login Gagal', 'Gagal memvalidasi otentikasi terpusat.', 'Otorisasi Ditolak', err.message);
+
+          /* Pesan error yang lebih spesifik berdasarkan konteks */
+          var errorDetail = err.message || 'Terjadi kesalahan sistem internal.';
+
+          if (errorDetail.indexOf('init') !== -1 || errorDetail.indexOf('SDK') !== -1) {
+            showError('Gagal Inisialisasi', 'Pi SDK tidak dapat diinisialisasi dengan benar.', 'Kesalahan SDK', errorDetail);
+          } else if (errorDetail.indexOf('waktu') !== -1 || errorDetail.indexOf('timeout') !== -1) {
+            showError('Waktu Habis', 'Server Pi tidak merespons dalam batas waktu.', 'Timeout Otentikasi', errorDetail);
+          } else if (errorDetail.indexOf('batal') !== -1 || errorDetail.indexOf('cancel') !== -1 || errorDetail.indexOf('denied') !== -1) {
+            showError('Dibatalkan', 'Anda menolak atau membatalkan otorisasi.', 'Otentikasi Ditolak Pengguna', errorDetail);
+          } else {
+            showError('Login Gagal', 'Gagal memvalidasi otentikasi terpusat.', 'Otorisasi Ditolak', errorDetail);
+          }
         })
         .finally(function() {
           loginInProgress = false;
@@ -652,15 +739,17 @@ CREATE POLICY "allow_anon_select_own"
     document.addEventListener('DOMContentLoaded', function() {
       btnRetry.addEventListener('click', startPiLogin);
       btnBack.addEventListener('click', function() { window.location.href = 'index.html'; });
-      
+
       logoutBtn.addEventListener('click', function() {
         clearPiAuth();
         sessionBanner.classList.remove('visible');
         showToast('Sesi dibersihkan', 'info', 2000);
+        /* Reset flag supaya init SDK bisa dijalankan ulang jika perlu */
+        sdkReady = false;
         startPiLogin();
       });
 
-      // Jalankan alur login otomatis saat halaman dimuat
+      /* Jalankan alur login otomatis saat halaman dimuat */
       setTimeout(startPiLogin, 500);
     });
   </script>
