@@ -1,34 +1,668 @@
-// SAAT PROSES AUTHENTICATE
-Pi.authenticate(['username', 'payments'], onIncompletePaymentFound)
-  .then(function(auth) {
-    if (!auth || !auth.user || !auth.user.uid) {
-      // JIKA UID TIDAK ADA, LANGSUNG LEMPAR ERROR (JANGAN FALLBACK KE USERNAME)
-      throw new Error("Otentikasi gagal: Pi SDK tidak mengembalikan UID unik.");
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0" />
+  <title>Masuk — Wallet Health Score</title>
+  <meta name="robots" content="noindex, nofollow" />
+
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=DM+Sans:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
+  <script src="https://sdk.minepi.com/pi-sdk.js"></script>
+
+  <script>
+    window.APP_CONFIG = {
+      sandbox: true,
+      authScopes: ['username', 'payments'],
+      sdkTimeout: 15000,
+      authTimeout: 30000,
+      sessionMaxAge: 86400000,
+      appId: 'wallet-health-score',
+      supabaseUrl: 'https://valpwlebldnkedrznaym.supabase.co',
+      supabaseAnonKey: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZhbHB3bGVibGRua2VkcnpuYXltIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODI3Mzk3ODUsImV4cCI6MjA5ODMxNTc4NX0.G3BDRqiRBmcFwtBRtdiJI3CkptRrya9bxiVozcQZCSc'
+    };
+  </script>
+
+  <script id="supabase-schema" type="text/sql">
+DROP TABLE IF EXISTS users CASCADE;
+
+CREATE TABLE users (
+  pi_uid          TEXT PRIMARY KEY,
+  username        TEXT NOT NULL,
+  pi_access_token TEXT,
+  last_login      TIMESTAMPTZ DEFAULT now(),
+  created_at      TIMESTAMPTZ DEFAULT now()
+);
+
+CREATE INDEX IF NOT EXISTS idx_users_username ON users (username);
+
+ALTER TABLE users ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "allow_anon_insert"
+  ON users FOR INSERT TO anon WITH CHECK (true);
+
+CREATE POLICY "allow_anon_update_own"
+  ON users FOR UPDATE TO anon USING (pi_uid = current_setting('request.headers')::json->>'x-user-uid') WITH CHECK (true);
+
+CREATE POLICY "allow_anon_select_own"
+  ON users FOR SELECT TO anon USING (pi_uid = current_setting('request.headers')::json->>'x-user-uid');
+  </script>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+  <style>
+    :root {
+      --bg-primary: #060a13;
+      --bg-secondary: #0c1222;
+      --bg-card: rgba(14, 22, 42, 0.65);
+      --bg-card-hover: rgba(20, 32, 58, 0.8);
+      --bg-glass: rgba(14, 22, 42, 0.45);
+      --bg-input: rgba(6, 10, 19, 0.6);
+      --border-color: rgba(45, 212, 191, 0.12);
+      --border-color-hover: rgba(45, 212, 191, 0.3);
+      --border-subtle: rgba(255, 255, 255, 0.06);
+      --border-focus: rgba(45, 212, 191, 0.4);
+      --accent: #2dd4bf;
+      --accent-dim: rgba(45, 212, 191, 0.12);
+      --accent-glow: rgba(45, 212, 191, 0.2);
+      --accent-secondary: #f59e0b;
+      --accent-secondary-dim: rgba(245, 158, 11, 0.12);
+      --text-primary: #f1f5f9;
+      --text-secondary: #94a3b8;
+      --text-muted: #475569;
+      --text-accent: #2dd4bf;
+      --success: #22c55e;
+      --warning: #f59e0b;
+      --danger: #ef4444;
+      --info: #3b82f6;
+      --radius-sm: 8px;
+      --radius-md: 12px;
+      --radius-lg: 16px;
+      --radius-xl: 24px;
+      --radius-full: 9999px;
+      --font-display: 'Space Grotesk', sans-serif;
+      --font-body: 'DM Sans', sans-serif;
+      --shadow-card: 0 4px 32px rgba(0, 0, 0, 0.4), 0 1px 2px rgba(0, 0, 0, 0.2);
+      --shadow-glow: 0 0 60px rgba(45, 212, 191, 0.06);
+      --topbar-height: 56px;
+      --transition-fast: 150ms cubic-bezier(0.4, 0, 0.2, 1);
+      --transition-base: 250ms cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+    html { scroll-behavior: smooth; -webkit-font-smoothing: antialiased; }
+    body { font-family: var(--font-body); background: var(--bg-primary); color: var(--text-primary); line-height: 1.6; overflow-x: hidden; min-height: 100vh; }
+    a { color: inherit; text-decoration: none; transition: color var(--transition-fast); }
+    button { font-family: var(--font-body); cursor: pointer; border: none; outline: none; background: none; }
+    button:focus-visible, a:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+    .bg-atmosphere { position: fixed; inset: 0; pointer-events: none; z-index: 0; overflow: hidden; }
+    .bg-atmosphere .orb { position: absolute; border-radius: 50%; filter: blur(100px); opacity: 0.18; animation: orbFloat 25s ease-in-out infinite; }
+    .orb-1 { width: 320px; height: 320px; background: radial-gradient(circle, rgba(45,212,191,0.12) 0%, transparent 70%); top: -8%; left: -5%; }
+    .orb-2 { width: 260px; height: 260px; background: radial-gradient(circle, rgba(245,158,11,0.06) 0%, transparent 70%); bottom: -8%; right: -5%; animation-delay: -10s; animation-duration: 28s; }
+    .orb-3 { width: 200px; height: 200px; background: radial-gradient(circle, rgba(45,212,191,0.05) 0%, transparent 70%); top: 45%; left: 55%; animation-delay: -15s; animation-duration: 22s; }
+    @keyframes orbFloat {
+      0%, 100% { transform: translate(0, 0) scale(1); }
+      33% { transform: translate(15px, -20px) scale(1.03); }
+      66% { transform: translate(-10px, 12px) scale(0.97); }
     }
 
-    var uid = auth.user.uid;
-    var username = auth.user.username;
-    var accessToken = auth.accessToken;
+    .topbar { height: var(--topbar-height); padding: 0 16px; display: flex; align-items: center; border-bottom: 1px solid var(--border-subtle); background: rgba(6,10,19,0.85); backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px); position: sticky; top: 0; z-index: 40; }
+    .topbar-left { display: flex; align-items: center; gap: 12px; min-width: 0; flex: 1; }
+    .back-btn { display: inline-flex; align-items: center; gap: 6px; padding: 8px 14px; font-size: 0.82rem; font-weight: 600; color: var(--accent); border: 1px solid var(--border-color); border-radius: var(--radius-full); transition: all var(--transition-fast); white-space: nowrap; background: var(--accent-dim); }
+    .back-btn:hover { background: rgba(45,212,191,0.18); border-color: var(--border-color-hover); box-shadow: 0 0 16px var(--accent-glow); }
+    .back-btn:active { transform: scale(0.97); }
+    .back-btn i { font-size: 0.8rem; }
+    .topbar-title { font-family: var(--font-display); font-size: 1rem; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
-    // Simpan ke localStorage menggunakan UID sebagai kunci utama
-    safeSet('whs_pi_uid', uid);
-    safeSet('whs_pi_username', username); // Hanya untuk display UI di dashboard nanti
-    safeSet('whs_pi_token', accessToken);
-    safeSet('whs_login_time', Date.now());
+    .page-wrapper { position: relative; z-index: 1; min-height: 100vh; display: flex; flex-direction: column; }
+    .login-main { flex: 1; display: flex; align-items: center; justify-content: center; padding: 24px 16px 40px; }
+    .login-layout { display: grid; grid-template-columns: 1fr; gap: 32px; max-width: 440px; width: 100%; }
 
-    // Kirim/Upsert ke Supabase menggunakan uid
-    return supabase.from('users').upsert({
-      pi_uid: uid,
-      username: username,
-      pi_access_token: accessToken,
-      last_login: new Date().toISOString()
+    .login-branding { text-align: center; animation: fadeInUp 0.5s ease-out 0.1s both; }
+    @keyframes fadeInUp { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: translateY(0); } }
+    .branding-icon-large { width: 56px; height: 56px; background: linear-gradient(135deg, var(--accent), #0d9488); border-radius: var(--radius-lg); display: flex; align-items: center; justify-content: center; font-size: 1.5rem; color: var(--bg-primary); margin: 0 auto 20px; box-shadow: 0 0 32px var(--accent-glow); position: relative; font-family: var(--font-display); font-weight: 700; }
+    .branding-icon-large::after { content: ''; position: absolute; inset: -6px; border-radius: 18px; border: 1px solid var(--accent-dim); animation: pulseRing 3s ease-in-out infinite; }
+    @keyframes pulseRing { 0%, 100% { opacity: 0.5; transform: scale(1); } 50% { opacity: 0.15; transform: scale(1.06); } }
+    .branding-title { font-family: var(--font-display); font-size: 1.5rem; font-weight: 700; letter-spacing: -0.02em; margin-bottom: 10px; line-height: 1.2; }
+    .branding-title .highlight { background: linear-gradient(135deg, var(--accent), #5eead4); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
+    .branding-desc { font-size: 0.88rem; color: var(--text-secondary); line-height: 1.6; }
+
+    .login-card-wrapper { animation: fadeInUp 0.5s ease-out 0.25s both; }
+    .login-card { background: var(--bg-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); padding: 28px 22px; box-shadow: var(--shadow-card); position: relative; overflow: hidden; backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); }
+    .login-card::before { content: ''; position: absolute; top: 0; left: 20%; right: 20%; height: 1px; background: linear-gradient(90deg, transparent, var(--accent), transparent); }
+    .card-header { margin-bottom: 24px; }
+    .card-title { font-family: var(--font-display); font-size: 1.15rem; font-weight: 700; margin-bottom: 6px; }
+    .card-subtitle { font-size: 0.82rem; color: var(--text-muted); line-height: 1.5; }
+
+    .pi-status-area { text-align: center; }
+    .pi-spinner-wrapper { width: 72px; height: 72px; margin: 0 auto 24px; position: relative; display: flex; align-items: center; justify-content: center; }
+    .pi-spinner-ring { width: 72px; height: 72px; border: 3px solid rgba(45,212,191,0.1); border-top-color: var(--accent); border-radius: 50%; animation: spinRing 1s linear infinite; transition: border-top-color 0.4s ease; }
+    .pi-spinner-ring.success { border-top-color: var(--success); animation: none; }
+    .pi-spinner-ring.error { border-top-color: var(--danger); animation: none; }
+    .pi-spinner-icon { position: absolute; font-family: var(--font-display); font-size: 1.6rem; color: var(--accent); font-weight: 700; transition: color 0.4s ease, transform 0.4s ease; }
+    .pi-spinner-icon.success { color: var(--success); transform: scale(1.1); }
+    .pi-spinner-icon.error { color: var(--danger); }
+    @keyframes spinRing { to { transform: rotate(360deg); } }
+
+    .pi-status-title { font-family: var(--font-display); font-size: 1.1rem; font-weight: 600; margin-bottom: 6px; transition: color 0.3s ease; }
+    .pi-status-title.success { color: var(--success); }
+    .pi-status-title.error { color: var(--danger); }
+    .pi-status-desc { font-size: 0.84rem; color: var(--text-secondary); line-height: 1.6; min-height: 42px; }
+
+    .pi-error-box { display: none; background: rgba(239,68,68,0.08); border: 1px solid rgba(239,68,68,0.2); border-radius: var(--radius-sm); padding: 14px 16px; margin: 20px 0; text-align: left; }
+    .pi-error-box.visible { display: block; animation: fadeInUp 0.3s ease-out; }
+    .pi-error-label { font-size: 0.7rem; font-weight: 600; color: #fca5a5; text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 6px; }
+    .pi-error-text { font-size: 0.82rem; color: #e2e8f0; word-break: break-word; line-height: 1.5; }
+
+    .pi-warning-box { display: none; background: rgba(245,158,11,0.08); border: 1px solid rgba(245,158,11,0.2); border-radius: var(--radius-sm); padding: 14px 16px; margin: 20px 0; text-align: left; }
+    .pi-warning-box.visible { display: block; animation: fadeInUp 0.3s ease-out; }
+    .pi-warning-label { font-size: 0.7rem; font-weight: 600; color: #fcd34d; text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 6px; }
+    .pi-warning-text { font-size: 0.82rem; color: #e2e8f0; word-break: break-word; line-height: 1.5; }
+
+    .pi-actions { display: none; flex-direction: column; gap: 10px; margin-top: 20px; }
+    .pi-actions.visible { display: flex; animation: fadeInUp 0.3s ease-out; }
+    .btn-pi-action { width: 100%; padding: 13px 20px; border-radius: var(--radius-md); font-size: 0.88rem; font-weight: 600; display: flex; align-items: center; justify-content: center; gap: 8px; transition: all var(--transition-base); position: relative; overflow: hidden; }
+    .btn-pi-action::before { content: ''; position: absolute; top: 0; left: -100%; width: 100%; height: 100%; background: linear-gradient(90deg, transparent, rgba(255,255,255,0.12), transparent); transition: left 0.5s ease; }
+    .btn-pi-action:hover::before { left: 100%; }
+    .btn-pi-retry { background: linear-gradient(135deg, var(--accent), #0d9488); color: var(--bg-primary); box-shadow: 0 0 20px var(--accent-glow); }
+    .btn-pi-retry:hover { transform: translateY(-1px); box-shadow: 0 0 32px var(--accent-glow), 0 4px 16px rgba(45,212,191,0.2); }
+    .btn-pi-retry:active { transform: translateY(0); }
+    .btn-pi-back { background: transparent; border: 1px solid var(--border-subtle); color: var(--text-secondary); }
+    .btn-pi-back:hover { border-color: rgba(255,255,255,0.15); color: var(--text-primary); background: rgba(255,255,255,0.03); }
+
+    .session-banner { display: none; align-items: center; gap: 10px; padding: 10px 14px; background: rgba(34,197,94,0.08); border: 1px solid rgba(34,197,94,0.2); border-radius: var(--radius-sm); margin-bottom: 18px; font-size: 0.78rem; color: var(--success); }
+    .session-banner.visible { display: flex; }
+    .session-banner i { font-size: 0.9rem; }
+    .session-banner .user-preview { font-family: 'Space Grotesk', monospace; font-weight: 600; }
+    .session-banner .session-age { color: var(--text-muted); font-size: 0.72rem; margin-left: 4px; }
+    .session-banner .logout-link { margin-left: auto; color: var(--text-muted); font-size: 0.74rem; cursor: pointer; transition: color var(--transition-fast); background: none; border: none; font-family: var(--font-body); }
+    .session-banner .logout-link:hover { color: var(--danger); }
+
+    .debug-log { display: none; margin-top: 16px; padding: 10px 12px; background: rgba(0,0,0,0.5); border: 1px solid rgba(255,255,255,0.08); border-radius: var(--radius-sm); font-family: 'Space Grotesk', monospace; font-size: 0.7rem; color: var(--accent); text-align: left; max-height: 200px; overflow-y: auto; line-height: 1.7; }
+    .debug-log.visible { display: block; }
+    .debug-log p { margin: 0; padding: 2px 0; border-bottom: 1px solid rgba(255,255,255,0.03); }
+    .debug-log p.err { color: var(--danger); }
+    .debug-log p.warn { color: var(--warning); }
+
+    .card-footer { margin-top: 20px; text-align: center; font-size: 0.74rem; color: var(--text-muted); line-height: 1.7; }
+    .card-footer a { color: var(--accent); font-weight: 500; }
+    .card-footer a:hover { text-decoration: underline; }
+
+    .trust-row { display: flex; justify-content: center; gap: 12px; margin-top: 24px; animation: fadeInUp 0.5s ease-out 0.4s both; flex-wrap: wrap; }
+    .trust-chip { display: inline-flex; align-items: center; gap: 6px; padding: 7px 14px; background: rgba(255,255,255,0.02); border: 1px solid var(--border-subtle); border-radius: var(--radius-full); font-size: 0.72rem; font-weight: 500; color: var(--text-muted); white-space: nowrap; }
+    .trust-chip i { font-size: 0.7rem; }
+    .tc-teal { color: var(--accent); }
+    .tc-amber { color: var(--accent-secondary); }
+    .tc-green { color: var(--success); }
+
+    .toast-container { position: fixed; top: 68px; left: 16px; right: 16px; z-index: 200; display: flex; flex-direction: column; gap: 8px; pointer-events: none; }
+    .toast { display: flex; align-items: center; gap: 10px; padding: 12px 16px; background: var(--bg-secondary); border: 1px solid var(--border-subtle); border-radius: var(--radius-md); box-shadow: 0 8px 32px rgba(0,0,0,0.5); font-size: 0.82rem; color: var(--text-primary); transform: translateY(-20px); opacity: 0; transition: all var(--transition-base); pointer-events: auto; }
+    .toast.show { transform: translateY(0); opacity: 1; }
+    .toast i { font-size: 1rem; flex-shrink: 0; }
+    .toast.success { border-left: 3px solid var(--success); }
+    .toast.success i { color: var(--success); }
+    .toast.error { border-left: 3px solid var(--danger); }
+    .toast.error i { color: var(--danger); }
+    .toast.info { border-left: 3px solid var(--info); }
+    .toast.info i { color: var(--info); }
+    .toast.warning { border-left: 3px solid var(--warning); }
+    .toast.warning i { color: var(--warning); }
+
+    .offline-banner { display: none; position: fixed; bottom: 0; left: 0; right: 0; padding: 10px 16px; background: rgba(239,68,68,0.15); border-top: 1px solid rgba(239,68,68,0.3); backdrop-filter: blur(12px); text-align: center; font-size: 0.8rem; color: #fca5a5; z-index: 300; }
+    .offline-banner.visible { display: block; animation: slideUp 0.3s ease-out; }
+    .offline-banner i { margin-right: 6px; }
+    @keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
+
+    @media (min-width: 640px) {
+      .login-main { padding: 32px 24px 48px; }
+      .login-layout { max-width: 480px; gap: 36px; }
+      .login-card { padding: 32px 28px; }
+      .branding-title { font-size: 1.7rem; }
+      .card-title { font-size: 1.3rem; }
+      .topbar { padding: 0 24px; }
+    }
+    @media (min-width: 900px) {
+      .login-layout { grid-template-columns: 1fr 1fr; max-width: 820px; gap: 48px; align-items: center; }
+      .login-branding { text-align: left; display: flex; flex-direction: column; align-items: flex-start; }
+      .branding-icon-large { margin: 0 0 24px; }
+      .branding-title { font-size: 2rem; line-height: 1.15; }
+      .branding-desc { margin-bottom: 28px; max-width: 360px; }
+      .trust-row { display: none; }
+      .trust-list { display: flex !important; flex-direction: column; gap: 14px; }
+      .trust-item { display: flex; align-items: center; gap: 12px; font-size: 0.88rem; color: var(--text-secondary); }
+      .trust-icon { width: 32px; height: 32px; border-radius: var(--radius-sm); display: flex; align-items: center; justify-content: center; font-size: 0.8rem; flex-shrink: 0; }
+      .trust-icon.teal { background: var(--accent-dim); color: var(--accent); }
+      .trust-icon.amber { background: var(--accent-secondary-dim); color: var(--accent-secondary); }
+      .trust-icon.green { background: rgba(34,197,94,0.12); color: var(--success); }
+      .login-card { padding: 36px 32px; border-radius: var(--radius-xl); }
+    }
+    .trust-list { display: none; }
+    @media (max-width: 360px) { .login-card { padding: 22px 16px; } .branding-icon-large { width: 48px; height: 48px; font-size: 1.3rem; } }
+    @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; } }
+  </style>
+</head>
+<body>
+
+  <div class="bg-atmosphere" aria-hidden="true">
+    <div class="orb orb-1"></div>
+    <div class="orb orb-2"></div>
+    <div class="orb orb-3"></div>
+  </div>
+
+  <div class="offline-banner" id="offlineBanner" role="alert">
+    <i class="fa-solid fa-wifi" aria-hidden="true"></i>
+    Tidak ada koneksi internet
+  </div>
+
+  <div class="toast-container" id="toastContainer" aria-live="polite"></div>
+
+  <div class="page-wrapper">
+    <header class="topbar" role="banner">
+      <div class="topbar-left">
+        <a href="index.html" class="back-btn" aria-label="Kembali ke beranda">
+          <i class="fa-solid fa-arrow-left"></i>
+          <span>Kembali</span>
+        </a>
+        <h1 class="topbar-title">Masuk</h1>
+      </div>
+    </header>
+
+    <main class="login-main" role="main">
+      <div class="login-layout">
+        <section class="login-branding" aria-labelledby="brandingTitle">
+          <div class="branding-icon-large" aria-hidden="true">&pi;</div>
+          <h2 class="branding-title" id="brandingTitle">
+            Masuk dengan<br><span class="highlight">Pi Network</span>
+          </h2>
+          <p class="branding-desc">
+            Hubungkan akun Pi Anda untuk mengakses dashboard credit score dan analitik wallet lengkap. Tanpa password, tanpa private key.
+          </p>
+          <div class="trust-list" role="list">
+            <div class="trust-item" role="listitem">
+              <div class="trust-icon teal"><i class="fa-solid fa-lock"></i></div>
+              <span>Otentikasi resmi via Pi SDK</span>
+            </div>
+            <div class="trust-item" role="listitem">
+              <div class="trust-icon amber"><i class="fa-solid fa-bolt"></i></div>
+              <span>Login instan — satu ketukan</span>
+            </div>
+            <div class="trust-item" role="listitem">
+              <div class="trust-icon green"><i class="fa-solid fa-shield-halved"></i></div>
+              <span>Data on-chain, tidak ada risiko keamanan</span>
+            </div>
+          </div>
+        </section>
+
+        <div class="login-card-wrapper">
+          <article class="login-card">
+            <div class="card-header">
+              <h2 class="card-title">Masuk ke Dashboard</h2>
+              <p class="card-subtitle" id="cardSubtitle">Menghubungkan melalui Pi Network...</p>
+            </div>
+
+            <div class="session-banner" id="sessionBanner" role="status">
+              <i class="fa-solid fa-circle-check" aria-hidden="true"></i>
+              <span>Sesi: <span class="user-preview" id="sessionUser"></span><span class="session-age" id="sessionAge"></span></span>
+              <button class="logout-link" id="logoutBtn" aria-label="Hapus sesi dan login ulang">Ganti</button>
+            </div>
+
+            <div class="pi-status-area" id="piStatusArea" role="status" aria-live="polite">
+              <div class="pi-spinner-wrapper" id="spinnerWrapper">
+                <div class="pi-spinner-ring" id="spinnerRing"></div>
+                <div class="pi-spinner-icon" id="spinnerIcon" aria-hidden="true">&pi;</div>
+              </div>
+              <div class="pi-status-title" id="statusTitle">Menghubungkan...</div>
+              <div class="pi-status-desc" id="statusDesc">Menyiapkan koneksi aman ke Pi Network</div>
+
+              <div class="pi-error-box" id="errorBox" role="alert">
+                <div class="pi-error-label">Kesalahan Sistem</div>
+                <div class="pi-error-text" id="errorText">-</div>
+              </div>
+
+              <div class="pi-warning-box" id="warningBox" role="alert">
+                <div class="pi-warning-label">Peringatan</div>
+                <div class="pi-warning-text" id="warningText">-</div>
+              </div>
+
+              <div class="pi-actions" id="actionButtons">
+                <button class="btn-pi-action btn-pi-retry" id="btnRetry" type="button">
+                  <i class="fa-solid fa-rotate-right" aria-hidden="true"></i>
+                  <span>Coba Lagi</span>
+                </button>
+                <button class="btn-pi-action btn-pi-back" id="btnBack" type="button">
+                  <i class="fa-solid fa-arrow-left" aria-hidden="true"></i>
+                  <span>Kembali ke Beranda</span>
+                </button>
+              </div>
+
+              <div class="debug-log" id="debugLog" role="log" aria-label="Log debug"></div>
+            </div>
+
+            <footer class="card-footer">
+              Login aman via Pi SDK — tidak ada data sensitif yang disimpan.<br>
+              Bukan pengguna Pi? <a href="index.html">Kembali ke beranda</a>
+            </footer>
+          </article>
+
+          <div class="trust-row" aria-label="Indikator keamanan">
+            <div class="trust-chip"><i class="fa-solid fa-lock tc-teal" aria-hidden="true"></i><span>Pi SDK Resmi</span></div>
+            <div class="trust-chip"><i class="fa-solid fa-bolt tc-amber" aria-hidden="true"></i><span>Login Instan</span></div>
+            <div class="trust-chip"><i class="fa-solid fa-shield-halved tc-green" aria-hidden="true"></i><span>Aman</span></div>
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <script>
+    /* ================================================================
+       KONFIGURASI
+       ================================================================ */
+    var urlParams = new URLSearchParams(window.location.search);
+    var IS_DEBUG = urlParams.get('debug') === 'true'
+      || window.location.hostname === 'localhost'
+      || window.location.hostname === '127.0.0.1';
+
+    var SDK_TIMEOUT    = (window.APP_CONFIG && window.APP_CONFIG.sdkTimeout)    || 15000;
+    var AUTH_TIMEOUT   = (window.APP_CONFIG && window.APP_CONFIG.authTimeout)   || 30000;
+    var SESSION_MAX_AGE = (window.APP_CONFIG && window.APP_CONFIG.sessionMaxAge) || 86400000;
+
+    var isRedirecting   = false;
+    var loginInProgress = false;
+
+    /* ================================================================
+       SUPABASE — Inisialisasi Aman
+       ================================================================ */
+    var supabase = null;
+    var SUPABASE_READY = false;
+
+    (function initSupabase() {
+      var url = window.APP_CONFIG && window.APP_CONFIG.supabaseUrl;
+      var key = window.APP_CONFIG && window.APP_CONFIG.supabaseAnonKey;
+
+      if (!url || !key || key.indexOf('GANTI') === 0) {
+        logDebug('Supabase: kredensial belum diisi — backend dilewati');
+        return;
+      }
+      if (!window.supabase || typeof window.supabase.createClient !== 'function') {
+        logDebug('Supabase JS v2 tidak terload — backend dilewati', true);
+        return;
+      }
+      try {
+        var createClient = window.supabase.createClient;
+        supabase = createClient(url, key);
+        SUPABASE_READY = true;
+        logDebug('Supabase client siap');
+      } catch (e) {
+        logDebug('Gagal init Supabase: ' + e.message, true);
+      }
+    })();
+
+    /* ================================================================
+       UTILITAS UI
+       ================================================================ */
+    function showToast(message, type, duration) {
+      type = type || 'info'; duration = duration || 3500;
+      var c = document.getElementById('toastContainer');
+      if (!c) return;
+      var t = document.createElement('div');
+      t.className = 'toast ' + type;
+      var icons = { success:'fa-solid fa-circle-check', error:'fa-solid fa-circle-xmark', info:'fa-solid fa-circle-info', warning:'fa-solid fa-triangle-exclamation' };
+      t.innerHTML = '<i class="' + (icons[type]||icons.info) + '"></i><span>' + message + '</span>';
+      c.appendChild(t);
+      requestAnimationFrame(function() { requestAnimationFrame(function() { t.classList.add('show'); }); });
+      setTimeout(function() { t.classList.remove('show'); setTimeout(function() { if(t.parentNode) t.remove(); }, 300); }, duration);
+    }
+
+    function logDebug(msg, isError, isWarn) {
+      if (isError) console.error('[PI] ' + msg);
+      else if (isWarn) console.warn('[PI] ' + msg);
+      else console.log('[PI] ' + msg);
+      if (!IS_DEBUG) return;
+      var box = document.getElementById('debugLog');
+      if (!box) return;
+      box.classList.add('visible');
+      var p = document.createElement('p');
+      if (isError) p.className = 'err';
+      else if (isWarn) p.className = 'warn';
+      var d = new Date();
+      var ts = String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0')+':'+String(d.getSeconds()).padStart(2,'0');
+      p.textContent = '[' + ts + '] ' + msg;
+      box.appendChild(p);
+      box.scrollTop = box.scrollHeight;
+    }
+
+    function withTimeout(promise, ms, errMsg) {
+      var id;
+      var tp = new Promise(function(_, rej) { id = setTimeout(function() { rej(new Error(errMsg)); }, ms); });
+      return Promise.race([promise, tp]).finally(function() { clearTimeout(id); });
+    }
+
+    function safeSet(k, v)  { try { localStorage.setItem(k, v); return true; } catch(e) { return false; } }
+    function safeGet(k)     { try { return localStorage.getItem(k); } catch(e) { return null; } }
+    function safeDel(k)     { try { localStorage.removeItem(k); } catch(e) {} }
+
+    /* ================================================================
+       OFFLINE DETECTION
+       ================================================================ */
+    var offlineBanner = document.getElementById('offlineBanner');
+    function updateOffline() { offlineBanner.classList.toggle('visible', !navigator.onLine); }
+    window.addEventListener('online',  function() { updateOffline(); showToast('Koneksi kembali', 'success', 2500); });
+    window.addEventListener('offline', updateOffline);
+    updateOffline();
+
+    /* ================================================================
+       CLEAR AUTH
+       ================================================================ */
+    function clearPiAuth() {
+      ['whs_pi_uid','whs_pi_username','whs_pi_token','whs_login_time','whs_incomplete_payment','whs_wallet'].forEach(function(k) { safeDel(k); });
+      try { ['whs_pi_user','currentWallet','walletData'].forEach(function(k) { sessionStorage.removeItem(k); }); } catch(e) {}
+    }
+
+    /* ================================================================
+       DOM ELEMENTS & UI MANIPULATION
+       ================================================================ */
+    var $ = function(id) { return document.getElementById(id); };
+    var spinnerWrapper = $('spinnerWrapper');
+    var spinnerRing    = $('spinnerRing');
+    var spinnerIcon    = $('spinnerIcon');
+    var statusTitle    = $('statusTitle');
+    var statusDesc     = $('statusDesc');
+    var errorBox       = $('errorBox');
+    var errorText      = $('errorText');
+    var warningBox     = $('warningBox');
+    var warningText    = $('warningText');
+    var actionButtons  = $('actionButtons');
+    var btnRetry       = $('btnRetry');
+    var btnBack        = $('btnBack');
+    var sessionBanner  = $('sessionBanner');
+    var sessionUser    = $('sessionUser');
+    var sessionAge     = $('sessionAge');
+    var logoutBtn      = $('logoutBtn');
+    var cardSubtitle   = $('cardSubtitle');
+
+    function resetUI() {
+      spinnerWrapper.style.display = 'flex';
+      spinnerRing.className = 'pi-spinner-ring';
+      spinnerIcon.className = 'pi-spinner-icon';
+      statusTitle.className = 'pi-status-title';
+      statusTitle.textContent = 'Menghubungkan...';
+      statusDesc.textContent = 'Menyiapkan koneksi aman ke Pi Network';
+      cardSubtitle.textContent = 'Menghubungkan melalui Pi Network...';
+      errorBox.classList.remove('visible');
+      warningBox.classList.remove('visible');
+      actionButtons.classList.remove('visible');
+    }
+
+    function showError(title, desc, subtitle, msg) {
+      spinnerRing.className = 'pi-spinner-ring error';
+      spinnerIcon.className = 'pi-spinner-icon error';
+      statusTitle.className = 'pi-status-title error';
+      statusTitle.textContent = title;
+      statusDesc.textContent = desc;
+      cardSubtitle.textContent = subtitle;
+      errorText.textContent = msg || 'Terjadi kesalahan sistem internal.';
+      errorBox.classList.add('visible');
+      actionButtons.classList.add('visible');
+      logDebug(title + ': ' + (msg || desc), true);
+    }
+
+    /* ================================================================
+       CEK SESI AKTIF BERDASARKAN UID
+       ================================================================ */
+    function checkExistingSession() {
+      try {
+        var savedUid = safeGet('whs_pi_uid');
+        var savedUsername = safeGet('whs_pi_username');
+        var lt = safeGet('whs_login_time');
+        
+        if (!savedUid || !lt) return false;
+        
+        var age = Date.now() - parseInt(lt, 10);
+        if (isNaN(age) || age > SESSION_MAX_AGE) {
+          logDebug('Sesi kadaluarsa', false, true);
+          clearPiAuth();
+          return false;
+        }
+        sessionBanner.classList.add('visible');
+        sessionUser.textContent = savedUsername ? '@' + savedUsername : 'User';
+        var m = Math.round(age / 60000);
+        sessionAge.textContent = m < 1 ? ' (baru saja)' : m < 60 ? ' (' + m + 'm lalu)' : ' (' + Math.round(m/60) + 'j lalu)';
+        return true;
+      } catch(e) { clearPiAuth(); return false; }
+    }
+
+    function safeRedirect(url, delay) {
+      if (isRedirecting) return;
+      isRedirecting = true;
+      setTimeout(function() { window.location.href = url; }, delay || 0);
+    }
+
+    /* ================================================================
+       PROSES OTIENTIKASI UTAMA (STRICT UID-BASED)
+       ================================================================ */
+    function startPiLogin() {
+      if (loginInProgress) return;
+      loginInProgress = true;
+      resetUI();
+
+      if (!navigator.onLine) {
+        showError('Koneksi Gagal', 'Anda sedang offline.', 'Koneksi internet diperlukan', 'Silakan aktifkan data internet Anda terlebih dahulu.');
+        loginInProgress = false;
+        return;
+      }
+
+      if (checkExistingSession()) {
+        logDebug('Sesi valid ditemukan, mengalihkan ke dashboard...');
+        statusTitle.textContent = 'Menghubungkan Sesi...';
+        statusDesc.textContent = 'Membuka dashboard Anda kembali';
+        safeRedirect('dashboard.html', 800);
+        return;
+      }
+
+      if (!window.Pi) {
+        showError('SDK Tidak Ditemukan', 'Gagal memuat script Pi Network.', 'Inisialisasi SDK Gagal', 'Buka aplikasi ini dari dalam Pi Browser untuk otentikasi resmi.');
+        loginInProgress = false;
+        return;
+      }
+
+      logDebug('Menginisialisasi Pi SDK...');
+      try {
+        window.Pi.init({ version: "2.0", sandbox: window.APP_CONFIG.sandbox });
+        logDebug('Pi SDK Terinisialisasi');
+      } catch(e) {
+        showError('Gagal Init SDK', 'Gagal memetakan konfigurasi internal SDK.', 'Kesalahan Fatal', e.message);
+        loginInProgress = false;
+        return;
+      }
+
+      logDebug('Meminta otentikasi user ke Pi SDK...');
+      statusTitle.textContent = 'Meminta Otorisasi...';
+      statusDesc.textContent = 'Konfirmasi login pada pop-up Pi Browser jika muncul';
+
+      var authScopes = window.APP_CONFIG.authScopes;
+      
+      var authPromise = window.Pi.authenticate(authScopes, function onIncompletePayment(payment) {
+        logDebug('Ditemukan pembayaran tertunda: ' + (payment ? payment.identifier : 'tanpa ID'), false, true);
+        if (payment && payment.identifier) {
+          safeSet('whs_incomplete_payment', payment.identifier);
+        }
+      });
+
+      withTimeout(authPromise, AUTH_TIMEOUT, 'Batas waktu otentikasi habis. Pi SDK tidak merespons.')
+        .then(function(auth) {
+          logDebug('Menerima callback respons dari Pi SDK');
+          
+          // PROTEKSI KETAT: Cek ketersediaan objek user dan UID secara absolut
+          if (!auth || !auth.user || !auth.user.uid) {
+            throw new Error('Sistem menolak login: Pi SDK tidak mengirimkan UID unik akun Anda.');
+          }
+
+          var uid = auth.user.uid;
+          var username = auth.user.username || "PiUser";
+          var token = auth.accessToken;
+
+          logDebug('Otentikasi sukses. UID terverifikasi aman.');
+          statusTitle.className = 'pi-status-title success';
+          spinnerRing.className = 'pi-spinner-ring success';
+          spinnerIcon.className = 'pi-spinner-icon success';
+          statusTitle.textContent = 'Otentikasi Berhasil';
+          statusDesc.textContent = 'Sinkronisasi data ke database...';
+
+          // Simpan identitas utama berbasis UID
+          safeSet('whs_pi_uid', uid);
+          safeSet('whs_pi_username', username); // Username hanya disimpan sebagai cache kosmetik/UI display
+          safeSet('whs_pi_token', token);
+          safeSet('whs_login_time', Date.now());
+
+          if (SUPABASE_READY && supabase) {
+            return supabase.from('users').upsert({
+              pi_uid: uid,
+              username: username,
+              pi_access_token: token,
+              last_login: new Date().toISOString()
+            }, { onConflict: 'pi_uid' });
+          } else {
+            logDebug('Supabase dilewati, melanjutkan login lokal');
+            return { error: null };
+          }
+        })
+        .then(function(dbResult) {
+          if (dbResult && dbResult.error) {
+            throw new Error('Gagal mengamankan sesi di database: ' + dbResult.error.message);
+          }
+          logDebug('Proses login selesai penuh. Mengalihkan...');
+          showToast('Selamat datang kembali!', 'success', 2000);
+          safeRedirect('dashboard.html', 1000);
+        })
+        .catch(function(err) {
+          clearPiAuth();
+          showError('Login Gagal', 'Gagal memvalidasi otentikasi terpusat.', 'Otorisasi Ditolak', err.message);
+        })
+        .finally(function() {
+          loginInProgress = false;
+        });
+    }
+
+    /* ================================================================
+       EVENT LISTENERS
+       ================================================================ */
+    document.addEventListener('DOMContentLoaded', function() {
+      btnRetry.addEventListener('click', startPiLogin);
+      btnBack.addEventListener('click', function() { window.location.href = 'index.html'; });
+      
+      logoutBtn.addEventListener('click', function() {
+        clearPiAuth();
+        sessionBanner.classList.remove('visible');
+        showToast('Sesi dibersihkan', 'info', 2000);
+        startPiLogin();
+      });
+
+      // Jalankan alur login otomatis saat halaman dimuat
+      setTimeout(startPiLogin, 500);
     });
-  })
-  .then(function(response) {
-    if (response.error) throw response.error;
-    // Redirect aman ke dashboard
-    safeRedirect('dashboard.html', 500);
-  })
-  .catch(function(err) {
-    showError('Gagal Masuk', 'Aplikasi memerlukan UID resmi dari Pi Network.', 'Gagal memvalidasi akun', err.message);
-  });
+  </script>
+</body>
+</html>
