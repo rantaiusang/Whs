@@ -381,7 +381,7 @@
     async function sbPing() {
       try {
         // Hit endpoint yang ringan, cek saja header response
-        var res = await fetch(SUPABASE_REST + '/wallet?limit=0', { 
+        var res = await fetch(SUPABASE_REST + '/wallets?limit=0', { 
           method: 'GET', 
           headers: sbHeaders() 
         });
@@ -441,12 +441,12 @@
       // Langsung pakai REST — tidak ada lagi ensureSupabase() yang bergantung CDN
       try {
         // 1. Cek apakah wallet sudah ada
-        var existing = await sbSelectOne('wallet', 'wallet_address', uid);
+        var existing = await sbSelectOne('wallets', 'wallet_address', uid);
 
         if (existing) {
           // 2a. Wallet ada → update last_login
           try {
-            await sbUpdate('wallet', 'wallet_address', uid, {
+            await sbUpdate('wallets', 'wallet_address', uid, {
               last_login: new Date().toISOString()
             });
           } catch (updateErr) {
@@ -457,7 +457,7 @@
         }
 
         // 2b. Wallet belum ada → insert baru
-        var created = await sbInsert('wallet', {
+        var created = await sbInsert('wallets', {
           user_id:          uid,
           wallet_address:   uid,
           score:            0,
@@ -546,7 +546,7 @@
             case 'permission_error':
               errTitle = 'Akses Ditolak';
               errIcon  = 'fa-ban';
-              errDesc  = 'Tabel "wallet" menolak akses anon. Pastikan RLS policy sudah diatur dengan benar di Supabase Dashboard.';
+              errDesc  = 'Tabel "wallets" menolak akses anon. Pastikan RLS policy sudah diatur dengan benar di Supabase Dashboard.';
               break;
             case 'server_error':
               errTitle = 'Server Bermasalah';
