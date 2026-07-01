@@ -10,10 +10,14 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=DM+Sans:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
+  <script src="https://sdk.minepi.com/pi-sdk.js"></script>
   
-  <!-- PENTING: Tambahkan DEFER agar tidak nge-block UI, tapi JS kita nanti yang menunggunya -->
-  <script src="https://sdk.minepi.com/pi-sdk.js" defer></script>
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" defer></script>
+  <!-- 
+    FIX RAJA CDN UNTUK PI BROWSER: 
+    Pakai path UMD eksplisit versi stabil (2.39.7) tanpa defer. 
+    Ini memaksa Pi Browser memuat format JS lama yang kompatibel.
+  -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.39.7/dist/umd/supabase.min.js"></script>
 
   <style>
     :root {
@@ -272,32 +276,32 @@
     var SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZhbHB3bGVibGRua2VkcnpuYXltIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODI3Mzk3ODUsImV4cCI6MjA5ODMxNTc4NX0.G3BDRqiRBmcFwtBRtdiJI3CkptRrya9bxiVozcQZCSc';
     var supabase = null;
 
-    /* ====================================================================
-       FIX RAJA: LAZY INITIALIZATION UNTUK SUPABASE (MENGHANCURKAN RACE CONDITION)
-       Karena script CDN memakai 'defer', kode ini dijamin berjalan SETELAH 
-       library selesai di-download, TAPI kita buat double safety net 
-       dengan fungsi init yang dipanggil tepat saat dibutuhkan.
-       ==================================================================== */
+    /* 
+     * FIX RAJA CDN UNTUK PI BROWSER: 
+     * Karena kita memaksa UMD di <head>, di sini kita tinggal langsung pakai.
+     * Tetap kita bungkus try-catch untuk keamanan.
+     */
     function ensureSupabase() {
-      if (supabase) return true; 
+      if (supabase && typeof supabase.from === 'function') return true;
       
-      console.log('[INIT] Mengecek ketersediaan Supabase CDN...');
-      console.log('[INIT] window.supabase:', typeof window.supabase);
-      console.log('[INIT] createClient:', typeof (window.supabase ? window.supabase.createClient : undefined));
-
-      if (window.supabase && typeof window.supabase.createClient === 'function') {
-        try {
+      try {
+        if (window.supabase && typeof window.supabase.createClient === 'function') {
           supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-          console.log('[INIT] Supabase Client berhasil dibuat!');
-          return true;
-        } catch (e) {
-          console.error('[INIT] Gagal membuat Supabase Client:', e.message);
-          return false;
+          
+          // DEBUG LOG UNTUK MEMASTIKAN .from() ADA
+          console.log('[INIT] Supabase Client dibuat. Apakah .from ada? ', typeof supabase.from);
+          
+          if (typeof supabase.from === 'function') {
+            return true;
+          } else {
+            console.error('[INIT] Client dibuat tapi .from tidak ada! CDN UMD gagal di Pi Browser.");
+            return false;
+          }
         }
-      } else {
-        console.error('[INIT] Supabase CDN belum siap atau gagal dimuat oleh Pi Browser.');
-        return false;
+      } catch (e) {
+        console.error('[INIT] Gagal init Supabase:', e.message);
       }
+      return false;
     }
 
     function showToast(msg, type, dur) {
@@ -324,7 +328,6 @@
 
     var verifiedUser = null;
 
-    /* AUTH GUARD: 100% Lokal, tidak crash walau DB turun */
     function verifySession() {
       var raw = safeGet('whs_pi_user');
       var localUser = null;
@@ -339,7 +342,6 @@
     }
 
     async function fetchOrCreateWallet(uid, username) {
-      /* PANGGIL LAZY INIT DI SINI! */
       if (!ensureSupabase()) return { error: 'no_supabase' };
 
       try {
@@ -413,7 +415,7 @@
           mainWrapper.style.display = 'flex';
           loadingScreen.style.display = 'none';
           if (walletResult.error === 'no_supabase') {
-            document.getElementById('pageContent').innerHTML = '<div style="text-align:center;padding:60px 20px;"><i class="fa-solid fa-database" style="font-size:2rem;color:var(--danger);opacity:0.5;margin-bottom:12px;display:block;"></i><h3 style="font-family:var(--font-display);margin-bottom:8px;">Backend Tidak Tersedia</h3><p style="color:var(--text-muted);font-size:0.88rem;max-width:320px;margin:0 auto;">Supabase CDN gagal dimuat di Pi Browser. Coba refresh halaman atau buka ulang aplikasi.</p></div>';
+            document.getElementById('pageContent').innerHTML = '<div style="text-align:center;padding:60px 20px;"><i class="fa-solid fa-database" style="font-size:2rem;color:var(--danger);opacity:0.5;margin-bottom:12px;display:block;"></i><h3 style="font-family:var(--font-display);margin-bottom:8px;">Backend Tidak Tersedia</h3><p style="color:var(--text-muted);font-size:0.88rem;max-width:320px;margin:0 auto;">CDN Supabase tidak kompatibel dengan Pi Browser saat ini.</p></div>';
           } else {
             showToast('Gagal memuat data: ' + (walletResult.detail || 'Error'), 'warning', 5000);
           }
@@ -438,9 +440,6 @@
       }
     }
 
-    /* ====================================================================
-       NORMALIZE: SKOR REAL-TIME, UMUR DARI created_at
-       ==================================================================== */
     function normalizeWalletData(dbRow, isNew, realUsername) {
       var riskFlags = [];
       try { riskFlags = (typeof dbRow.risk_flags === 'string') ? JSON.parse(dbRow.risk_flags) : (dbRow.risk_flags || []); } catch(e) { riskFlags = []; }
@@ -463,7 +462,6 @@
       else if (ageDays >= 30) ageScore = 100;
 
       var riskScore = Math.max(0, 250 - riskPenalty);
-
       var totalScore = srScore + volScore + ageScore + riskScore;
 
       var networkAvg = 580; 
@@ -487,11 +485,7 @@
         statusColor: statusColor,
         walletAgeDays: ageDays, 
         isNew: isNew,
-        transactions: {
-          total: txTotal,
-          successRate: successRate,
-          failed: Math.round(txTotal * (100 - successRate) / 100),
-        },
+        transactions: { total: txTotal, successRate: successRate, failed: Math.round(txTotal * (100 - successRate) / 100) },
         breakdown: {
           successRate: { label: 'Success Rate', score: srScore, max: 250 },
           volume:       { label: 'Volume', score: volScore, max: 250, value: txTotal },
@@ -505,11 +499,9 @@
     function render(data) {
       var pc = document.getElementById('pageContent');
       var safeAddr = escapeHtml(data.walletAddress);
-
       var vsNetwork = data.score - data.networkAvg;
       var vsText = vsNetwork >= 0 ? '+' + vsNetwork : '' + vsNetwork;
       var vsClass = vsNetwork >= 0 ? 'color:var(--success)' : 'color:var(--danger)';
-
       var criticalCount = 0, highCount = 0;
       for (var r = 0; r < data.riskFlags.length; r++) {
         if (data.riskFlags[r].severity === 'critical') criticalCount++;
@@ -519,75 +511,14 @@
       var networkAvgPct = Math.round((data.networkAvg / 4) / 250 * 100);
 
       var html = '';
+      html += '<div class="identity-card"><div class="identity-top"><div class="identity-left"><div class="identity-avatar">&pi;</div><div class="identity-info"><h1>' + escapeHtml('@' + data.username) + (data.isNew ? '<span class="score-est-badge"><i class="fa-solid fa-seedling"></i> Baru</span>' : '') + '</h1><div class="identity-uid-row"><span class="identity-uid-badge"><i class="fa-solid fa-fingerprint"></i> Wallet</span><span class="identity-uid-text">' + safeAddr + '</span></div><div class="identity-meta"><span><i class="fa-solid fa-shield-halved" style="color:' + data.statusColor + '"></i> <b style="color:' + data.statusColor + '">' + data.status + '</b></span><span><i class="fa-regular fa-clock"></i> ' + (data.walletAgeDays >= 30 ? Math.floor(data.walletAgeDays/30) + ' bulan' : data.walletAgeDays + ' hari') + ' di sistem</span><span><i class="fa-solid fa-chart-line" style="color:var(--accent)"></i> Live Calculated</span></div></div></div><div class="identity-actions"><button class="btn-sm" id="copyUidBtn"><i class="fa-regular fa-copy"></i> Salin</button></div></div><div class="identity-stats-row"><div class="identity-stat"><div class="identity-stat-value" style="color:var(--accent);" id="animScore">0</div><div class="identity-stat-label">Credit Score</div></div><div class="identity-stat"><div class="identity-stat-value" id="animTx">0</div><div class="identity-stat-label">Total Transaksi</div></div><div class="identity-stat"><div class="identity-stat-value" id="animRate">0%</div><div class="identity-stat-label">Success Rate</div></div><div class="identity-stat"><div class="identity-stat-value" style="color:' + (data.riskFlags.length > 0 ? 'var(--danger)' : 'var(--success)') + ';">' + data.riskFlags.length + '</div><div class="identity-stat-label">Risk Flags</div></div><div class="identity-stat"><div class="identity-stat-value" style="' + vsClass + '">' + vsText + '</div><div class="identity-stat-label">vs Network Avg</div></div></div></div>';
 
-      html += '<div class="identity-card">'
-        + '<div class="identity-top">'
-        +   '<div class="identity-left">'
-        +     '<div class="identity-avatar">&pi;</div>'
-        +     '<div class="identity-info">'
-        +       '<h1>' + escapeHtml('@' + data.username) + (data.isNew ? '<span class="score-est-badge"><i class="fa-solid fa-seedling"></i> Baru</span>' : '') + '</h1>'
-        +       '<div class="identity-uid-row">'
-        +         '<span class="identity-uid-badge"><i class="fa-solid fa-fingerprint"></i> Wallet</span>'
-        +         '<span class="identity-uid-text">' + safeAddr + '</span>'
-        +       '</div>'
-        +       '<div class="identity-meta">'
-        +         '<span><i class="fa-solid fa-shield-halved" style="color:' + data.statusColor + '"></i> <b style="color:' + data.statusColor + '">' + data.status + '</b></span>'
-        +         '<span><i class="fa-regular fa-clock"></i> ' + (data.walletAgeDays >= 30 ? Math.floor(data.walletAgeDays/30) + ' bulan' : data.walletAgeDays + ' hari') + ' di sistem</span>'
-        +         '<span><i class="fa-solid fa-chart-line" style="color:var(--accent)"></i> Live Calculated</span>'
-        +       '</div>'
-        +     '</div>'
-        +   '</div>'
-        +   '<div class="identity-actions">'
-        +     '<button class="btn-sm" id="copyUidBtn"><i class="fa-regular fa-copy"></i> Salin</button>'
-        +   '</div>'
-        + '</div>'
-        + '<div class="identity-stats-row">'
-        +   '<div class="identity-stat"><div class="identity-stat-value" style="color:var(--accent);" id="animScore">0</div><div class="identity-stat-label">Credit Score</div></div>'
-        +   '<div class="identity-stat"><div class="identity-stat-value" id="animTx">0</div><div class="identity-stat-label">Total Transaksi</div></div>'
-        +   '<div class="identity-stat"><div class="identity-stat-value" id="animRate">0%</div><div class="identity-stat-label">Success Rate</div></div>'
-        +   '<div class="identity-stat"><div class="identity-stat-value" style="color:' + (data.riskFlags.length > 0 ? 'var(--danger)' : 'var(--success)') + ';">' + data.riskFlags.length + '</div><div class="identity-stat-label">Risk Flags</div></div>'
-        +   '<div class="identity-stat"><div class="identity-stat-value" style="' + vsClass + '">' + vsText + '</div><div class="identity-stat-label">vs Network Avg</div></div>'
-        + '</div>'
-        + '</div>';
+      html += '<div class="section"><div class="section-header"><div class="section-icon teal"><i class="fa-solid fa-chart-bar"></i></div><h2 class="section-title">Breakdown Skor</h2><span class="section-subtitle">Maks 250 poin/kategori</span></div><div class="card"><div class="card-body"><div class="score-detail-grid"><div class="breakdown-list">' + renderBreakdown(data.breakdown.successRate, 'teal', 'fa-circle-check', (data.transactions.successRate||0) + '%', 'Skor berdasarkan persentase transaksi yang berhasil.', networkAvgPct) + renderBreakdown(data.breakdown.volume, 'green', 'fa-arrow-right-arrow-left', formatNumber(data.breakdown.volume.value||0) + ' tx', 'Skor berdasarkan total volume transaksi on-chain.', networkAvgPct) + '</div><div class="breakdown-list">' + renderBreakdown(data.breakdown.age, 'amber', 'fa-clock', Math.floor(data.walletAgeDays/30) + ' bulan', getAgeExplain(data.walletAgeDays), networkAvgPct) + renderBreakdownRisk(data.breakdown.risk, networkAvgPct) + '</div></div></div></div></div>';
 
-      html += '<div class="section">'
-        + '<div class="section-header">'
-        +   '<div class="section-icon teal"><i class="fa-solid fa-chart-bar"></i></div>'
-        +   '<h2 class="section-title">Breakdown Skor</h2>'
-        +   '<span class="section-subtitle">Maks 250 poin/kategori</span>'
-        + '</div>'
-        + '<div class="card"><div class="card-body"><div class="score-detail-grid">'
-        + '<div class="breakdown-list">'
-        + renderBreakdown(data.breakdown.successRate, 'teal', 'fa-circle-check', (data.transactions.successRate||0) + '%', 'Skor berdasarkan persentase transaksi yang berhasil.', networkAvgPct)
-        + renderBreakdown(data.breakdown.volume, 'green', 'fa-arrow-right-arrow-left', formatNumber(data.breakdown.volume.value||0) + ' tx', 'Skor berdasarkan total volume transaksi on-chain.', networkAvgPct)
-        + '</div>'
-        + '<div class="breakdown-list">'
-        + renderBreakdown(data.breakdown.age, 'amber', 'fa-clock', Math.floor(data.walletAgeDays/30) + ' bulan', getAgeExplain(data.walletAgeDays), networkAvgPct)
-        + renderBreakdownRisk(data.breakdown.risk, networkAvgPct)
-        + '</div>'
-        + '</div></div></div></div>';
+      html += '<div class="section"><div class="section-header"><div class="section-icon blue"><i class="fa-solid fa-lightbulb"></i></div><h2 class="section-title">Mengapa Skor Ini?</h2></div><div class="why-grid">' + generateWhyCards(data) + '</div></div>';
 
-      html += '<div class="section">'
-        + '<div class="section-header">'
-        +   '<div class="section-icon blue"><i class="fa-solid fa-lightbulb"></i></div>'
-        +   '<h2 class="section-title">Mengapa Skor Ini?</h2>'
-        + '</div>'
-        + '<div class="why-grid">' + generateWhyCards(data) + '</div>'
-        + '</div>';
-
-      html += '<div class="section">'
-        + '<div class="section-header">'
-        +   '<div class="section-icon red"><i class="fa-solid fa-triangle-exclamation"></i></div>'
-        +   '<h2 class="section-title">Analisis Risiko</h2>'
-        +   '<span class="section-subtitle">' + data.riskFlags.length + ' flag terdeteksi</span>'
-        + '</div>'
-        + '<div class="card"><div class="card-body">';
-
-      html += '<div class="risk-overview">'
-        + '<div class="risk-metric"><div class="risk-metric-value" style="color:' + (criticalCount>0?'var(--danger)':'var(--success)') + '">' + criticalCount + '</div><div class="risk-metric-label">Critical</div></div>'
-        + '<div class="risk-metric"><div class="risk-metric-value" style="color:' + (highCount>0?'var(--warning)':'var(--success)') + '">' + highCount + '</div><div class="risk-metric-label">High</div></div>'
-        + '<div class="risk-metric"><div class="risk-metric-value" style="color:' + (totalPenalty>0?'var(--danger)':'var(--success)') + '">-' + totalPenalty + '</div><div class="risk-metric-label">Total Penalty</div></div>'
-        + '</div>';
+      html += '<div class="section"><div class="section-header"><div class="section-icon red"><i class="fa-solid fa-triangle-exclamation"></i></div><h2 class="section-title">Analisis Risiko</h2><span class="section-subtitle">' + data.riskFlags.length + ' flag terdeteksi</span></div><div class="card"><div class="card-body">';
+      html += '<div class="risk-overview"><div class="risk-metric"><div class="risk-metric-value" style="color:' + (criticalCount>0?'var(--danger)':'var(--success)') + '">' + criticalCount + '</div><div class="risk-metric-label">Critical</div></div><div class="risk-metric"><div class="risk-metric-value" style="color:' + (highCount>0?'var(--warning)':'var(--success)') + '">' + highCount + '</div><div class="risk-metric-label">High</div></div><div class="risk-metric"><div class="risk-metric-value" style="color:' + (totalPenalty>0?'var(--danger)':'var(--success)') + '">-' + totalPenalty + '</div><div class="risk-metric-label">Total Penalty</div></div></div>';
 
       if (data.riskFlags.length === 0) {
         html += '<div class="no-flags-full"><i class="fa-solid fa-shield-halved"></i><h4>Wallet Bersih</h4><p>Tidak ada risk flag terdeteksi.</p></div>';
@@ -597,29 +528,19 @@
         var severityIcons = { critical:'fa-skull-crossbones', high:'fa-circle-exclamation', medium:'fa-triangle-exclamation', low:'fa-circle-info' };
         for (var f = 0; f < data.riskFlags.length; f++) {
           var flag = data.riskFlags[f];
-          html += '<div class="risk-flag-card severity-' + (flag.severity||'low') + '">'
-            + '<div class="risk-flag-icon"><i class="fa-solid ' + (severityIcons[flag.severity]||'fa-circle-info') + '"></i></div>'
-            + '<div class="risk-flag-content">'
-            +   '<div class="risk-flag-header"><span class="risk-flag-label">' + escapeHtml(flag.label) + '</span><span class="severity-tag ' + (flag.severity||'low') + '">' + (flag.severity||'low') + '</span></div>'
-            +   '<div class="risk-flag-desc">' + escapeHtml(flag.description) + '</div>'
-            + '</div>'
-            + '<div class="risk-flag-penalty">-' + (penaltyMap[flag.severity]||0) + '</div>'
-            + '</div>';
+          html += '<div class="risk-flag-card severity-' + (flag.severity||'low') + '"><div class="risk-flag-icon"><i class="fa-solid ' + (severityIcons[flag.severity]||'fa-circle-info') + '"></i></div><div class="risk-flag-content"><div class="risk-flag-header"><span class="risk-flag-label">' + escapeHtml(flag.label) + '</span><span class="severity-tag ' + (flag.severity||'low') + '">' + (flag.severity||'low') + '</span></div><div class="risk-flag-desc">' + escapeHtml(flag.description) + '</div></div><div class="risk-flag-penalty">-' + (penaltyMap[flag.severity]||0) + '</div></div>';
         }
         html += '</div>';
       }
-
       html += '</div></div></div>';
+      
       pc.innerHTML = html;
 
-      var copyBtn = document.getElementById('copyUidBtn');
-      if (copyBtn) {
-        copyBtn.addEventListener('click', function() {
-          if (navigator.clipboard && navigator.clipboard.writeText) {
-            navigator.clipboard.writeText(data.uid).then(function() { showToast('Wallet Address disalin', 'success', 2000); }).catch(function() { fallbackCopy(data.uid); });
-          } else { fallbackCopy(data.uid); }
-        });
-      }
+      document.getElementById('copyUidBtn').addEventListener('click', function() {
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+          navigator.clipboard.writeText(data.uid).then(function() { showToast('Wallet Address disalin', 'success', 2000); }).catch(function() { fallbackCopy(data.uid); });
+        } else { fallbackCopy(data.uid); }
+      });
 
       requestAnimationFrame(function() {
         animateCounter('animScore', 0, data.score, 1200);
@@ -627,9 +548,7 @@
         animateCounter('animRate', 0, data.transactions.successRate, 1000, '%', 1);
         setTimeout(function() {
           var bars = document.querySelectorAll('.breakdown-bar-fill');
-          for (var b = 0; b < bars.length; b++) {
-            bars[b].style.width = bars[b].getAttribute('data-width') + '%';
-          }
+          for (var b = 0; b < bars.length; b++) { bars[b].style.width = bars[b].getAttribute('data-width') + '%'; }
         }, 200);
       });
     }
@@ -638,13 +557,7 @@
       var pct = Math.round((item.score / item.max) * 100);
       var markerPct = Math.min(100, Math.max(0, avgPct));
       var colorVar = colorClass === 'teal' ? 'accent' : colorClass === 'green' ? 'success' : 'warning';
-      return '<div class="breakdown-item">'
-        + '<div class="breakdown-item-header">'
-        +   '<span class="breakdown-label"><i class="fa-solid ' + icon + '" style="color:var(--' + colorVar + ')"></i> ' + item.label + '</span>'
-        +   '<span class="breakdown-values"><span class="bv-score">' + item.score + '</span><span class="bv-max">/' + item.max + '</span><span class="bv-detail">(' + displayVal + ')</span></span>'
-        + '</div>'
-        + '<div class="breakdown-bar"><div class="breakdown-bar-fill ' + colorClass + '" data-width="' + pct + '"></div><div class="breakdown-bar-marker" style="left:' + markerPct + '%;"></div></div>'
-        + '<div class="breakdown-explain">' + explain + '</div></div>';
+      return '<div class="breakdown-item"><div class="breakdown-item-header"><span class="breakdown-label"><i class="fa-solid ' + icon + '" style="color:var(--' + colorVar + ')"></i> ' + item.label + '</span><span class="breakdown-values"><span class="bv-score">' + item.score + '</span><span class="bv-max">/' + item.max + '</span><span class="bv-detail">(' + displayVal + ')</span></span></div><div class="breakdown-bar"><div class="breakdown-bar-fill ' + colorClass + '" data-width="' + pct + '"></div><div class="breakdown-bar-marker" style="left:' + markerPct + '%;"></div></div><div class="breakdown-explain">' + explain + '</div></div>';
     }
 
     function renderBreakdownRisk(item, avgPct) {
@@ -653,13 +566,7 @@
       var displayVal = item.penalty > 0 ? '-' + item.penalty + ' poin penalty' : 'Tidak ada penalty';
       var explain = item.penalty === 0 ? 'Tidak ada penalti risiko.' : item.penalty <= 30 ? 'Penalti ringan.' : item.penalty <= 80 ? 'Penalti sedang.' : 'Penalti berat.';
       var markerPct = Math.min(100, Math.max(0, avgPct));
-      return '<div class="breakdown-item">'
-        + '<div class="breakdown-item-header">'
-        +   '<span class="breakdown-label"><i class="fa-solid fa-shield-halved" style="color:var(--danger)"></i> ' + item.label + '</span>'
-        +   '<span class="breakdown-values"><span class="bv-score">' + item.score + '</span><span class="bv-max">/' + item.max + '</span><span class="bv-detail">(' + displayVal + ')</span></span>'
-        + '</div>'
-        + '<div class="breakdown-bar"><div class="breakdown-bar-fill ' + colorClass + '" data-width="' + pct + '"></div><div class="breakdown-bar-marker" style="left:' + markerPct + '%;"></div></div>'
-        + '<div class="breakdown-explain">' + explain + '</div></div>';
+      return '<div class="breakdown-item"><div class="breakdown-item-header"><span class="breakdown-label"><i class="fa-solid fa-shield-halved" style="color:var(--danger)"></i> ' + item.label + '</span><span class="breakdown-values"><span class="bv-score">' + item.score + '</span><span class="bv-max">/' + item.max + '</span><span class="bv-detail">(' + displayVal + ')</span></span></div><div class="breakdown-bar"><div class="breakdown-bar-fill ' + colorClass + '" data-width="' + pct + '"></div><div class="breakdown-bar-marker" style="left:' + markerPct + '%;"></div></div><div class="breakdown-explain">' + explain + '</div></div>';
     }
 
     function getAgeExplain(days) {
@@ -671,111 +578,62 @@
 
     function generateWhyCards(data) {
       var cards = [];
-      if (data.isNew) {
-        cards.push({ icon: 'fa-seedling', type: 'neutral', title: 'Wallet Baru Terdaftar', text: 'Ini adalah kunjungan pertama. Skor dihitung secara real-time berdasarkan data on-chain.', impact: 'Dimulai dari ' + data.score + ' poin', impactType: 'neutral' });
-      }
-      
+      if (data.isNew) cards.push({ icon: 'fa-seedling', type: 'neutral', title: 'Wallet Baru Terdaftar', text: 'Ini adalah kunjungan pertama. Skor dihitung secara real-time berdasarkan data on-chain.', impact: 'Dimulai dari ' + data.score + ' poin', impactType: 'neutral' });
       if (data.transactions.total === 0) {
         cards.push({ icon: 'fa-hourglass-start', type: 'neutral', title: 'Belum Ada Transaksi', text: 'Volume dan success rate masih 0 karena belum ada aktivitas on-chain yang tercatat di wallet ini.', impact: '0 / 500 poin', impactType: 'neutral' });
       } else {
-        if (data.transactions.successRate >= 90) {
-          cards.push({ icon: 'fa-circle-check', type: 'positive', title: 'Tingkat Keberhasilan Tinggi', text: 'Lebih dari 90% transaksi Anda berhasil.', impact: '+' + data.breakdown.successRate.score + ' poin', impactType: 'positive' });
-        } else if (data.transactions.successRate < 50 && data.transactions.total > 5) {
-          cards.push({ icon: 'fa-circle-xmark', type: 'negative', title: 'Banyak Transaksi Gagal', text: 'Sebagian besar transaksi mengalami kegagalan.', impact: '+' + data.breakdown.successRate.score + ' poin', impactType: 'negative' });
-        }
+        if (data.transactions.successRate >= 90) cards.push({ icon: 'fa-circle-check', type: 'positive', title: 'Tingkat Keberhasilan Tinggi', text: 'Lebih dari 90% transaksi Anda berhasil.', impact: '+' + data.breakdown.successRate.score + ' poin', impactType: 'positive' });
+        else if (data.transactions.successRate < 50 && data.transactions.total > 5) cards.push({ icon: 'fa-circle-xmark', type: 'negative', title: 'Banyak Transaksi Gagal', text: 'Sebagian besar transaksi mengalami kegagalan.', impact: '+' + data.breakdown.successRate.score + ' poin', impactType: 'negative' });
       }
-
-      if (data.walletAgeDays >= 365) {
-        cards.push({ icon: 'fa-calendar-check', type: 'positive', title: 'Akun Mapan', text: 'Usia akun lebih dari 1 tahun menunjukkan komitmen jangka panjang.', impact: '+' + data.breakdown.age.score + ' poin', impactType: 'positive' });
-      } else if (data.walletAgeDays < 30) {
-        cards.push({ icon: 'fa-clock', type: 'negative', title: 'Akun Sangat Baru', text: 'Usia akun kurang dari 30 hari. Skor akan meningkat seiring waktu.', impact: '+' + data.breakdown.age.score + ' poin', impactType: 'negative' });
-      }
-
-      if (data.riskFlags.length === 0) {
-        cards.push({ icon: 'fa-shield-halved', type: 'positive', title: 'Profil Risiko Bersih', text: 'Tidak ditemukan indikasi aktivitas mencurigakan.', impact: 'Penuh (250/250)', impactType: 'positive' });
-      } else {
-        cards.push({ icon: 'fa-triangle-exclamation', type: 'negative', title: 'Terdapat Risk Flags', text: 'Ditemukan ' + data.riskFlags.length + ' tanda bahaya.', impact: '-' + data.breakdown.risk.penalty + ' poin penalty', impactType: 'negative' });
-      }
+      if (data.walletAgeDays >= 365) cards.push({ icon: 'fa-calendar-check', type: 'positive', title: 'Akun Mapan', text: 'Usia akun lebih dari 1 tahun menunjukkan komitmen jangka panjang.', impact: '+' + data.breakdown.age.score + ' poin', impactType: 'positive' });
+      else if (data.walletAgeDays < 30) cards.push({ icon: 'fa-clock', type: 'negative', title: 'Akun Sangat Baru', text: 'Usia akun kurang dari 30 hari. Skor akan meningkat seiring waktu.', impact: '+' + data.breakdown.age.score + ' poin', impactType: 'negative' });
+      if (data.riskFlags.length === 0) cards.push({ icon: 'fa-shield-halved', type: 'positive', title: 'Profil Risiko Bersih', text: 'Tidak ditemukan indikasi aktivitas mencurigakan.', impact: 'Penuh (250/250)', impactType: 'positive' });
+      else cards.push({ icon: 'fa-triangle-exclamation', type: 'negative', title: 'Terdapat Risk Flags', text: 'Ditemukan ' + data.riskFlags.length + ' tanda bahaya.', impact: '-' + data.breakdown.risk.penalty + ' poin penalty', impactType: 'negative' });
 
       var html = '';
       for (var i = 0; i < cards.length; i++) {
         var c = cards[i];
-        html += '<div class="why-card">'
-          + '<div class="why-card-top">'
-          + '<div class="why-card-icon ' + c.type + '"><i class="fa-solid ' + c.icon + '"></i></div>'
-          + '<div class="why-card-body">'
-          + '<div class="why-card-title">' + c.title + '</div>'
-          + '<div class="why-card-text">' + c.text + '</div>'
-          + '<div class="why-card-impact ' + c.type + '"><i class="fa-solid ' + (c.type === 'positive' ? 'fa-arrow-up' : c.type === 'negative' ? 'fa-arrow-down' : 'fa-minus') + '"></i> ' + c.impact + '</div>'
-          + '</div></div></div>';
+        html += '<div class="why-card"><div class="why-card-top"><div class="why-card-icon ' + c.type + '"><i class="fa-solid ' + c.icon + '"></i></div><div class="why-card-body"><div class="why-card-title">' + c.title + '</div><div class="why-card-text">' + c.text + '</div><div class="why-card-impact ' + c.type + '"><i class="fa-solid ' + (c.type === 'positive' ? 'fa-arrow-up' : c.type === 'negative' ? 'fa-arrow-down' : 'fa-minus') + '"></i> ' + c.impact + '</div></div></div></div>';
       }
       return html;
     }
 
     function animateCounter(id, start, end, duration, suffix, decimals) {
-      suffix = suffix || '';
-      decimals = decimals || 0;
-      var el = document.getElementById(id);
-      if (!el) return;
-      var range = end - start;
-      var startTime = null;
+      suffix = suffix || ''; decimals = decimals || 0;
+      var el = document.getElementById(id); if (!el) return;
+      var range = end - start; var startTime = null;
       function step(timestamp) {
         if (!startTime) startTime = timestamp;
         var progress = Math.min((timestamp - startTime) / duration, 1);
         var ease = 1 - Math.pow(1 - progress, 3);
         var current = start + (range * ease);
         el.textContent = (decimals > 0 ? current.toFixed(decimals) : Math.floor(current)) + suffix;
-        if (progress < 1) { requestAnimationFrame(step); } 
-        else { el.textContent = (decimals > 0 ? end.toFixed(decimals) : end) + suffix; }
+        if (progress < 1) { requestAnimationFrame(step); } else { el.textContent = (decimals > 0 ? end.toFixed(decimals) : end) + suffix; }
       }
       requestAnimationFrame(step);
     }
 
     function fallbackCopy(text) {
-      var textArea = document.createElement("textarea");
-      textArea.value = text;
-      textArea.style.position = "fixed";
-      textArea.style.left = "-9999px";
-      document.body.appendChild(textArea);
-      textArea.focus();
-      textArea.select();
+      var textArea = document.createElement("textarea"); textArea.value = text; textArea.style.position = "fixed"; textArea.style.left = "-9999px"; document.body.appendChild(textArea); textArea.focus(); textArea.select();
       try { document.execCommand('copy'); showToast('Wallet Address disalin', 'success', 2000); } catch (err) { showToast('Gagal menyalin', 'error', 2000); }
       document.body.removeChild(textArea);
     }
 
     document.getElementById('refreshBtn').addEventListener('click', function() {
-      var btn = this;
-      var icon = btn.querySelector('i');
-      icon.classList.add('fa-spin');
-      btn.disabled = true;
-      
+      var btn = this; var icon = btn.querySelector('i'); icon.classList.add('fa-spin'); btn.disabled = true;
       fetchOrCreateWallet(verifiedUser.uid, verifiedUser.username).then(function(res) {
-        if (!res.error && res.data) {
-          var data = normalizeWalletData(res.data, false, verifiedUser.username);
-          render(data);
-          showToast('Data diperbarui (Real-time)', 'success');
-        } else {
-          showToast('Gagal memperbarui data', 'error');
-        }
-      }).catch(function() {
-        showToast('Error koneksi', 'error');
-      }).finally(function() {
-        icon.classList.remove('fa-spin');
-        btn.disabled = false;
-      });
+        if (!res.error && res.data) { var data = normalizeWalletData(res.data, false, verifiedUser.username); render(data); showToast('Data diperbarui (Real-time)', 'success'); }
+        else { showToast('Gagal memperbarui data', 'error'); }
+      }).catch(function() { showToast('Error koneksi', 'error'); }).finally(function() { icon.classList.remove('fa-spin'); btn.disabled = false; });
     });
 
     document.getElementById('logoutBtn').addEventListener('click', function() {
-      safeDel('whs_pi_user');
-      safeDel('whs_login_time');
-      safeDel('whs_pi_token');
+      safeDel('whs_pi_user'); safeDel('whs_login_time'); safeDel('whs_pi_token');
       try { if(window.Pi && window.Pi.auth) window.Pi.auth.signOut(); } catch(e){}
-      
       showToast('Sesi berakhir', 'info', 1500);
       setTimeout(function() { window.location.href = 'login.html'; }, 800);
     });
 
-    /* DOMContentLoaded memastikan HTML 100% selesai dibaca sebelum eksekusi script */
     document.addEventListener('DOMContentLoaded', initApp);
   </script>
 </body>
