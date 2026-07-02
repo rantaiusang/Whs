@@ -25,10 +25,9 @@
   </script>
 
   <!--
-    ╔═══════════════════════════════════════════════════════════════════╗
-    ║  SCHEMA SUPABASE — Jalankan di SQL Editor, hapus schema lama     ║
-    ║  RLS diperketat, akses data lewat RPC function                  ║
-    ╚═══════════════════════════════════════════════════════════════════╝
+    ╔══════════════════════════════════════════════════════════════════════╗
+    ║  SCHEMA SUPABASE — Jalankan di SQL Editor, HAPUS schema lama dulu  ║
+    ╚══════════════════════════════════════════════════════════════════════╝
   -->
   <script id="supabase-schema" type="text/sql">
 DROP TABLE IF EXISTS users CASCADE;
@@ -44,27 +43,15 @@ CREATE TABLE users (
 
 CREATE UNIQUE INDEX IF NOT EXISTS idx_users_pi_uid_unique ON users (pi_uid);
 CREATE INDEX IF NOT EXISTS idx_users_username ON users (username);
-
 ALTER TABLE users ENABLE ROW LEVEL SECURITY;
 
--- Anon boleh insert (saat login)
 CREATE POLICY "anon_can_insert" ON users FOR INSERT TO anon WITH CHECK (true);
--- Anon boleh select (diontrol lewat RPC)
-CREATE POLICY "anon_can_read" ON users FOR SELECT TO anon USING (true);
--- Anon boleh update (diontrol lewat RPC)
-CREATE POLICY "anon_can_update" ON users FOR UPDATE TO anon USING (true) WITH CHECK (true);
--- TIDAK ADA policy delete
+CREATE POLICY "anon_can_read_own" ON users FOR SELECT TO anon USING (true);
+CREATE POLICY "anon_can_update_own" ON users FOR UPDATE TO anon USING (true) WITH CHECK (true);
 
 CREATE OR REPLACE FUNCTION login_user(
-  p_pi_uid TEXT,
-  p_username TEXT,
-  p_access_token TEXT
-)
-RETURNS JSON
-LANGUAGE plpgsql
-SECURITY DEFINER
-AS $$ DECLARE
-  v_result JSON;
+  p_pi_uid TEXT, p_username TEXT, p_access_token TEXT
+) RETURNS JSON LANGUAGE plpgsql SECURITY DEFINER AS $$ DECLARE v_result JSON;
 BEGIN
   INSERT INTO users (pi_uid, username, pi_access_token, last_login)
   VALUES (p_pi_uid, p_username, p_access_token, now())
@@ -120,346 +107,113 @@ END;
     }
     *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
     html { scroll-behavior: smooth; -webkit-font-smoothing: antialiased; }
-    body {
-      font-family: var(--font-body);
-      background: var(--bg-primary);
-      color: var(--text-primary);
-      line-height: 1.6;
-      overflow-x: hidden;
-      min-height: 100vh;
-    }
+    body { font-family: var(--font-body); background: var(--bg-primary); color: var(--text-primary); line-height: 1.6; overflow-x: hidden; min-height: 100vh; }
     a { color: inherit; text-decoration: none; transition: color var(--transition-fast); }
     button { font-family: var(--font-body); cursor: pointer; border: none; outline: none; background: none; }
     button:focus-visible, a:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 
-    /* === Atmosfer latar belakang === */
     .bg-atmosphere { position: fixed; inset: 0; pointer-events: none; z-index: 0; overflow: hidden; }
-    .bg-atmosphere .orb {
-      position: absolute; border-radius: 50%;
-      filter: blur(100px); opacity: 0.18;
-      animation: orbFloat 25s ease-in-out infinite;
-    }
-    .orb-1 {
-      width: 320px; height: 320px;
-      background: radial-gradient(circle, rgba(45,212,191,0.12) 0%, transparent 70%);
-      top: -8%; left: -5%;
-    }
-    .orb-2 {
-      width: 260px; height: 260px;
-      background: radial-gradient(circle, rgba(245,158,11,0.06) 0%, transparent 70%);
-      bottom: -8%; right: -5%;
-      animation-delay: -10s; animation-duration: 28s;
-    }
-    .orb-3 {
-      width: 200px; height: 200px;
-      background: radial-gradient(circle, rgba(45,212,191,0.05) 0%, transparent 70%);
-      top: 45%; left: 55%;
-      animation-delay: -15s; animation-duration: 22s;
-    }
+    .bg-atmosphere .orb { position: absolute; border-radius: 50%; filter: blur(100px); opacity: 0.18; animation: orbFloat 25s ease-in-out infinite; }
+    .orb-1 { width: 320px; height: 320px; background: radial-gradient(circle, rgba(45,212,191,0.12) 0%, transparent 70%); top: -8%; left: -5%; }
+    .orb-2 { width: 260px; height: 260px; background: radial-gradient(circle, rgba(245,158,11,0.06) 0%, transparent 70%); bottom: -8%; right: -5%; animation-delay: -10s; animation-duration: 28s; }
+    .orb-3 { width: 200px; height: 200px; background: radial-gradient(circle, rgba(45,212,191,0.05) 0%, transparent 70%); top: 45%; left: 55%; animation-delay: -15s; animation-duration: 22s; }
     @keyframes orbFloat {
       0%, 100% { transform: translate(0, 0) scale(1); }
       33% { transform: translate(15px, -20px) scale(1.03); }
       66% { transform: translate(-10px, 12px) scale(0.97); }
     }
 
-    /* === Topbar === */
-    .topbar {
-      height: var(--topbar-height); padding: 0 16px;
-      display: flex; align-items: center;
-      border-bottom: 1px solid var(--border-subtle);
-      background: rgba(6,10,19,0.85);
-      backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px);
-      position: sticky; top: 0; z-index: 40;
-    }
+    .topbar { height: var(--topbar-height); padding: 0 16px; display: flex; align-items: center; border-bottom: 1px solid var(--border-subtle); background: rgba(6,10,19,0.85); backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px); position: sticky; top: 0; z-index: 40; }
     .topbar-left { display: flex; align-items: center; gap: 12px; min-width: 0; flex: 1; }
-    .back-btn {
-      display: inline-flex; align-items: center; gap: 6px;
-      padding: 8px 14px; font-size: 0.82rem; font-weight: 600;
-      color: var(--accent); border: 1px solid var(--border-color);
-      border-radius: var(--radius-full);
-      transition: all var(--transition-fast);
-      white-space: nowrap; background: var(--accent-dim);
-    }
-    .back-btn:hover {
-      background: rgba(45,212,191,0.18);
-      border-color: var(--border-color-hover);
-      box-shadow: 0 0 16px var(--accent-glow);
-    }
+    .back-btn { display: inline-flex; align-items: center; gap: 6px; padding: 8px 14px; font-size: 0.82rem; font-weight: 600; color: var(--accent); border: 1px solid var(--border-color); border-radius: var(--radius-full); transition: all var(--transition-fast); white-space: nowrap; background: var(--accent-dim); }
+    .back-btn:hover { background: rgba(45,212,191,0.18); border-color: var(--border-color-hover); box-shadow: 0 0 16px var(--accent-glow); }
     .back-btn:active { transform: scale(0.97); }
     .back-btn i { font-size: 0.8rem; }
-    .topbar-title {
-      font-family: var(--font-display);
-      font-size: 1rem; font-weight: 600;
-      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
-    }
+    .topbar-title { font-family: var(--font-display); font-size: 1rem; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
-    /* === Layout utama === */
-    .page-wrapper {
-      position: relative; z-index: 1;
-      min-height: 100vh; display: flex; flex-direction: column;
-    }
-    .login-main {
-      flex: 1; display: flex; align-items: center; justify-content: center;
-      padding: 24px 16px 40px;
-    }
-    .login-layout {
-      display: grid; grid-template-columns: 1fr;
-      gap: 32px; max-width: 440px; width: 100%;
-    }
+    .page-wrapper { position: relative; z-index: 1; min-height: 100vh; display: flex; flex-direction: column; }
+    .login-main { flex: 1; display: flex; align-items: center; justify-content: center; padding: 24px 16px 40px; }
+    .login-layout { display: grid; grid-template-columns: 1fr; gap: 32px; max-width: 440px; width: 100%; }
 
-    /* === Branding === */
     .login-branding { text-align: center; animation: fadeInUp 0.5s ease-out 0.1s both; }
-    @keyframes fadeInUp {
-      from { opacity: 0; transform: translateY(16px); }
-      to { opacity: 1; transform: translateY(0); }
-    }
-    .branding-icon-large {
-      width: 56px; height: 56px;
-      background: linear-gradient(135deg, var(--accent), #0d9488);
-      border-radius: var(--radius-lg);
-      display: flex; align-items: center; justify-content: center;
-      font-size: 1.5rem; color: var(--bg-primary);
-      margin: 0 auto 20px;
-      box-shadow: 0 0 32px var(--accent-glow);
-      position: relative;
-      font-family: var(--font-display); font-weight: 700;
-    }
-    .branding-icon-large::after {
-      content: ''; position: absolute; inset: -6px;
-      border-radius: 18px; border: 1px solid var(--accent-dim);
-      animation: pulseRing 3s ease-in-out infinite;
-    }
-    @keyframes pulseRing {
-      0%, 100% { opacity: 0.5; transform: scale(1); }
-      50% { opacity: 0.15; transform: scale(1.06); }
-    }
-    .branding-title {
-      font-family: var(--font-display);
-      font-size: 1.5rem; font-weight: 700;
-      letter-spacing: -0.02em; margin-bottom: 10px; line-height: 1.2;
-    }
-    .branding-title .highlight {
-      background: linear-gradient(135deg, var(--accent), #5eead4);
-      -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
-    }
+    @keyframes fadeInUp { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: translateY(0); } }
+    .branding-icon-large { width: 56px; height: 56px; background: linear-gradient(135deg, var(--accent), #0d9488); border-radius: var(--radius-lg); display: flex; align-items: center; justify-content: center; font-size: 1.5rem; color: var(--bg-primary); margin: 0 auto 20px; box-shadow: 0 0 32px var(--accent-glow); position: relative; font-family: var(--font-display); font-weight: 700; }
+    .branding-icon-large::after { content: ''; position: absolute; inset: -6px; border-radius: 18px; border: 1px solid var(--accent-dim); animation: pulseRing 3s ease-in-out infinite; }
+    @keyframes pulseRing { 0%, 100% { opacity: 0.5; transform: scale(1); } 50% { opacity: 0.15; transform: scale(1.06); } }
+    .branding-title { font-family: var(--font-display); font-size: 1.5rem; font-weight: 700; letter-spacing: -0.02em; margin-bottom: 10px; line-height: 1.2; }
+    .branding-title .highlight { background: linear-gradient(135deg, var(--accent), #5eead4); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
     .branding-desc { font-size: 0.88rem; color: var(--text-secondary); line-height: 1.6; }
 
-    /* === Card login === */
     .login-card-wrapper { animation: fadeInUp 0.5s ease-out 0.25s both; }
-    .login-card {
-      background: var(--bg-card);
-      border: 1px solid var(--border-subtle);
-      border-radius: var(--radius-lg);
-      padding: 28px 22px;
-      box-shadow: var(--shadow-card);
-      position: relative; overflow: hidden;
-      backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
-    }
-    .login-card::before {
-      content: ''; position: absolute;
-      top: 0; left: 20%; right: 20%; height: 1px;
-      background: linear-gradient(90deg, transparent, var(--accent), transparent);
-    }
+    .login-card { background: var(--bg-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); padding: 28px 22px; box-shadow: var(--shadow-card); position: relative; overflow: hidden; backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); }
+    .login-card::before { content: ''; position: absolute; top: 0; left: 20%; right: 20%; height: 1px; background: linear-gradient(90deg, transparent, var(--accent), transparent); }
     .card-header { margin-bottom: 24px; }
-    .card-title {
-      font-family: var(--font-display);
-      font-size: 1.15rem; font-weight: 700; margin-bottom: 6px;
-    }
+    .card-title { font-family: var(--font-display); font-size: 1.15rem; font-weight: 700; margin-bottom: 6px; }
     .card-subtitle { font-size: 0.82rem; color: var(--text-muted); line-height: 1.5; }
 
-    /* === Status area (spinner, teks, error) === */
     .pi-status-area { text-align: center; }
-    .pi-spinner-wrapper {
-      width: 72px; height: 72px; margin: 0 auto 24px;
-      position: relative; display: flex; align-items: center; justify-content: center;
-    }
-    .pi-spinner-ring {
-      width: 72px; height: 72px;
-      border: 3px solid rgba(45,212,191,0.1);
-      border-top-color: var(--accent);
-      border-radius: 50%;
-      animation: spinRing 1s linear infinite;
-      transition: border-top-color 0.4s ease;
-    }
+    .pi-spinner-wrapper { width: 72px; height: 72px; margin: 0 auto 24px; position: relative; display: flex; align-items: center; justify-content: center; }
+    .pi-spinner-ring { width: 72px; height: 72px; border: 3px solid rgba(45,212,191,0.1); border-top-color: var(--accent); border-radius: 50%; animation: spinRing 1s linear infinite; transition: border-top-color 0.4s ease; }
     .pi-spinner-ring.success { border-top-color: var(--success); animation: none; }
     .pi-spinner-ring.error { border-top-color: var(--danger); animation: none; }
-    .pi-spinner-icon {
-      position: absolute;
-      font-family: var(--font-display);
-      font-size: 1.6rem; color: var(--accent); font-weight: 700;
-      transition: color 0.4s ease, transform 0.4s ease;
-    }
+    .pi-spinner-icon { position: absolute; font-family: var(--font-display); font-size: 1.6rem; color: var(--accent); font-weight: 700; transition: color 0.4s ease, transform 0.4s ease; }
     .pi-spinner-icon.success { color: var(--success); transform: scale(1.1); }
     .pi-spinner-icon.error { color: var(--danger); }
     @keyframes spinRing { to { transform: rotate(360deg); } }
 
-    .pi-status-title {
-      font-family: var(--font-display);
-      font-size: 1.1rem; font-weight: 600;
-      margin-bottom: 6px; transition: color 0.3s ease;
-    }
+    .pi-status-title { font-family: var(--font-display); font-size: 1.1rem; font-weight: 600; margin-bottom: 6px; transition: color 0.3s ease; }
     .pi-status-title.success { color: var(--success); }
     .pi-status-title.error { color: var(--danger); }
-    .pi-status-desc {
-      font-size: 0.84rem; color: var(--text-secondary);
-      line-height: 1.6; min-height: 42px;
-    }
+    .pi-status-desc { font-size: 0.84rem; color: var(--text-secondary); line-height: 1.6; min-height: 42px; }
 
-    /* Error & warning box */
-    .pi-error-box {
-      display: none;
-      background: rgba(239,68,68,0.08);
-      border: 1px solid rgba(239,68,68,0.2);
-      border-radius: var(--radius-sm);
-      padding: 14px 16px; margin: 20px 0; text-align: left;
-    }
+    .pi-error-box { display: none; background: rgba(239,68,68,0.08); border: 1px solid rgba(239,68,68,0.2); border-radius: var(--radius-sm); padding: 14px 16px; margin: 20px 0; text-align: left; }
     .pi-error-box.visible { display: block; animation: fadeInUp 0.3s ease-out; }
-    .pi-error-label {
-      font-size: 0.7rem; font-weight: 600; color: #fca5a5;
-      text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 6px;
-    }
+    .pi-error-label { font-size: 0.7rem; font-weight: 600; color: #fca5a5; text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 6px; }
     .pi-error-text { font-size: 0.82rem; color: #e2e8f0; word-break: break-word; line-height: 1.5; }
 
-    .pi-warning-box {
-      display: none;
-      background: rgba(245,158,11,0.08);
-      border: 1px solid rgba(245,158,11,0.2);
-      border-radius: var(--radius-sm);
-      padding: 14px 16px; margin: 20px 0; text-align: left;
-    }
+    .pi-warning-box { display: none; background: rgba(245,158,11,0.08); border: 1px solid rgba(245,158,11,0.2); border-radius: var(--radius-sm); padding: 14px 16px; margin: 20px 0; text-align: left; }
     .pi-warning-box.visible { display: block; animation: fadeInUp 0.3s ease-out; }
-    .pi-warning-label {
-      font-size: 0.7rem; font-weight: 600; color: #fcd34d;
-      text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 6px;
-    }
+    .pi-warning-label { font-size: 0.7rem; font-weight: 600; color: #fcd34d; text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 6px; }
     .pi-warning-text { font-size: 0.82rem; color: #e2e8f0; word-break: break-word; line-height: 1.5; }
 
-    /* Tombol aksi */
-    .pi-actions {
-      display: none; flex-direction: column; gap: 10px; margin-top: 20px;
-    }
+    .pi-actions { display: none; flex-direction: column; gap: 10px; margin-top: 20px; }
     .pi-actions.visible { display: flex; animation: fadeInUp 0.3s ease-out; }
-    .btn-pi-action {
-      width: 100%; padding: 13px 20px;
-      border-radius: var(--radius-md);
-      font-size: 0.88rem; font-weight: 600;
-      display: flex; align-items: center; justify-content: center; gap: 8px;
-      transition: all var(--transition-base);
-      position: relative; overflow: hidden;
-    }
-    .btn-pi-action::before {
-      content: ''; position: absolute;
-      top: 0; left: -100%; width: 100%; height: 100%;
-      background: linear-gradient(90deg, transparent, rgba(255,255,255,0.12), transparent);
-      transition: left 0.5s ease;
-    }
+    .btn-pi-action { width: 100%; padding: 13px 20px; border-radius: var(--radius-md); font-size: 0.88rem; font-weight: 600; display: flex; align-items: center; justify-content: center; gap: 8px; transition: all var(--transition-base); position: relative; overflow: hidden; }
+    .btn-pi-action::before { content: ''; position: absolute; top: 0; left: -100%; width: 100%; height: 100%; background: linear-gradient(90deg, transparent, rgba(255,255,255,0.12), transparent); transition: left 0.5s ease; }
     .btn-pi-action:hover::before { left: 100%; }
-    .btn-pi-retry {
-      background: linear-gradient(135deg, var(--accent), #0d9488);
-      color: var(--bg-primary);
-      box-shadow: 0 0 20px var(--accent-glow);
-    }
-    .btn-pi-retry:hover {
-      transform: translateY(-1px);
-      box-shadow: 0 0 32px var(--accent-glow), 0 4px 16px rgba(45,212,191,0.2);
-    }
+    .btn-pi-retry { background: linear-gradient(135deg, var(--accent), #0d9488); color: var(--bg-primary); box-shadow: 0 0 20px var(--accent-glow); }
+    .btn-pi-retry:hover { transform: translateY(-1px); box-shadow: 0 0 32px var(--accent-glow), 0 4px 16px rgba(45,212,191,0.2); }
     .btn-pi-retry:active { transform: translateY(0); }
-    .btn-pi-back {
-      background: transparent;
-      border: 1px solid var(--border-subtle);
-      color: var(--text-secondary);
-    }
-    .btn-pi-back:hover {
-      border-color: rgba(255,255,255,0.15);
-      color: var(--text-primary);
-      background: rgba(255,255,255,0.03);
-    }
+    .btn-pi-back { background: transparent; border: 1px solid var(--border-subtle); color: var(--text-secondary); }
+    .btn-pi-back:hover { border-color: rgba(255,255,255,0.15); color: var(--text-primary); background: rgba(255,255,255,0.03); }
 
-    /* Banner sesi */
-    .session-banner {
-      display: none; align-items: center; gap: 10px;
-      padding: 10px 14px;
-      background: rgba(34,197,94,0.08);
-      border: 1px solid rgba(34,197,94,0.2);
-      border-radius: var(--radius-sm);
-      margin-bottom: 18px; font-size: 0.78rem; color: var(--success);
-    }
+    .session-banner { display: none; align-items: center; gap: 10px; padding: 10px 14px; background: rgba(34,197,94,0.08); border: 1px solid rgba(34,197,94,0.2); border-radius: var(--radius-sm); margin-bottom: 18px; font-size: 0.78rem; color: var(--success); }
     .session-banner.visible { display: flex; }
     .session-banner i { font-size: 0.9rem; }
-    .session-banner .user-preview {
-      font-family: 'Space Grotesk', monospace; font-weight: 600;
-    }
-    .session-banner .session-age {
-      color: var(--text-muted); font-size: 0.72rem; margin-left: 4px;
-    }
-    .session-banner .logout-link {
-      margin-left: auto; color: var(--text-muted); font-size: 0.74rem;
-      cursor: pointer; transition: color var(--transition-fast);
-      background: none; border: none; font-family: var(--font-body);
-    }
+    .session-banner .user-preview { font-family: 'Space Grotesk', monospace; font-weight: 600; }
+    .session-banner .session-age { color: var(--text-muted); font-size: 0.72rem; margin-left: 4px; }
+    .session-banner .logout-link { margin-left: auto; color: var(--text-muted); font-size: 0.74rem; cursor: pointer; transition: color var(--transition-fast); background: none; border: none; font-family: var(--font-body); }
     .session-banner .logout-link:hover { color: var(--danger); }
 
-    /* Debug log */
-    .debug-log {
-      display: none; margin-top: 16px;
-      padding: 10px 12px;
-      background: rgba(0,0,0,0.5);
-      border: 1px solid rgba(255,255,255,0.08);
-      border-radius: var(--radius-sm);
-      font-family: 'Space Grotesk', monospace;
-      font-size: 0.7rem; color: var(--accent);
-      text-align: left; max-height: 200px; overflow-y: auto; line-height: 1.7;
-    }
+    .debug-log { display: none; margin-top: 16px; padding: 10px 12px; background: rgba(0,0,0,0.5); border: 1px solid rgba(255,255,255,0.08); border-radius: var(--radius-sm); font-family: 'Space Grotesk', monospace; font-size: 0.7rem; color: var(--accent); text-align: left; max-height: 200px; overflow-y: auto; line-height: 1.7; }
     .debug-log.visible { display: block; }
     .debug-log p { margin: 0; padding: 2px 0; border-bottom: 1px solid rgba(255,255,255,0.03); }
     .debug-log p.err { color: var(--danger); }
     .debug-log p.warn { color: var(--warning); }
 
-    /* Footer card */
-    .card-footer {
-      margin-top: 20px; text-align: center;
-      font-size: 0.74rem; color: var(--text-muted); line-height: 1.7;
-    }
+    .card-footer { margin-top: 20px; text-align: center; font-size: 0.74rem; color: var(--text-muted); line-height: 1.7; }
     .card-footer a { color: var(--accent); font-weight: 500; }
     .card-footer a:hover { text-decoration: underline; }
 
-    /* Trust chips (mobile) */
-    .trust-row {
-      display: flex; justify-content: center; gap: 12px;
-      margin-top: 24px;
-      animation: fadeInUp 0.5s ease-out 0.4s both; flex-wrap: wrap;
-    }
-    .trust-chip {
-      display: inline-flex; align-items: center; gap: 6px;
-      padding: 7px 14px;
-      background: rgba(255,255,255,0.02);
-      border: 1px solid var(--border-subtle);
-      border-radius: var(--radius-full);
-      font-size: 0.72rem; font-weight: 500;
-      color: var(--text-muted); white-space: nowrap;
-    }
+    .trust-row { display: flex; justify-content: center; gap: 12px; margin-top: 24px; animation: fadeInUp 0.5s ease-out 0.4s both; flex-wrap: wrap; }
+    .trust-chip { display: inline-flex; align-items: center; gap: 6px; padding: 7px 14px; background: rgba(255,255,255,0.02); border: 1px solid var(--border-subtle); border-radius: var(--radius-full); font-size: 0.72rem; font-weight: 500; color: var(--text-muted); white-space: nowrap; }
     .trust-chip i { font-size: 0.7rem; }
     .tc-teal { color: var(--accent); }
     .tc-amber { color: var(--accent-secondary); }
     .tc-green { color: var(--success); }
 
-    /* Toast */
-    .toast-container {
-      position: fixed; top: 68px; left: 16px; right: 16px;
-      z-index: 200; display: flex; flex-direction: column; gap: 8px;
-      pointer-events: none;
-    }
-    .toast {
-      display: flex; align-items: center; gap: 10px;
-      padding: 12px 16px;
-      background: var(--bg-secondary);
-      border: 1px solid var(--border-subtle);
-      border-radius: var(--radius-md);
-      box-shadow: 0 8px 32px rgba(0,0,0,0.5);
-      font-size: 0.82rem; color: var(--text-primary);
-      transform: translateY(-20px); opacity: 0;
-      transition: all var(--transition-base); pointer-events: auto;
-    }
+    .toast-container { position: fixed; top: 68px; left: 16px; right: 16px; z-index: 200; display: flex; flex-direction: column; gap: 8px; pointer-events: none; }
+    .toast { display: flex; align-items: center; gap: 10px; padding: 12px 16px; background: var(--bg-secondary); border: 1px solid var(--border-subtle); border-radius: var(--radius-md); box-shadow: 0 8px 32px rgba(0,0,0,0.5); font-size: 0.82rem; color: var(--text-primary); transform: translateY(-20px); opacity: 0; transition: all var(--transition-base); pointer-events: auto; }
     .toast.show { transform: translateY(0); opacity: 1; }
     .toast i { font-size: 1rem; flex-shrink: 0; }
     .toast.success { border-left: 3px solid var(--success); }
@@ -471,24 +225,17 @@ END;
     .toast.warning { border-left: 3px solid var(--warning); }
     .toast.warning i { color: var(--warning); }
 
-    /* Banner offline */
-    .offline-banner {
-      display: none; position: fixed;
-      bottom: 0; left: 0; right: 0;
-      padding: 10px 16px;
-      background: rgba(239,68,68,0.15);
-      border-top: 1px solid rgba(239,68,68,0.3);
-      backdrop-filter: blur(12px);
-      text-align: center; font-size: 0.8rem; color: #fca5a5; z-index: 300;
-    }
+    .offline-banner { display: none; position: fixed; bottom: 0; left: 0; right: 0; padding: 10px 16px; background: rgba(239,68,68,0.15); border-top: 1px solid rgba(239,68,68,0.3); backdrop-filter: blur(12px); text-align: center; font-size: 0.8rem; color: #fca5a5; z-index: 300; }
     .offline-banner.visible { display: block; animation: slideUp 0.3s ease-out; }
     .offline-banner i { margin-right: 6px; }
-    @keyframes slideUp {
-      from { transform: translateY(100%); }
-      to { transform: translateY(0); }
-    }
+    @keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
 
-    /* === Responsive === */
+    .env-info { display: none; margin-top: 12px; padding: 10px 14px; background: rgba(59,130,246,0.06); border: 1px solid rgba(59,130,246,0.15); border-radius: var(--radius-sm); text-align: left; font-size: 0.72rem; color: var(--text-secondary); line-height: 1.8; font-family: 'Space Grotesk', monospace; }
+    .env-info.visible { display: block; animation: fadeInUp 0.3s ease-out; }
+    .env-info .env-label { color: #93c5fd; font-weight: 600; }
+    .env-info .env-bad { color: #fca5a5; }
+    .env-info .env-ok { color: #86efac; }
+
     @media (min-width: 640px) {
       .login-main { padding: 32px 24px 48px; }
       .login-layout { max-width: 480px; gap: 36px; }
@@ -498,80 +245,53 @@ END;
       .topbar { padding: 0 24px; }
     }
     @media (min-width: 900px) {
-      .login-layout {
-        grid-template-columns: 1fr 1fr;
-        max-width: 820px; gap: 48px; align-items: center;
-      }
-      .login-branding {
-        text-align: left;
-        display: flex; flex-direction: column; align-items: flex-start;
-      }
+      .login-layout { grid-template-columns: 1fr 1fr; max-width: 820px; gap: 48px; align-items: center; }
+      .login-branding { text-align: left; display: flex; flex-direction: column; align-items: flex-start; }
       .branding-icon-large { margin: 0 0 24px; }
       .branding-title { font-size: 2rem; line-height: 1.15; }
       .branding-desc { margin-bottom: 28px; max-width: 360px; }
       .trust-row { display: none; }
       .trust-list { display: flex !important; flex-direction: column; gap: 14px; }
-      .trust-item {
-        display: flex; align-items: center; gap: 12px;
-        font-size: 0.88rem; color: var(--text-secondary);
-      }
-      .trust-icon {
-        width: 32px; height: 32px; border-radius: var(--radius-sm);
-        display: flex; align-items: center; justify-content: center;
-        font-size: 0.8rem; flex-shrink: 0;
-      }
+      .trust-item { display: flex; align-items: center; gap: 12px; font-size: 0.88rem; color: var(--text-secondary); }
+      .trust-icon { width: 32px; height: 32px; border-radius: var(--radius-sm); display: flex; align-items: center; justify-content: center; font-size: 0.8rem; flex-shrink: 0; }
       .trust-icon.teal { background: var(--accent-dim); color: var(--accent); }
       .trust-icon.amber { background: var(--accent-secondary-dim); color: var(--accent-secondary); }
       .trust-icon.green { background: rgba(34,197,94,0.12); color: var(--success); }
       .login-card { padding: 36px 32px; border-radius: var(--radius-xl); }
     }
     .trust-list { display: none; }
-    @media (max-width: 360px) {
-      .login-card { padding: 22px 16px; }
-      .branding-icon-large { width: 48px; height: 48px; font-size: 1.3rem; }
-    }
-    @media (prefers-reduced-motion: reduce) {
-      *, *::before, *::after {
-        animation-duration: 0.01ms !important;
-        transition-duration: 0.01ms !important;
-      }
-    }
+    @media (max-width: 360px) { .login-card { padding: 22px 16px; } .branding-icon-large { width: 48px; height: 48px; font-size: 1.3rem; } }
+    @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; } }
   </style>
 </head>
 <body>
 
-  <!-- Latar belakang atmosfer -->
   <div class="bg-atmosphere" aria-hidden="true">
     <div class="orb orb-1"></div>
     <div class="orb orb-2"></div>
     <div class="orb orb-3"></div>
   </div>
 
-  <!-- Banner offline -->
   <div class="offline-banner" id="offlineBanner" role="alert">
     <i class="fa-solid fa-wifi" aria-hidden="true"></i>
     Tidak ada koneksi internet
   </div>
 
-  <!-- Container toast -->
   <div class="toast-container" id="toastContainer" aria-live="polite"></div>
 
   <div class="page-wrapper">
-    <!-- Topbar -->
     <header class="topbar" role="banner">
       <div class="topbar-left">
         <a href="index.html" class="back-btn" aria-label="Kembali ke beranda">
           <i class="fa-solid fa-arrow-left"></i>
           <span>Kembali</span>
         </a>
-      
+        <h1 class="topbar-title">Masuk</h1>
       </div>
     </header>
 
-    <!-- Konten utama -->
     <main class="login-main" role="main">
       <div class="login-layout">
-        <!-- Kolom kiri: branding -->
         <section class="login-branding" aria-labelledby="brandingTitle">
           <div class="branding-icon-large" aria-hidden="true">&pi;</div>
           <h2 class="branding-title" id="brandingTitle">
@@ -596,7 +316,6 @@ END;
           </div>
         </section>
 
-        <!-- Kolom kanan: card login -->
         <div class="login-card-wrapper">
           <article class="login-card">
             <div class="card-header">
@@ -604,14 +323,12 @@ END;
               <p class="card-subtitle" id="cardSubtitle">Menghubungkan melalui Pi Network...</p>
             </div>
 
-            <!-- Banner sesi aktif -->
             <div class="session-banner" id="sessionBanner" role="status">
               <i class="fa-solid fa-circle-check" aria-hidden="true"></i>
               <span>Sesi: <span class="user-preview" id="sessionUser"></span><span class="session-age" id="sessionAge"></span></span>
               <button class="logout-link" id="logoutBtn" aria-label="Hapus sesi dan login ulang">Ganti</button>
             </div>
 
-            <!-- Area status utama -->
             <div class="pi-status-area" id="piStatusArea" role="status" aria-live="polite">
               <div class="pi-spinner-wrapper" id="spinnerWrapper">
                 <div class="pi-spinner-ring" id="spinnerRing"></div>
@@ -620,19 +337,16 @@ END;
               <div class="pi-status-title" id="statusTitle">Menghubungkan...</div>
               <div class="pi-status-desc" id="statusDesc">Menyiapkan koneksi aman ke Pi Network</div>
 
-              <!-- Box error -->
               <div class="pi-error-box" id="errorBox" role="alert">
                 <div class="pi-error-label">Kesalahan Sistem</div>
                 <div class="pi-error-text" id="errorText">-</div>
               </div>
 
-              <!-- Box warning -->
               <div class="pi-warning-box" id="warningBox" role="alert">
                 <div class="pi-warning-label">Peringatan</div>
                 <div class="pi-warning-text" id="warningText">-</div>
               </div>
 
-              <!-- Tombol aksi -->
               <div class="pi-actions" id="actionButtons">
                 <button class="btn-pi-action btn-pi-retry" id="btnRetry" type="button">
                   <i class="fa-solid fa-rotate-right" aria-hidden="true"></i>
@@ -644,7 +358,7 @@ END;
                 </button>
               </div>
 
-              <!-- Debug log (hanya muncul mode debug) -->
+              <div class="env-info" id="envInfo" role="log" aria-label="Info lingkungan"></div>
               <div class="debug-log" id="debugLog" role="log" aria-label="Log debug"></div>
             </div>
 
@@ -654,7 +368,696 @@ END;
             </footer>
           </article>
 
-          <!-- Trust chips (mobile) -->
           <div class="trust-row" aria-label="Indikator keamanan">
             <div class="trust-chip"><i class="fa-solid fa-lock tc-teal" aria-hidden="true"></i><span>Pi SDK Resmi</span></div>
-            <div class="trust
+            <div class="trust-chip"><i class="fa-solid fa-bolt tc-amber" aria-hidden="true"></i><span>Login Instan</span></div>
+            <div class="trust-chip"><i class="fa-solid fa-shield-halved tc-green" aria-hidden="true"></i><span>Aman</span></div>
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <!--
+    ═══ PERBAIKAN: defer + posisi sebelum </body> ═══
+    defer memastikan:
+    1. Download paralel dengan HTML parsing (non-blocking)
+    2. Eksekusi SETELAH DOM selesai dibangun
+    3. Urutan eksekusi terjaga terhadap script inline setelahnya
+  -->
+  <script defer src="https://sdk.minepi.com/pi-sdk.js"></script>
+
+  <script>
+    /* ================================================================
+     *  KONFIGURASI & STATE
+     * ================================================================ */
+    var urlParams = new URLSearchParams(window.location.search);
+    var IS_DEBUG = urlParams.get('debug') === 'true'
+      || window.location.hostname === 'localhost'
+      || window.location.hostname === '127.0.0.1';
+
+    var AUTH_TIMEOUT    = (window.APP_CONFIG && window.APP_CONFIG.authTimeout)   || 30000;
+    var SESSION_MAX_AGE = (window.APP_CONFIG && window.APP_CONFIG.sessionMaxAge) || 86400000;
+
+    var isRedirecting   = false;
+    var loginInProgress = false;
+
+    /*
+     * State inisialisasi SDK:
+     *   sdkReady = false       → Pi.init() belum pernah dipanggil
+     *   sdkReady = true        → Pi.init() sudah dipanggil dan tidak throw
+     *   sdkReady = 'failed'    → Pi.init() dipanggil tapi throw error
+     *
+     * Pi.init() HANYA dipanggil dari satu tempat: bootstrap().
+     * Tidak ada di level atas, tidak ada di runPiLogin().
+     */
+    var sdkReady = false;
+
+    /* Supabase client */
+    var supabase = null;
+    var SUPABASE_READY = false;
+
+    (function initSupabase() {
+      var url = window.APP_CONFIG && window.APP_CONFIG.supabaseUrl;
+      var key = window.APP_CONFIG && window.APP_CONFIG.supabaseAnonKey;
+      if (!url || !key) return;
+      if (!window.supabase || typeof window.supabase.createClient !== 'function') return;
+      try {
+        supabase = window.supabase.createClient(url, key);
+        SUPABASE_READY = true;
+      } catch (e) {}
+    })();
+
+    /* ================================================================
+     *  UTILITAS
+     * ================================================================ */
+    function showToast(message, type, duration) {
+      type = type || 'info';
+      duration = duration || 3500;
+      var c = document.getElementById('toastContainer');
+      if (!c) return;
+      var t = document.createElement('div');
+      t.className = 'toast ' + type;
+      var icons = {
+        success: 'fa-solid fa-circle-check',
+        error:   'fa-solid fa-circle-xmark',
+        info:    'fa-solid fa-circle-info',
+        warning: 'fa-solid fa-triangle-exclamation'
+      };
+      t.innerHTML = '<i class="' + (icons[type] || icons.info) + '"></i><span>' + message + '</span>';
+      c.appendChild(t);
+      requestAnimationFrame(function () {
+        requestAnimationFrame(function () { t.classList.add('show'); });
+      });
+      setTimeout(function () {
+        t.classList.remove('show');
+        setTimeout(function () { if (t.parentNode) t.remove(); }, 300);
+      }, duration);
+    }
+
+    function logDebug(msg, isError, isWarn) {
+      if (isError) console.error('[PI] ' + msg);
+      else if (isWarn) console.warn('[PI] ' + msg);
+      else console.log('[PI] ' + msg);
+      if (!IS_DEBUG) return;
+      var box = document.getElementById('debugLog');
+      if (!box) return;
+      box.classList.add('visible');
+      var p = document.createElement('p');
+      if (isError) p.className = 'err';
+      else if (isWarn) p.className = 'warn';
+      var d = new Date();
+      var ts = String(d.getHours()).padStart(2, '0') + ':' +
+               String(d.getMinutes()).padStart(2, '0') + ':' +
+               String(d.getSeconds()).padStart(2, '0');
+      p.textContent = '[' + ts + '] ' + msg;
+      box.appendChild(p);
+      box.scrollTop = box.scrollHeight;
+    }
+
+    function withTimeout(promise, ms, errMsg) {
+      var id;
+      var tp = new Promise(function (_, rej) {
+        id = setTimeout(function () { rej(new Error(errMsg)); }, ms);
+      });
+      return Promise.race([promise, tp]).finally(function () { clearTimeout(id); });
+    }
+
+    /* Storage — token HANYA sessionStorage */
+    function safeSet(k, v)     { try { localStorage.setItem(k, v); return true; } catch (e) { return false; } }
+    function safeGet(k)        { try { return localStorage.getItem(k); } catch (e) { return null; } }
+    function safeDel(k)        { try { localStorage.removeItem(k); } catch (e) {} }
+    function sessionSet(k, v)  { try { sessionStorage.setItem(k, v); } catch (e) {} }
+    function sessionGet(k)     { try { return sessionStorage.getItem(k); } catch (e) { return null; } }
+    function sessionDel(k)     { try { sessionStorage.removeItem(k); } catch (e) {} }
+
+    /* Offline */
+    var offlineBanner = document.getElementById('offlineBanner');
+    function updateOffline() { offlineBanner.classList.toggle('visible', !navigator.onLine); }
+    window.addEventListener('online',  function () { updateOffline(); showToast('Koneksi kembali', 'success', 2500); });
+    window.addEventListener('offline', updateOffline);
+    updateOffline();
+
+    /* Clear semua sesi */
+    function clearPiAuth() {
+      ['whs_pi_user', 'whs_login_time', 'whs_incomplete_payment', 'whs_wallet', 'whs_db_user_id'].forEach(function (k) { safeDel(k); });
+      safeDel('whs_pi_token');
+      sessionDel('whs_pi_token');
+      sessionDel('whs_pi_user');
+      sessionDel('currentWallet');
+      sessionDel('walletData');
+      try { sessionStorage.removeItem('pi_user'); sessionStorage.removeItem('pi_auth'); } catch (e) {}
+    }
+
+    /* ================================================================
+     *  REFERENSI DOM
+     * ================================================================ */
+    var spinnerWrapper = document.getElementById('spinnerWrapper');
+    var spinnerRing    = document.getElementById('spinnerRing');
+    var spinnerIcon    = document.getElementById('spinnerIcon');
+    var statusTitle    = document.getElementById('statusTitle');
+    var statusDesc     = document.getElementById('statusDesc');
+    var errorBox       = document.getElementById('errorBox');
+    var errorText      = document.getElementById('errorText');
+    var warningBox     = document.getElementById('warningBox');
+    var warningText    = document.getElementById('warningText');
+    var actionButtons  = document.getElementById('actionButtons');
+    var btnRetry       = document.getElementById('btnRetry');
+    var btnBack        = document.getElementById('btnBack');
+    var sessionBanner  = document.getElementById('sessionBanner');
+    var sessionUser    = document.getElementById('sessionUser');
+    var sessionAge     = document.getElementById('sessionAge');
+    var logoutBtn      = document.getElementById('logoutBtn');
+    var cardSubtitle   = document.getElementById('cardSubtitle');
+    var envInfoBox     = document.getElementById('envInfo');
+
+    /* ================================================================
+     *  CEK SESI EKSISTING
+     * ================================================================ */
+    function checkExistingSession() {
+      try {
+        var saved = safeGet('whs_pi_user');
+        var lt    = safeGet('whs_login_time');
+        if (!saved || !lt) return false;
+        var user = JSON.parse(saved);
+        if (!user || !user.username) return false;
+        var age = Date.now() - parseInt(lt, 10);
+        if (isNaN(age) || age > SESSION_MAX_AGE) {
+          logDebug('Sesi kadaluarsa (' + Math.round(age / 60000) + ' menit)', false, true);
+          clearPiAuth();
+          return false;
+        }
+        sessionBanner.classList.add('visible');
+        sessionUser.textContent = '@' + user.username;
+        var m = Math.round(age / 60000);
+        sessionAge.textContent = m < 1 ? ' (baru saja)' : m < 60 ? ' (' + m + 'm lalu)' : ' (' + Math.round(m / 60) + 'j lalu)';
+        return true;
+      } catch (e) {
+        clearPiAuth();
+        return false;
+      }
+    }
+
+    function safeRedirect(url, delay) {
+      if (isRedirecting) return;
+      isRedirecting = true;
+      setTimeout(function () { window.location.href = url; }, delay || 0);
+    }
+
+    function resetUI() {
+      spinnerWrapper.style.display = 'flex';
+      spinnerRing.className = 'pi-spinner-ring';
+      spinnerIcon.className = 'pi-spinner-icon';
+      statusTitle.className = 'pi-status-title';
+      statusTitle.textContent = 'Menghubungkan...';
+      statusDesc.textContent = 'Menyiapkan koneksi aman ke Pi Network';
+      cardSubtitle.textContent = 'Menghubungkan melalui Pi Network...';
+      errorBox.classList.remove('visible');
+      warningBox.classList.remove('visible');
+      actionButtons.classList.remove('visible');
+      envInfoBox.classList.remove('visible');
+    }
+
+    function showError(title, desc, subtitle, msg) {
+      spinnerRing.classList.add('error');
+      spinnerIcon.classList.add('error');
+      statusTitle.classList.add('error');
+      statusTitle.textContent = title;
+      statusDesc.textContent = desc;
+      cardSubtitle.textContent = subtitle;
+      errorText.textContent = msg;
+      errorBox.classList.add('visible');
+      actionButtons.classList.add('visible');
+      spinnerWrapper.style.display = 'none';
+    }
+
+    /* ================================================================
+     *  DIAGNOSTIK LINGKUNGAN
+     * ================================================================ */
+    function showEnvironmentDiagnostics() {
+      var ua = navigator.userAgent || '';
+      var loc = window.location;
+      var lines = [];
+
+      lines.push('<span class="env-label">Diagnostik Lingkungan:</span>');
+
+      var isHttps = loc.protocol === 'https:';
+      lines.push('HTTPS: ' + (isHttps ? '<span class="env-ok">Ya</span>' : '<span class="env-bad">TIDAK (' + loc.protocol + ')</span>'));
+
+      var isLocalhost = loc.hostname === 'localhost' || loc.hostname === '127.0.0.1' || loc.hostname === '';
+      lines.push('Host: ' + (isLocalhost ? '<span class="env-bad">' + loc.hostname + ' (SDK tidak bekerja di localhost)</span>' : '<span class="env-ok">' + loc.hostname + '</span>'));
+
+      var hasPi = typeof Pi !== 'undefined';
+      lines.push('Pi global: ' + (hasPi ? '<span class="env-ok">Ada</span>' : '<span class="env-bad">Tidak ada</span>'));
+
+      lines.push('Pi.init(): ' + (sdkReady === true ? '<span class="env-ok">Berhasil</span>' : (sdkReady === 'failed' ? '<span class="env-bad">Gagal (throw)</span>' : '<span class="env-bad">Tidak dipanggil</span>')));
+
+      var hasAuth = hasPi && typeof Pi.authenticate === 'function';
+      lines.push('Pi.authenticate: ' + (hasAuth ? '<span class="env-ok">Tersedia</span>' : '<span class="env-bad">Tidak tersedia</span>'));
+
+      var uaShort = ua.length > 80 ? ua.substring(0, 80) + '...' : ua;
+      lines.push('UA: ' + uaShort);
+
+      /* Rekomendasi spesifik */
+      lines.push('');
+      if (isLocalhost) {
+        lines.push('<span class="env-bad">Pi SDK tidak bekerja di localhost. Deploy ke PiNet (contoh: https://whs4415.pinet.com).</span>');
+      } else if (!isHttps) {
+        lines.push('<span class="env-bad">Pi SDK memerlukan HTTPS. Deploy ke hosting dengan SSL.</span>');
+      } else if (!hasPi) {
+        lines.push('<span class="env-bad">pi-sdk.js gagal dimuat. Cek koneksi internet atau coba lagi nanti.</span>');
+      } else if (sdkReady !== true) {
+        lines.push('<span class="env-bad">Pi.init() gagal. Kemungkinan: SDK corrupt, Pi Browser sandbox down, atau konfigurasi di Developer Portal salah.</span>');
+      } else if (!hasAuth) {
+        lines.push('<span class="env-bad">Pi global ada tapi Pi.authenticate tidak ditemukan. Kemungkinan versi SDK tidak cocok.</span>');
+      } else {
+        lines.push('<span class="env-bad">Semua cek lokal lolos. Jika error "SDK not initialized" tetap muncul, kemungkinan: Redirect URI di Developer Portal tidak cocok, OAuth Client ID salah, atau Pi Browser sandbox sedang gangguan.</span>');
+      }
+
+      envInfoBox.innerHTML = lines.join('<br>');
+      envInfoBox.classList.add('visible');
+    }
+
+    /* ================================================================
+     *  PERBAIKAN #2: waitForPiSDK()
+     *  Polling aktif — bukan sekadar "apakah script sudah dieksekusi"
+     *  tapi benar-benar menunggu sampai global Pi muncul.
+     *  Timeout 10 detik. Polling setiap 100ms.
+     * ================================================================ */
+    function waitForPiSDK(timeout) {
+      timeout = timeout || 10000;
+      return new Promise(function (resolve, reject) {
+        /* Jika sudah ada sekarang, langsung resolve */
+        if (typeof Pi !== 'undefined') {
+          logDebug('Pi sudah tersedia, tidak perlu polling');
+          resolve(true);
+          return;
+        }
+
+        logDebug('Pi belum tersedia, memulai polling (timeout=' + timeout + 'ms)...');
+        var start = Date.now();
+
+        var poll = function () {
+          if (typeof Pi !== 'undefined') {
+            var elapsed = Date.now() - start;
+            logDebug('Pi tersedia setelah ' + elapsed + 'ms polling');
+            resolve(true);
+            return;
+          }
+          if (Date.now() - start > timeout) {
+            logDebug('Pi SDK tidak ditemukan setelah ' + timeout + 'ms', true);
+            reject(new Error(
+              'Pi SDK tidak ditemukan setelah ' + Math.round(timeout / 1000) +
+              ' detik. Pastikan halaman dibuka di Pi Browser dengan koneksi internet stabil.'
+            ));
+            return;
+          }
+          setTimeout(poll, 100);
+        };
+
+        poll();
+      });
+    }
+
+    /* ================================================================
+     *  SYNC KE SUPABASE (RPC + fallback)
+     * ================================================================ */
+    async function syncUserToSupabase(authUser, accessToken) {
+      if (!SUPABASE_READY || !supabase) {
+        return { success: false, skip: true };
+      }
+      var username = authUser.username || null;
+      var uid      = authUser.uid || authUser.username;
+      if (!uid || !username) {
+        return { success: false, warning: 'Username kosong dari Pi SDK' };
+      }
+      logDebug('Sync RPC: pi_uid=' + uid + ', username=' + username);
+
+      try {
+        var result = await withTimeout(
+          supabase.rpc('login_user', {
+            p_pi_uid: uid,
+            p_username: username,
+            p_access_token: accessToken
+          }),
+          10000,
+          'Timeout menyimpan data ke database'
+        );
+
+        if (result.error) {
+          var code = result.error.code || '-';
+          var msg  = result.error.message || '-';
+          logDebug('RPC error [' + code + ']: ' + msg, true);
+
+          if (code === '42883' || (msg.indexOf('function') !== -1 && msg.indexOf('does not exist') !== -1)) {
+            logDebug('RPC belum ada, fallback ke direct upsert...', false, true);
+            var fallback = await withTimeout(
+              supabase.from('users').upsert({
+                pi_uid: uid, username: username, pi_access_token: accessToken,
+                last_login: new Date().toISOString()
+              }, { onConflict: 'pi_uid' }).select().single(),
+              10000, 'Timeout fallback upsert'
+            );
+            if (fallback.error) {
+              return { success: false, warning: 'DB [' + (fallback.error.code || '?') + ']: ' + (fallback.error.message || '?') };
+            }
+            logDebug('Fallback OK, id=' + (fallback.data ? fallback.data.id : '?'));
+            return { success: true, data: fallback.data };
+          }
+
+          var hint = null;
+          if (code === '42501') hint = 'RLS memblokir. Jalankan SQL schema yang baru.';
+          else if (code === '42P01') hint = 'Tabel "users" belum ada. Jalankan SQL schema dulu.';
+          return { success: false, warning: hint || ('DB [' + code + ']: ' + msg) };
+        }
+
+        logDebug('RPC OK');
+        return { success: true, data: result.data };
+      } catch (e) {
+        logDebug('Sync gagal: ' + e.message, true);
+        return { success: false, warning: 'Koneksi DB gagal: ' + e.message };
+      }
+    }
+
+    /* ================================================================
+     *  FLOW LOGIN
+     *  TIDAK memanggil Pi.init() — itu sudah dilakukan di bootstrap()
+     * ================================================================ */
+    async function runPiLogin() {
+      if (isRedirecting) return;
+      if (loginInProgress) return;
+      loginInProgress = true;
+
+      if (urlParams.get('retry') === 'true') {
+        clearPiAuth();
+        window.history.replaceState({}, document.title, window.location.pathname);
+      }
+
+      resetUI();
+
+      try {
+        /* Deteksi lingkungan Pi */
+        logDebug('Mendeteksi lingkungan Pi...');
+        var hasPi = typeof Pi !== 'undefined';
+        var hasAuth = hasPi && typeof Pi.authenticate === 'function';
+
+        if (!hasPi) {
+          throw new Error(
+            'Pi SDK tidak tersedia. Buka halaman ini di dalam Pi Browser, bukan Chrome atau Safari.'
+          );
+        }
+        if (!hasAuth) {
+          throw new Error(
+            'Pi SDK ditemukan tetapi Pi.authenticate() tidak ada. ' +
+            'Kemungkinan versi SDK tidak cocok — pastikan Pi Browser versi terbaru.'
+          );
+        }
+
+        /* Cek sdkReady — JANGAN panggil Pi.init() di sini */
+        logDebug('sdkReady = ' + JSON.stringify(sdkReady));
+        statusTitle.textContent = 'Inisialisasi...';
+        statusDesc.textContent = 'Menghubungkan ke Pi Network';
+        cardSubtitle.textContent = 'Menyiapkan Pi SDK...';
+
+        if (sdkReady !== true) {
+          /*
+           * sdkReady bukan true — bisa false (belum init) atau 'failed' (init throw).
+           * Kita TIDAK retry init di sini. Pisahkan alur error.
+           */
+          if (sdkReady === 'failed') {
+            throw new Error(
+              'Pi.init() gagal saat halaman dimuat. ' +
+              'Kemungkinan: Pi Browser sandbox sedang down, atau konfigurasi app di Developer Portal tidak cocok dengan domain ini.'
+            );
+          } else {
+            throw new Error(
+              'Pi SDK tersedia tetapi Pi.init() belum dipanggil. Ini bug kode — hubungi developer.'
+            );
+          }
+        }
+
+        /* SDK siap → authenticate */
+        logDebug('SDK siap, memulai Pi.authenticate()...');
+        statusTitle.textContent = 'Autentikasi...';
+        statusDesc.textContent = 'Izinkan akses akun Pi Anda di popup yang muncul';
+        cardSubtitle.textContent = 'Menunggu persetujuan Anda...';
+
+        var scopes = (window.APP_CONFIG && window.APP_CONFIG.authScopes)
+          ? window.APP_CONFIG.authScopes
+          : ['username', 'payments'];
+
+        var onIncompletePaymentFound = function (payment) {
+          logDebug('Incomplete payment: ' + (payment && payment.identifier ? payment.identifier : '-'));
+          if (payment && payment.identifier) {
+            safeSet('whs_incomplete_payment', payment.identifier);
+          }
+        };
+
+        var auth = await withTimeout(
+          Pi.authenticate(scopes, onIncompletePaymentFound),
+          AUTH_TIMEOUT,
+          'Autentikasi timeout — Anda tidak menyetujui dalam ' + Math.round(AUTH_TIMEOUT / 1000) + ' detik.'
+        );
+
+        if (!auth || !auth.user || !auth.user.username) {
+          throw new Error('Respons autentikasi tidak valid: data user kosong.');
+        }
+        if (!auth.accessToken) {
+          throw new Error('Autentikasi berhasil tetapi access token tidak diterima.');
+        }
+
+        logDebug('Auth berhasil! @' + auth.user.username);
+        logDebug('uid: ' + (auth.user.uid || '(tidak ada, pakai username)'));
+        logDebug('user keys: ' + JSON.stringify(Object.keys(auth.user)));
+
+        /* Simpan — token HANYA sessionStorage */
+        var userData = { username: auth.user.username, uid: auth.user.uid || null };
+        safeSet('whs_pi_user', JSON.stringify(userData));
+        safeSet('whs_login_time', String(Date.now()));
+        sessionSet('whs_pi_token', auth.accessToken);
+        sessionSet('whs_pi_user', JSON.stringify(auth.user));
+        logDebug('Data disimpan. Token di sessionStorage saja.');
+
+        /* Sync ke Supabase */
+        statusTitle.textContent = 'Menyimpan...';
+        statusDesc.textContent = 'Mencatat data akun Anda';
+        cardSubtitle.textContent = 'Menyinkronkan ke server...';
+
+        var db = await syncUserToSupabase(auth.user, auth.accessToken);
+
+        if (db.success) {
+          logDebug('Backend OK');
+          if (db.data && db.data.id) safeSet('whs_db_user_id', String(db.data.id));
+          cardSubtitle.textContent = 'Data tersinkronisasi';
+        } else if (db.skip) {
+          logDebug('Backend dilewati');
+        } else if (db.warning) {
+          logDebug('Backend warning: ' + db.warning, false, true);
+          warningText.textContent = db.warning;
+          warningBox.classList.add('visible');
+          cardSubtitle.textContent = 'Login berhasil, data tidak tersimpan di server';
+          showToast('Data tidak tersimpan — dashboard tetap bisa diakses', 'warning', 5000);
+        }
+
+        /* Sukses */
+        spinnerRing.classList.add('success');
+        spinnerIcon.classList.add('success');
+        statusTitle.classList.add('success');
+        statusTitle.textContent = 'Berhasil!';
+        statusDesc.textContent = 'Selamat datang, @' + auth.user.username;
+        cardSubtitle.textContent = 'Login berhasil — mengalihkan...';
+        showToast('Login berhasil sebagai @' + auth.user.username, 'success', 2500);
+
+        safeRedirect('dashboard.html', 1500);
+
+      } catch (err) {
+        logDebug(err.message, true);
+        showError(
+          'Login Gagal',
+          'Terjadi kendala saat menyambungkan ke Pi Network.',
+          'Koneksi gagal',
+          err.message
+        );
+        showToast('Login gagal', 'error', 3000);
+        showEnvironmentDiagnostics();
+      } finally {
+        loginInProgress = false;
+      }
+    }
+
+    /* ================================================================
+     *  BOOTSTRAP — SATU-SATUNYA tempat Pi.init() dipanggil
+     *
+     *  Alur:
+     *  1. Cek sesi lama → redirect langsung jika valid
+     *  2. Cek koneksi internet
+     *  3. waitForPiSDK() — polling aktif sampai global Pi muncul
+     *  4. Jeda 200ms setelah Pi muncul — biarkan bridge internal siap
+     *  5. Pi.init() — satu kali, synchronous, dengan guard !sdkReady
+     *  6. runPiLogin()
+     * ================================================================ */
+    async function bootstrap() {
+      logDebug('=== BOOTSTRAP DIMULAI ===');
+      logDebug('protocol: ' + window.location.protocol);
+      logDebug('hostname: ' + window.location.hostname);
+      logDebug('typeof Pi: ' + typeof Pi);
+
+      /* Langkah 1: Cek sesi lama */
+      if (checkExistingSession()) {
+        statusTitle.textContent = 'Sesi ditemukan';
+        statusDesc.textContent = 'Mengalihkan ke dashboard...';
+        spinnerRing.classList.add('success');
+        spinnerIcon.classList.add('success');
+        cardSubtitle.textContent = 'Sesi sebelumnya masih valid';
+        safeRedirect('dashboard.html', 1000);
+        return;
+      }
+
+      /* Langkah 2: Cek internet */
+      if (!navigator.onLine) {
+        showError(
+          'Tidak Ada Internet',
+          'Pastikan koneksi Wi-Fi atau data seluler aktif, lalu coba lagi.',
+          'Koneksi terputus',
+          'Pi Network memerlukan koneksi internet untuk autentikasi.'
+        );
+        showEnvironmentDiagnostics();
+        return;
+      }
+
+      /* Langkah 3: Tunggu Pi SDK tersedia secara aktif */
+      try {
+        statusTitle.textContent = 'Memuat SDK...';
+        statusDesc.textContent = 'Menunggu Pi Network SDK siap';
+        cardSubtitle.textContent = 'Mendeteksi Pi Browser...';
+
+        await waitForPiSDK(10000);
+        logDebug('waitForPiSDK() resolve — Pi global ada');
+      } catch (sdkErr) {
+        logDebug(sdkErr.message, true);
+        showError(
+          'Pi SDK Tidak Ditemukan',
+          'Script pi-sdk.js gagal dimuat dalam waktu 10 detik.',
+          'SDK missing',
+          sdkErr.message
+        );
+        showEnvironmentDiagnostics();
+        return;
+      }
+
+      /*
+       * Langkah 4: Jeda 200ms setelah Pi global muncul.
+       *
+       * Mengapa? Karena `defer` hanya menjamin script pi-sdk.js
+       * sudah dieksekusi (global Pi ada). Tapi bridge internal
+       * Pi Browser mungkin belum selesai menginjeksi method-method
+       * ke dalam object Pi. Jeda singkat ini memberi waktu.
+       *
+       * 200ms cukup karena bridge adalah native injection,
+       * bukan network request.
+       */
+      logDebug('Menunggu 200ms untuk Pi Bridge siap...');
+      await new Promise(function (r) { setTimeout(r, 200); });
+
+      /* Verifikasi ulang setelah jeda */
+      if (typeof Pi === 'undefined') {
+        showError(
+          'Pi SDK Hilang',
+          'Pi global muncul lalu hilang — kemungkinan conflict script.',
+          'SDK unstable',
+          'Coba muat ulang halaman. Jika tetap gagal, ada kemungkinan script lain meng-override global Pi.'
+        );
+        showEnvironmentDiagnostics();
+        return;
+      }
+
+      logDebug('Pi tetap ada setelah jeda. typeof Pi.init: ' + typeof Pi.init);
+      logDebug('typeof Pi.authenticate: ' + typeof Pi.authenticate);
+
+      /*
+       * Langkah 5: Pi.init() — SATU KALI, dengan guard.
+       *
+       * PERBAIKAN #3: Cek !sdkReady sebelum init.
+       * sdkReady bisa false (belum init) atau 'failed' (sudah init tapi gagal).
+       * Kita hanya init jika false.
+       */
+      if (sdkReady === false) {
+        logDebug('Memanggil Pi.init({ version: "2.0", sandbox: ' +
+          ((window.APP_CONFIG && window.APP_CONFIG.sandbox) !== false) + ' })...');
+
+        try {
+          Pi.init({
+            version: "2.0",
+            sandbox: (window.APP_CONFIG && window.APP_CONFIG.sandbox) !== false
+          });
+          sdkReady = true;
+          logDebug('Pi.init() berhasil — sdkReady = true');
+        } catch (initErr) {
+          sdkReady = 'failed';
+          logDebug('Pi.init() throw: ' + initErr.message, true);
+
+          /*
+           * Graceful: meskipun init throw, cek apakah authenticate
+           * tetap tersedia. Beberapa versi SDK mengecek init
+           * secara internal saat authenticate dipanggil, bukan saat init.
+           */
+          if (typeof Pi.authenticate === 'function') {
+            logDebug('Pi.init() throw tapi Pi.authenticate tetap ada — melanjutkan', false, true);
+            sdkReady = true;
+          } else {
+            logDebug('Pi.init() throw DAN Pi.authenticate tidak ada — gagal total', true);
+          }
+        }
+      } else {
+        logDebug('Pi.init() sudah dipanggil sebelumnya (sdkReady=' + JSON.stringify(sdkReady) + '), tidak memanggil ulang');
+      }
+
+      /* Langkah 6: Mulai login */
+      setTimeout(runPiLogin, 300);
+    }
+
+    /* ================================================================
+     *  ENTRY POINT
+     *
+     *  Menggunakan DOMContentLoaded (bukan window.load) karena:
+     *  - DOMContentLoaded: DOM siap, tapi resource (gambar dll) belum tentu
+     *  - Kita tidak butuh gambar selesai, cuma butuh DOM + Pi SDK
+     *  - Pi SDK dimuat dengan defer, jadi sudah pasti jalan sebelum ini
+     *  - Lebih cepat daripada menunggu semua resource
+     *
+     *  Catatan: kita bisa juga pakai window.load, tapi DOMContentLoaded
+     *  cukup karena yang kita butuh cuma:
+     *  1. Elemen DOM sudah ada (untuk update UI)
+     *  2. pi-sdk.js sudah dieksekusi (dijamin defer)
+     *  3. Pi Bridge sudah siap (dijamin waitForPiSDK + jeda 200ms)
+     * ================================================================ */
+    document.addEventListener('DOMContentLoaded', function () {
+      logDebug('DOMContentLoaded terpicu — memulai bootstrap');
+      bootstrap();
+    });
+
+    /* ================================================================
+     *  EVENT LISTENERS
+     * ================================================================ */
+    logoutBtn.addEventListener('click', function () {
+      clearPiAuth();
+      sessionBanner.classList.remove('visible');
+      showToast('Sesi dihapus', 'info', 2000);
+      if (!loginInProgress && !isRedirecting) {
+        resetUI();
+        setTimeout(runPiLogin, 300);
+      }
+    });
+
+    btnRetry.addEventListener('click', function () {
+      if (loginInProgress) return;
+      clearPiAuth();
+      window.location.href = window.location.pathname + '?retry=true';
+    });
+
+    btnBack.addEventListener('click', function () {
+      window.location.href = 'index.html';
+    });
+  </script>
+</body>
+</html>
