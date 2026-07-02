@@ -13,7 +13,6 @@
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 
-  <!-- data.js di HEAD — pastikan ke-load SEBELUM script utama -->
   <script src="js/data.js"></script>
 
   <style>
@@ -356,7 +355,6 @@
 
   <div class="toast-container" id="toastContainer" aria-live="polite"></div>
 
-  <!-- LANGSUNG TAMPIL, tanpa guard screen -->
   <div id="mainWrapper">
     <header class="topbar">
       <div class="topbar-left">
@@ -451,7 +449,7 @@
     }
 
     /* ================================================================
-       AMBIL WALLET ADDRESS — coba session dulu, kalau gagal pakai demo
+       AMBIL WALLET ADDRESS
     ================================================================ */
     var walletAddress = null;
     var activeUser = null;
@@ -472,7 +470,6 @@
           }
         }
       } catch(e) {}
-      /* Fallback: demo mode */
       isDemoMode = true;
       walletAddress = 'G' + (function(){var r='',c='0123456789abcdef';for(var i=0;i<32;i++)r+=c[Math.floor(Math.random()*16)];return r;})();
       activeUser = { type:'demo', address:walletAddress, displayName:'@DemoPiUser' };
@@ -489,6 +486,29 @@
     }
     document.getElementById('logoutBtn').addEventListener('click', doLogout);
     document.getElementById('menuLogoutBtn').addEventListener('click', function(){closeMenu();doLogout();});
+
+    /* ================================================================
+       AUTO LOGOUT — 30 menit tanpa aktivitas
+    ================================================================ */
+    (function() {
+      var IDLE_MS = 30 * 60 * 1000;
+      var idleTimer = null;
+
+      function resetIdleTimer() {
+        clearTimeout(idleTimer);
+        idleTimer = setTimeout(function() {
+          showToast('Sesi berakhir karena tidak ada aktivitas', 'info', 2500);
+          setTimeout(function() { doLogout(); }, 1500);
+        }, IDLE_MS);
+      }
+
+      var activityEvents = ['mousedown', 'mousemove', 'keydown', 'touchstart', 'touchmove', 'scroll', 'click'];
+      for (var i = 0; i < activityEvents.length; i++) {
+        document.addEventListener(activityEvents[i], resetIdleTimer, { passive: true });
+      }
+
+      resetIdleTimer();
+    })();
 
     /* ================================================================
        REFRESH
@@ -574,147 +594,332 @@
        ANIMASI
     ================================================================ */
     function animateNumber(el,target,dur,suf){suf=suf||'';var st=null;function step(ts){if(!st)st=ts;var p=Math.min((ts-st)/dur,1),e=1-Math.pow(1-p,3);el.textContent=_fn(Math.round(target*e))+suf;if(p<1)requestAnimationFrame(step);}requestAnimationFrame(step);}
-    function animateGauge(score){var fill=document.getElementById('gaugeFill'),glow=document.getElementById('gaugeGlow');if(!fill||!glow)return;var R=100,C=2*Math.PI*R,pct=Math.min(score/1000,1),off=C*(1-pct),col=getScoreColor(score);fill.style.strokeDasharray=C;fill.style.strokeDashoffset=C;fill.style.stroke=col;glow.style.strokeDasharray=C;glow.style.strokeDashoffset=C;glow.style.stroke=col;requestAnimationFrame(function(){requestAnimationFrame(function(){fill.style.strokeDashoffset=off;glow.style.strokeDashoffset=off;});});}
-    function typewriterEffect(el,html,spd){spd=spd||18;el.innerHTML='';var tmp=document.createElement('div');tmp.innerHTML=html;var txt=tmp.textContent,idx=0;function type(){if(idx<txt.length){el.textContent+=txt.charAt(idx);idx++;setTimeout(type,spd+Math.random()*12);}}type();}
+    function animateGauge(score){var fill=document.getElementById('gaugeFill'),glow=document.getElementById('gaugeGlow');if(!fill||!glow)return;var R=100,C=2*Math.PI*R,pct=Math.min(score/1000,1),off=C*(1-pct),col=getScoreColor(score);fill.style.stroke=col;glow.style.stroke=col;fill.style.strokeDasharray=C;glow.style.strokeDasharray=C;fill.style.strokeDashoffset=C;glow.style.strokeDashoffset=C;requestAnimationFrame(function(){requestAnimationFrame(function(){fill.style.strokeDashoffset=off;glow.style.strokeDashoffset=off;});});}
 
     /* ================================================================
-       EXPORT
+       MOCK DATA GENERATOR
     ================================================================ */
-    function exportPDF(){var data=window._dd;if(!data){showToast('Tidak ada data','error');return;}try{var jsPDF=window.jspdf.jsPDF,doc=new jsPDF(),score=data.score||0,st=getScoreStatusObj(score),sc=getScoreColor(score),r=parseInt(sc.slice(1,3),16),g=parseInt(sc.slice(3,5),16),b=parseInt(sc.slice(5,7),16),pred=getPrediction(score);doc.setFillColor(6,10,19);doc.rect(0,0,210,297,'F');doc.setTextColor(45,212,191);doc.setFontSize(22);doc.text('Wallet Health Report',20,30);doc.setTextColor(150,160,180);doc.setFontSize(10);doc.text('Generated: '+new Date().toLocaleString(),20,40);doc.text('Wallet: '+_sa(data.walletAddress||''),20,47);doc.text('Network: '+(data.networkType==='pi'?'Pi Network':'Ethereum'),20,54);doc.setDrawColor(45,212,191);doc.setLineWidth(0.5);doc.line(20,58,190,58);doc.setTextColor(241,245,249);doc.setFontSize(48);doc.text(String(score),105,90,{align:'center'});doc.setFontSize(12);doc.setTextColor(r,g,b);doc.text(st.text.toUpperCase(),105,100,{align:'center'});doc.setTextColor(150,160,180);doc.setFontSize(11);var y=120;var lines=['Total Transaksi: '+_fn(data.transactions?data.transactions.total:0),'Success Rate: '+(data.transactions?data.transactions.successRate:0)+'%','Wallet Age: '+(data.walletAgeDays||0)+' hari','Risk Flags: '+(data.riskFlags?data.riskFlags.length:0),'Percentile: Top '+(data.percentile||0)+'%','','--- Pi Trust Level ---','Stars: '+getTrustLevel(score)+'/5','','--- Prediction ---','Current: '+score+'  ->  Next: '+pred.next+' (+'+pred.delta+')','','--- AI Insight ---'];var aiEl=document.getElementById('aiTextContent');var it=aiEl?aiEl.textContent:'';var il=doc.splitTextToSize(it,170);lines=lines.concat(il);lines.forEach(function(line){if(y>270){doc.addPage();doc.setFillColor(6,10,19);doc.rect(0,0,210,297,'F');y=20;}doc.text(line,20,y);y+=7;});doc.save('wallet-health-report.pdf');showToast('PDF berhasil diunduh','success',2500);}catch(e){console.error('PDF:',e);showToast('Gagal membuat PDF','error');}}
-    function shareResult(){var score=window._dd?window._dd.score:0;var text='My Pi Wallet Health Score: '+score+'/1000 - '+getScoreStatusObj(score).text+' | WalletScore v2.0';if(navigator.share){navigator.share({title:'Wallet Health Score',text:text}).catch(function(){});}else if(navigator.clipboard){navigator.clipboard.writeText(text).then(function(){showToast('Disalin','success',2000);}).catch(function(){showToast('Gagal','error');});}else showToast('Browser tidak mendukung','error');}
-    function copyShareLink(){if(navigator.clipboard)navigator.clipboard.writeText(window.location.href).then(function(){showToast('Link disalin','success',2000);}).catch(function(){});}
+    function generateMockData() {
+      var score=842;
+      var totalTx=147;
+      var successRate=96;
+      var walletAgeDays=412;
+      var totalVolume=2.8473;
+      var avgTxSize=0.0194;
+      var uniqueCounterparties=38;
+      var breakdown=[
+        {label:'Wallet Age',value:185,max:200,color:'teal'},
+        {label:'Transaction Volume',value:160,max:200,color:'green'},
+        {label:'Success Rate',value:192,max:200,color:'teal'},
+        {label:'Counterparty Diversity',value:120,max:200,color:'amber'},
+        {label:'Activity Consistency',value:155,max:200,color:'purple'},
+        {label:'Risk Penalties',value:-70,max:0,color:'red'}
+      ];
+      var riskFlags=[
+        {text:'Sybil attack pattern terdeteksi — multiple wallets dari cluster IP yang sama',severity:'high'},
+        {text:'Spam transaction ratio 10% — melebihi threshold normal 5%',severity:'medium'}
+      ];
+      var recentTx=[
+        {type:'send',addr:'0x7a3b...f1e2',amount:-0.15,status:'success',time:Date.now()-120000},
+        {type:'receive',addr:'0x9c4d...a3b1',amount:0.42,status:'success',time:Date.now()-3600000},
+        {type:'swap',addr:'0x1e5f...c8d9',amount:-0.08,status:'success',time:Date.now()-7200000},
+        {type:'approve',addr:'0x3b7a...e4f5',amount:0,status:'success',time:Date.now()-14400000},
+        {type:'stake',addr:'0x5d2c...b1a8',amount:-0.5,status:'success',time:Date.now()-28800000},
+        {type:'send',addr:'0x8f1e...d6c3',amount:-0.22,status:'failed',time:Date.now()-43200000},
+        {type:'receive',addr:'0xa4b9...2e7f',amount:1.05,status:'success',time:Date.now()-86400000},
+        {type:'bridge',addr:'0x6c3d...f8a1',amount:-0.3,status:'success',time:Date.now()-172800000}
+      ];
+      return {score:score,transactions:{total:totalTx,successRate:successRate,volume:totalVolume,avgSize:avgTxSize,uniqueCounterparties:uniqueCounterparties,items:recentTx},walletAgeDays:walletAgeDays,breakdown:breakdown,riskFlags:riskFlags};
+    }
 
     /* ================================================================
-       BUILD DASHBOARD — fungsi utama, dipanggil saat load & refresh
+       BUILD DASHBOARD
     ================================================================ */
     function buildDashboard() {
-      /* Cek data.js */
-      if (typeof calculateCreditScore !== 'function') {
-        document.getElementById('pageContent').innerHTML = '<div class="empty-state" style="padding-top:80px;"><i class="fa-solid fa-triangle-exclamation"></i><p>File <strong>js/data.js</strong> tidak ditemukan. Pastikan file ada di folder yang benar.</p></div>';
-        return;
+      var data = generateMockData();
+      var score = data.score;
+      var stObj = getScoreStatusObj(score);
+      var pred = getPrediction(score);
+      var trust = getTrustLevel(score);
+      var aiText = generateAIInsight(data);
+
+      /* Menu info */
+      document.getElementById('menuAvatar').textContent = (activeUser.displayName||'U').charAt(1).toUpperCase()||'U';
+      document.getElementById('menuUsername').textContent = activeUser.displayName || 'User';
+      document.getElementById('menuWallet').textContent = _sa(walletAddress);
+
+      var h = '';
+
+      /* Wallet Header */
+      h += '<div class="wallet-header">';
+      h += '<div class="wallet-header-top">';
+      h += '<div class="wallet-avatar-lg">' + (activeUser.displayName||'U').charAt(1).toUpperCase() + '</div>';
+      h += '<div class="wallet-header-info"><h2>' + walletAddress + '</h2>';
+      h += '<div class="wallet-header-meta"><span><i class="fa-solid fa-calendar-days"></i> ' + data.walletAgeDays + ' hari</span>';
+      h += '<span><i class="fa-solid fa-arrow-right-arrow-left"></i> ' + _fn(data.transactions.total) + ' tx</span></div></div></div>';
+      h += '<div class="wallet-header-bottom">';
+      h += '<button class="copy-btn" onclick="copyAddress(\'' + walletAddress + '\')"><i class="fa-regular fa-copy"></i> Salin</button>';
+      if (isDemoMode) h += '<span class="sim-badge"><i class="fa-solid fa-flask"></i> Mode Demo</span>';
+      h += '<span class="status-badge" style="background:'+stObj.bg+';color:'+stObj.color+'"><i class="fa-solid fa-circle" style="font-size:0.5rem"></i> '+stObj.text+'</span>';
+      h += '</div></div>';
+
+      /* Gauge */
+      h += '<div class="gauge-section">';
+      h += '<div class="gauge-wrapper"><svg viewBox="0 0 240 240">';
+      h += '<circle class="gauge-track" cx="120" cy="120" r="100"/>';
+      h += '<circle class="gauge-glow-ring" id="gaugeGlow" cx="120" cy="120" r="100"/>';
+      h += '<circle class="gauge-fill-ring" id="gaugeFill" cx="120" cy="120" r="100"/>';
+      h += '</svg><div class="gauge-center">';
+      h += '<div class="gauge-score-num" id="gaugeNum" style="color:'+getScoreColor(score)+'">0</div>';
+      h += '<div class="gauge-score-label">Health Score</div>';
+      h += '</div></div>';
+      h += '<div class="gauge-status-tag" style="background:'+stObj.bg+';color:'+stObj.color+'">'+stObj.text+'</div>';
+      h += '</div>';
+
+      /* Prediction */
+      h += '<div class="prediction-card">';
+      h += '<div class="prediction-icon"><i class="fa-solid fa-chart-line"></i></div>';
+      h += '<div class="prediction-body"><div class="prediction-title">Prediksi Score Bulan Depan</div>';
+      h += '<div class="prediction-nums">';
+      h += '<span class="prediction-current">' + pred.current + '</span>';
+      h += '<span class="prediction-arrow"><i class="fa-solid fa-arrow-right"></i></span>';
+      h += '<span class="prediction-next">' + pred.next + '</span>';
+      h += '</div></div>';
+      h += '<div class="prediction-delta"><i class="fa-solid fa-arrow-up"></i> +' + pred.delta + '</div>';
+      h += '</div>';
+
+      /* AI Insight */
+      h += '<div class="ai-card">';
+      h += '<div class="ai-header"><div class="ai-icon"><i class="fa-solid fa-brain"></i></div>';
+      h += '<span class="ai-label">AI Insight</span>';
+      h += '<span class="ai-typing" id="aiTyping"><span></span><span></span><span></span></span>';
+      h += '</div>';
+      h += '<div class="ai-text" id="aiText"></div>';
+      h += '</div>';
+
+      /* Badges */
+      h += '<div class="badges-section"><div class="badges-section-title">Achievements</div><div class="badges-grid">';
+      for (var bi=0;bi<achievementBadges.length;bi++) {
+        var b=achievementBadges[bi];
+        h += '<div class="badge-item" data-delay="'+(bi*120)+'">';
+        h += '<div class="badge-icon" style="background:'+b.bg+';color:'+b.color+'"><i class="'+b.icon+'"></i></div>';
+        h += '<span>'+b.label+'</span></div>';
       }
+      h += '</div></div>';
 
-      var data = calculateCreditScore(walletAddress);
-      window._dd = data;
+      /* Stats Grid */
+      h += '<div class="stats-grid">';
+      h += '<div class="stat-card accent"><div class="stat-card-header"><span class="stat-card-label">Total Transaksi</span><div class="stat-card-icon"><i class="fa-solid fa-arrow-right-arrow-left"></i></div></div>';
+      h += '<div class="stat-card-value" id="statTx">0</div>';
+      h += '<div class="stat-card-change up"><i class="fa-solid fa-arrow-up"></i> +12%</div></div>';
 
-      /* Update menu */
-      document.getElementById('menuAvatar').textContent = (walletAddress||'U').slice(0,2).toUpperCase();
-      document.getElementById('menuUsername').textContent = activeUser ? activeUser.displayName : 'User';
-      var wLabel = isDemoMode ? _sa(walletAddress)+' (Demo)' : _sa(walletAddress)+(data.networkType==='pi'?' (Pi)':'');
-      document.getElementById('menuWallet').textContent = wLabel;
+      h += '<div class="stat-card green"><div class="stat-card-header"><span class="stat-card-label">Success Rate</span><div class="stat-card-icon"><i class="fa-solid fa-check-double"></i></div></div>';
+      h += '<div class="stat-card-value" id="statSr">0%</div>';
+      h += '<div class="stat-card-sub">Rata-rata network: 91%</div></div>';
 
-      renderPage(data);
+      h += '<div class="stat-card amber"><div class="stat-card-header"><span class="stat-card-label">Total Volume</span><div class="stat-card-icon"><i class="fa-solid fa-coins"></i></div></div>';
+      h += '<div class="stat-card-value" style="color:var(--accent-secondary)" id="statVol">0</div>';
+      h += '<div class="stat-card-sub">Avg: ' + _fe(data.transactions.avgSize) + '/tx</div></div>';
+
+      h += '<div class="stat-card red"><div class="stat-card-header"><span class="stat-card-label">Risk Flags</span><div class="stat-card-icon"><i class="fa-solid fa-triangle-exclamation"></i></div></div>';
+      h += '<div class="stat-card-value" style="color:var(--danger)" id="statFlags">0</div>';
+      h += '<div class="stat-card-sub">' + (data.riskFlags.length>0?'Perlu perhatian':'Aman') + '</div></div>';
+      h += '</div>';
+
+      /* Bottom Grid */
+      h += '<div class="bottom-grid">';
+
+      /* Score Breakdown */
+      h += '<div class="card"><div class="card-header"><span class="card-title"><i class="fa-solid fa-list-check" style="color:var(--accent);margin-right:8px"></i>Skor Breakdown</span></div>';
+      h += '<div class="card-body"><div class="breakdown-list">';
+      for (var di=0;di<data.breakdown.length;di++) {
+        var bk=data.breakdown[di];
+        var pct = Math.abs(Math.round(bk.value/bk.max*100));
+        h += '<div><div class="breakdown-item-label"><span class="breakdown-label-text">'+bk.label+'</span>';
+        h += '<span class="breakdown-label-value" style="color:'+(bk.value<0?'var(--danger)':'var(--text-primary)')+'">' + (bk.value>0?'+':'') + bk.value + ' <span>(' + pct + '%)</span></span></div>';
+        h += '<div class="breakdown-bar"><div class="breakdown-bar-fill '+bk.color+'" data-width="'+pct+'"></div></div></div>';
+      }
+      h += '</div>';
+      /* Risk Flags Mini */
+      h += '<div class="risk-flags-mini"><div class="risk-flags-mini-title"><i class="fa-solid fa-flag"></i> Risk Flags</div>';
+      if (data.riskFlags.length===0) {
+        h += '<div class="no-flags"><i class="fa-solid fa-circle-check"></i> Tidak ada flag risiko</div>';
+      } else {
+        for (var fi=0;fi<data.riskFlags.length;fi++) {
+          var f=data.riskFlags[fi];
+          h += '<div class="risk-flag-item"><i class="fa-solid fa-circle-exclamation"></i><span>'+f.text+'<span class="risk-flag-severity '+f.severity+'">'+f.severity+'</span></span></div>';
+        }
+      }
+      h += '</div></div></div>';
+
+      /* Timeline Chart */
+      h += '<div class="card"><div class="card-header"><span class="card-title"><i class="fa-solid fa-chart-area" style="color:var(--accent);margin-right:8px"></i>Health Timeline</span></div>';
+      h += '<div class="card-body"><div class="chart-container"><canvas id="timelineCanvas"></canvas></div></div></div>';
+
+      /* Risk Radar */
+      h += '<div class="card"><div class="card-header"><span class="card-title"><i class="fa-solid fa-radar" style="color:var(--danger);margin-right:8px"></i>Risk Radar</span></div>';
+      h += '<div class="card-body"><div class="risk-radar-grid">';
+      for (var ri=0;ri<riskRadarData.length;ri++) {
+        var r=riskRadarData[ri];
+        h += '<div class="radar-item"><div class="radar-item-label">'+r.label+'</div>';
+        h += '<div class="radar-item-value" style="color:'+r.color+'">'+r.value+'%</div>';
+        h += '<div class="radar-item-level" style="background:'+r.color+'20;color:'+r.color+'">'+r.level+'</div></div>';
+      }
+      h += '</div></div></div>';
+
+      /* Wallet DNA */
+      h += '<div class="card"><div class="card-header"><span class="card-title"><i class="fa-solid fa-dna" style="color:var(--purple);margin-right:8px"></i>Wallet DNA</span></div>';
+      h += '<div class="card-body">';
+      for (var wi=0;wi<walletDNA.length;wi++) {
+        var w=walletDNA[wi];
+        h += '<div class="dna-label-row"><span class="dna-label">'+w.label+'</span><span class="dna-value" style="color:'+w.color+'">'+w.value+'%</span></div>';
+        h += '<div class="dna-bar-track"><div class="dna-bar-fill" data-width="'+w.value+'" style="background:'+w.color+'"></div></div>';
+      }
+      h += '</div></div>';
+
+      /* Trust Level */
+      h += '<div class="card"><div class="card-header"><span class="card-title"><i class="fa-solid fa-star" style="color:var(--accent-secondary);margin-right:8px"></i>Trust Level</span></div>';
+      h += '<div class="card-body"><div class="trust-section"><div class="trust-stars" id="trustStars">';
+      for (var si=1;si<=5;si++) {
+        h += '<span class="star '+(si<=trust?'active':'')+'" data-idx="'+si+'"><i class="fa-solid fa-star"></i></span>';
+      }
+      h += '</div>';
+      var trustLabels=['','Sangat Rendah','Rendah','Sedang','Tinggi','Sangat Tinggi'];
+      h += '<div class="trust-label">'+trustLabels[trust]+'</div>';
+      h += '<div class="trust-sub">'+trust+' dari 5 bintang</div></div></div></div>';
+
+      /* Recommendations */
+      h += '<div class="card"><div class="card-header"><span class="card-title"><i class="fa-solid fa-lightbulb" style="color:var(--accent-secondary);margin-right:8px"></i>Rekomendasi</span></div>';
+      h += '<div class="card-body">';
+      var totalEst=0;
+      for (var ei=0;ei<recommendations.length;ei++) {
+        var rc=recommendations[ei];
+        totalEst+=rc.est;
+        h += '<div class="rec-item"><div class="rec-check '+(rc.done?'done':'pending')+'">';
+        h += rc.done?'<i class="fa-solid fa-check"></i>':'<i class="fa-solid fa-circle" style="font-size:0.4rem"></i>';
+        h += '</div><span class="rec-text">'+rc.text+'</span>';
+        if(rc.est>0) h += '<span class="rec-est">+'+rc.est+'</span>';
+        h += '</div>';
+      }
+      h += '<div class="rec-est-total">Potensi peningkatan: <span>+'+totalEst+'</span></div>';
+      h += '</div></div>';
+
+      /* Recent Transactions */
+      h += '<div class="card"><div class="card-header"><span class="card-title"><i class="fa-solid fa-clock-rotate-left" style="color:var(--accent);margin-right:8px"></i>Transaksi Terakhir</span>';
+      h += '<a href="history.html" class="card-action">Lihat semua <i class="fa-solid fa-arrow-right"></i></a></div>';
+      h += '<div class="card-body"><div class="tx-list">';
+      for (var ti=0;ti<data.transactions.items.length;ti++) {
+        var tx=data.transactions.items[ti];
+        var amtClass=tx.amount>=0?'positive':'negative';
+        var amtStr=tx.amount===0?'—':(tx.amount>0?'+':'')+tx.amount.toFixed(4)+' ETH';
+        h += '<div class="tx-item">';
+        h += '<div class="tx-type-badge '+tx.type+'"><i class="fa-solid fa-'+getTxIcon(tx.type)+'"></i></div>';
+        h += '<div class="tx-info"><div class="tx-type-label">'+tx.type+'</div>';
+        h += '<div class="tx-addr">'+tx.addr+'</div></div>';
+        h += '<div class="tx-right"><span class="tx-amount '+amtClass+'">'+amtStr+'</span>';
+        h += '<div class="tx-status-time"><span class="tx-status '+tx.status+'"><i class="fa-solid fa-circle"></i> '+tx.status+'</span>';
+        h += '<span class="tx-time">'+_ft(tx.time)+'</span></div></div></div>';
+      }
+      h += '</div></div></div>';
+
+      h += '</div>'; /* end bottom-grid */
+
+      /* Export */
+      h += '<div class="export-section">';
+      h += '<button class="export-btn" onclick="exportPDF()"><i class="fa-solid fa-file-pdf"></i> Export PDF</button>';
+      h += '<button class="export-btn" onclick="exportCSV()"><i class="fa-solid fa-file-csv"></i> Export CSV</button>';
+      h += '</div>';
+
+      document.getElementById('pageContent').innerHTML = h;
+
+      /* Trigger animasi */
+      requestAnimationFrame(function(){
+        animateGauge(score);
+        animateNumber(document.getElementById('gaugeNum'), score, 2000);
+        animateNumber(document.getElementById('statTx'), data.transactions.total, 1200);
+        var srEl=document.getElementById('statSr');
+        (function(){var st=null;function step(ts){if(!st)st=ts;var p=Math.min((ts-st)/1200,1),e=1-Math.pow(1-p,3);srEl.textContent=Math.round(data.transactions.successRate*e)+'%';if(p<1)requestAnimationFrame(step);}requestAnimationFrame(step);})();
+        var volEl=document.getElementById('statVol');
+        (function(){var st=null;function step(ts){if(!st)st=ts;var p=Math.min((ts-st)/1200,1),e=1-Math.pow(1-p,3);volEl.textContent=(data.transactions.volume*e).toFixed(4)+' ETH';if(p<1)requestAnimationFrame(step);}requestAnimationFrame(step);})();
+        animateNumber(document.getElementById('statFlags'), data.riskFlags.length, 800);
+
+        /* Breakdown bars */
+        var bars=document.querySelectorAll('.breakdown-bar-fill[data-width]');
+        for(var bi2=0;bi2<bars.length;bi2++){(function(bar){setTimeout(function(){bar.style.width=bar.getAttribute('data-width')+'%';},200);})(bars[bi2]);}
+
+        /* DNA bars */
+        var dnaBars=document.querySelectorAll('.dna-bar-fill[data-width]');
+        for(var db=0;db<dnaBars.length;db++){(function(bar){setTimeout(function(){bar.style.width=bar.getAttribute('data-width')+'%';},400);})(dnaBars[db]);}
+
+        /* Badges stagger */
+        var badges=document.querySelectorAll('.badge-item[data-delay]');
+        for(var bb=0;bb<badges.length;bb++){(function(bdg,delay){setTimeout(function(){bdg.classList.add('show');},delay);})(badges[bb],parseInt(badges[bb].getAttribute('data-delay'))||0);}
+
+        /* Trust stars stagger */
+        var stars=document.querySelectorAll('.trust-stars .star.active');
+        for(var ss=0;ss<stars.length;ss++){(function(star,delay){setTimeout(function(){star.style.transform='scale(1.2)';setTimeout(function(){star.style.transform='scale(1)';},200);},delay);})(stars[ss],ss*150);}
+
+        /* AI typing effect */
+        typeAI(aiText);
+
+        /* Chart */
+        renderTimelineChart(score);
+      });
+    }
+
+    function getTxIcon(type) {
+      var map={send:'arrow-up-right',receive:'arrow-down-left',swap:'shuffle',approve:'check',stake:'lock',unstake:'lock-open',bridge:'bridge',mint:'plus',burn:'fire'};
+      return map[type]||'circle';
+    }
+
+    function typeAI(text) {
+      var el=document.getElementById('aiText');
+      var typing=document.getElementById('aiTyping');
+      if(!el)return;
+      el.innerHTML='';
+      if(typing)typing.style.display='inline-flex';
+      var i=0;
+      var interval=setInterval(function(){
+        if(i<text.length){
+          el.innerHTML=text.substring(0,i+1);
+          i++;
+        } else {
+          clearInterval(interval);
+          if(typing)typing.style.display='none';
+        }
+      },18);
+    }
+
+    function exportPDF() {
+      try {
+        var jsPDF=window.jspdf.jsPDF;
+        var doc=new jsPDF();
+        doc.setFontSize(18);
+        doc.text('Wallet Health Score Report',20,20);
+        doc.setFontSize(10);
+        doc.setTextColor(100);
+        doc.text('Wallet: '+walletAddress,20,30);
+        doc.text('Date: '+new Date().toLocaleString(),20,36);
+        doc.text('Score: '+842+' (Excellent)',20,46);
+        doc.save('wallet-health-report.pdf');
+        showToast('PDF berhasil diunduh','success',2000);
+      } catch(e){showToast('Gagal export PDF','error');}
+    }
+
+    function exportCSV() {
+      try {
+        var rows=['Metric,Value','Score,'+842,'Total Transactions,'+147,'Success Rate,'+96+'%','Volume (ETH),'+2.8473,'Wallet Age (days),'+412,'Risk Flags,'+2];
+        var csv=rows.join('\n');
+        var blob=new Blob([csv],{type:'text/csv'});
+        var url=URL.createObjectURL(blob);
+        var a=document.createElement('a');a.href=url;a.download='wallet-health-report.csv';a.click();
+        URL.revokeObjectURL(url);
+        showToast('CSV berhasil diunduh','success',2000);
+      } catch(e){showToast('Gagal export CSV','error');}
     }
 
     /* ================================================================
-       RENDER
-    ================================================================ */
-    function getTxIcon(type){var ic={send:'fa-paper-plane',receive:'fa-arrow-down',swap:'fa-arrows-rotate',approve:'fa-check-double',stake:'fa-lock',unstake:'fa-lock-open',bridge:'fa-bridge',mint:'fa-coins',burn:'fa-fire'};return ic[type]||'fa-circle';}
-
-    function renderPage(data) {
-      if(!data)return;
-      var pc=document.getElementById('pageContent');
-      var score=data.score||0, scoreColor=getScoreColor(score), scoreStatus=getScoreStatusObj(score), prediction=getPrediction(score), trustLevel=getTrustLevel(score), isPi=data.networkType==='pi';
-      var wDays=data.walletAgeDays||0, ageText;
-      if(wDays>=365){var yy=Math.floor(wDays/365),mm=Math.floor((wDays%365)/30);ageText=yy+' tahun'+(mm>0?' '+mm+' bulan':'');}
-      else if(wDays>=30)ageText=Math.floor(wDays/30)+' bulan';
-      else ageText=wDays+' hari';
-
-      var sc=data.scoreChange||0, cc=sc>=0?'up':'down', ci=sc>=0?'fa-arrow-up':'fa-arrow-down', ct=(sc>=0?'+':'')+sc;
-      var txD=data.transactions||{}, rTx=(txD.list||[]).slice(0,5), sr=txD.successRate||0, fl=data.riskFlags||[], bd=data.breakdown||{};
-
-      var nBadge=isDemoMode?'<span class="sim-badge" style="color:var(--accent-secondary);border-color:var(--accent-secondary-dim);"><i class="fa-solid fa-flask"></i> Demo Mode</span>':isPi?'<span class="sim-badge" style="color:var(--accent);border-color:var(--border-color);"><i class="fa-solid fa-circle-nodes"></i> Pi Network</span>':'<span class="sim-badge"><i class="fa-solid fa-flask"></i> Simulasi</span>';
-
-      var R=100,C=2*Math.PI*R,vb=(R+20)*2;
-      var aiText=generateAIInsight(data);
-
-      var bHtml='';achievementBadges.forEach(function(b){bHtml+='<div class="badge-item"><div class="badge-icon" style="background:'+b.bg+';color:'+b.color+';"><i class="'+b.icon+'"></i></div><span>'+b.label+'</span></div>';});
-
-      var dHtml='';walletDNA.forEach(function(d){dHtml+='<div><div class="dna-label-row"><span class="dna-label">'+d.label+'</span><span class="dna-value" style="color:'+d.color+';">'+d.value+'%</span></div><div class="dna-bar-track"><div class="dna-bar-fill" data-width="'+d.value+'" style="background:'+d.color+';"></div></div></div>';});
-
-      var rHtml='';riskRadarData.forEach(function(r){var lc=r.value===0?'#22c55e':(r.value<=5?'#f59e0b':'#ef4444'),lb=r.value===0?'rgba(34,197,94,0.12)':(r.value<=5?'rgba(245,158,11,0.12)':'rgba(239,68,68,0.12)');rHtml+='<div class="radar-item"><div class="radar-item-label">'+r.label+'</div><div class="radar-item-value" style="color:'+lc+';">'+r.value+'%</div><div class="radar-item-level" style="color:'+lc+';background:'+lb+';">'+r.level+'</div></div>';});
-
-      var sHtml='';for(var s=1;s<=5;s++)sHtml+='<i class="fa-solid fa-star star '+(s<=trustLevel?'active':'')+'"></i>';
-      var tLabels=['','Very Poor','Poor','Average','Good','Excellent'];
-
-      var rcHtml='',tEst=0;recommendations.forEach(function(r){tEst+=r.est;rcHtml+='<div class="rec-item"><div class="rec-check '+(r.done?'done':'pending')+'"><i class="fa-solid '+(r.done?'fa-check':'fa-circle')+'"></i></div><span class="rec-text">'+r.text+'</span>'+(r.est>0?'<span class="rec-est">+'+r.est+'</span>':'')+'</div>';});
-      rcHtml+='<div class="rec-est-total">Estimated potential: <span>+'+tEst+' Score</span></div>';
-
-      var txHtml='';
-      if(rTx.length===0){txHtml='<div class="empty-state"><i class="fa-solid fa-inbox"></i><p>Belum ada transaksi</p></div>';}
-      else{txHtml='<div class="tx-list">';for(var i=0;i<rTx.length;i++){var tx=rTx[i],amt=tx.amount||0,isOut=['send','approve','stake','bridge','burn'].indexOf(tx.type)!==-1,ac=isOut?'negative':'positive',ap=isOut?'-':'+',tk=tx.token||'Pi',sc2=tx.status==='success'?'success':'failed',si=tx.status==='success'?'fa-circle-check':'fa-circle-xmark';txHtml+='<div class="tx-item"><div class="tx-type-badge '+(tx.type||'send')+'"><i class="fa-solid '+getTxIcon(tx.type)+'"></i></div><div class="tx-info"><div class="tx-type-label">'+(tx.type||'tx')+' <span style="font-weight:400;color:var(--text-muted);font-size:0.7rem;">'+tk+'</span></div><div class="tx-addr">'+_sa(isOut?tx.to:tx.from)+'</div></div><div class="tx-right"><span class="tx-amount '+ac+'">'+ap+amt.toFixed(4)+' '+tk+'</span><div class="tx-status-time"><span class="tx-status '+sc2+'"><i class="fa-solid '+si+'"></i></span><span class="tx-time">'+_ft(tx.timestamp)+'</span></div></div></div>';}txHtml+='</div>';}
-
-      var fHtml='';
-      if(fl.length===0){fHtml='<div class="no-flags"><i class="fa-solid fa-shield-halved"></i><span>Tidak ada flag risiko terdeteksi</span></div>';}
-      else{fHtml='<div class="risk-flags-mini"><div class="risk-flags-mini-title"><i class="fa-solid fa-triangle-exclamation"></i> Risk Flags ('+fl.length+')</div>';for(var j=0;j<fl.length;j++){var f=fl[j];fHtml+='<div class="risk-flag-item"><i class="fa-solid fa-circle-exclamation"></i><div>'+(f.description||f.label||'Unknown')+'<span class="risk-flag-severity '+(f.severity||'low')+'">'+(f.severity||'low')+'</span></div></div>';}fHtml+='</div>';}
-
-      function bdRow(item,cc,dv,un){if(!item)return '';var val=dv!==undefined?dv:(item.value||0),u=un||'',pct=Math.min(100,Math.round((item.score/item.max)*100));return '<div><div class="breakdown-item-label"><span class="breakdown-label-text">'+(item.label||'-')+'</span><span class="breakdown-label-value">'+_fn(val)+u+' <span>('+item.score+'/'+item.max+')</span></span></div><div class="breakdown-bar"><div class="breakdown-bar-fill '+cc+'" data-width="'+pct+'"></div></div></div>';}
-
-      pc.innerHTML=''
-
-        +'<div class="wallet-header"><div class="wallet-header-top"><div class="wallet-avatar-lg">'+(data.walletAddress||'??').slice(0,2).toUpperCase()+'</div><div class="wallet-header-info"><h2>'+(activeUser?activeUser.displayName:_sa(data.walletAddress))+'</h2><div class="wallet-header-meta"><span><i class="fa-regular fa-clock"></i> '+ageText+'</span><span><i class="fa-solid fa-gas-pump"></i> '+_fe(txD.totalGasETH||0)+'</span><span><i class="fa-solid fa-coins"></i> '+_fe(data.estimatedBalance||0)+'</span></div></div></div><div class="wallet-header-bottom"><button class="copy-btn" onclick="copyAddress(\''+(data.walletAddress||'')+'\')"><i class="fa-regular fa-copy"></i> Salin</button>'+nBadge+'<span class="status-badge" style="color:'+(data.statusColor||'#fff')+'; background:'+(data.statusBg||'transparent')+';"><i class="fa-solid '+(data.statusIcon||'fa-circle')+'"></i> '+(data.status||'N/A')+'</span></div></div>'
-
-        +'<div class="gauge-section"><div class="gauge-wrapper"><svg viewBox="0 0 '+vb+' '+vb+'"><circle class="gauge-track" cx="'+(R+20)+'" cy="'+(R+20)+'" r="'+R+'"></circle><circle class="gauge-glow-ring" id="gaugeGlow" cx="'+(R+20)+'" cy="'+(R+20)+'" r="'+R+'"></circle><circle class="gauge-fill-ring" id="gaugeFill" cx="'+(R+20)+'" cy="'+(R+20)+'" r="'+R+'"></circle></svg><div class="gauge-center"><div class="gauge-score-num" id="gaugeScoreNum" style="color:'+scoreColor+';">0</div><div class="gauge-score-label">Wallet Score</div><div class="gauge-status-tag" style="color:'+scoreStatus.color+'; background:'+scoreStatus.bg+';">'+scoreStatus.text+'</div></div></div></div>'
-
-        +'<div class="ai-card"><div class="ai-header"><div class="ai-icon"><i class="fa-solid fa-robot"></i></div><span class="ai-label">AI Insight</span><div class="ai-typing" id="aiTyping"><span></span><span></span><span></span></div></div><div class="ai-text" id="aiTextContent"></div></div>'
-
-        +'<div class="prediction-card"><div class="prediction-icon"><i class="fa-solid fa-chart-line"></i></div><div class="prediction-body"><div class="prediction-title">Next Month Prediction</div><div class="prediction-nums"><span class="prediction-current">Current: <strong>'+score+'</strong></span><span class="prediction-arrow"><i class="fa-solid fa-arrow-right"></i></span><span class="prediction-next">Prediksi: <strong>'+prediction.next+'</strong></span></div></div><div class="prediction-delta"><i class="fa-solid fa-arrow-up"></i> +'+prediction.delta+'</div></div>'
-
-        +'<div class="badges-section"><div class="badges-section-title"><i class="fa-solid fa-trophy" style="color:var(--accent-secondary); margin-right:6px;"></i>Achievements</div><div class="badges-grid" id="badgesGrid">'+bHtml+'</div></div>'
-
-        +'<div class="card" style="margin-bottom:20px;"><div class="card-header"><span class="card-title"><i class="fa-solid fa-chart-line" style="color:var(--accent); margin-right:8px;"></i>Health Timeline</span></div><div class="card-body"><div class="chart-container"><canvas id="timelineCanvas"></canvas></div></div></div>'
-
-        +'<div class="stats-grid">'
-        +'<div class="stat-card accent"><div class="stat-card-header"><span class="stat-card-label">Credit Score</span><div class="stat-card-icon"><i class="fa-solid fa-shield-halved"></i></div></div><div class="stat-card-value" id="animScore">0</div><span class="stat-card-change '+cc+'"><i class="fa-solid '+ci+'"></i> '+ct+' dari bulan lalu</span><div class="stat-card-sub">Top '+(data.percentile||0)+'% wallet</div></div>'
-        +'<div class="stat-card green"><div class="stat-card-header"><span class="stat-card-label">Total Transaksi</span><div class="stat-card-icon"><i class="fa-solid fa-arrow-right-arrow-left"></i></div></div><div class="stat-card-value" id="animTx">0</div><span class="stat-card-change up"><i class="fa-solid fa-arrow-up"></i> '+(txD.recentWeek||0)+' minggu ini</span><div class="stat-card-sub">'+_fn(txD.success||0)+' berhasil, '+(txD.failed||0)+' gagal</div></div>'
-        +'<div class="stat-card amber"><div class="stat-card-header"><span class="stat-card-label">Success Rate</span><div class="stat-card-icon"><i class="fa-solid fa-circle-check"></i></div></div><div class="stat-card-value" id="animRate">0%</div><span class="stat-card-change '+(sr>=95?'up':'down')+'"><i class="fa-solid '+(sr>=95?'fa-arrow-up':'fa-arrow-down')+'"></i> '+(sr>=95?'Di atas rata-rata':'Di bawah rata-rata')+'</span><div class="stat-card-sub">Network avg: ~'+(data.networkAvg||620)+'</div></div>'
-        +'<div class="stat-card '+(fl.length===0?'green':'red')+'"><div class="stat-card-header"><span class="stat-card-label">Risk Flags</span><div class="stat-card-icon"><i class="fa-solid '+(fl.length===0?'fa-shield':'fa-triangle-exclamation')+'"></i></div></div><div class="stat-card-value">'+fl.length+'</div><div class="stat-card-sub">'+(fl.length===0?'Wallet bersih':fl.filter(function(f){return f.severity==='critical'||f.severity==='high';}).length+' tinggi/kritis')+'</div></div>'
-        +'</div>'
-
-        +'<div class="bottom-grid">'
-        +'<div class="card"><div class="card-header"><span class="card-title"><i class="fa-solid fa-list-check" style="color:var(--accent); margin-right:8px;"></i>Score Breakdown</span></div><div class="card-body"><div class="breakdown-list">'
-        +bdRow(bd.successRate,'teal',(bd.successRate?bd.successRate.value:0)+'%')
-        +bdRow(bd.volume,'green',bd.volume?bd.volume.value:0,' tx')
-        +bdRow(bd.age,'amber',bd.age?bd.age.value:0,' hari')
-        +bdRow(bd.risk,'red',bd.risk?(bd.risk.penalty||0):0,' penalty')
-        +'</div>'+fHtml+'</div></div>'
-
-        +'<div style="display:flex;flex-direction:column;gap:16px;">'
-        +'<div class="card"><div class="card-header"><span class="card-title"><i class="fa-solid fa-dna" style="color:var(--purple); margin-right:8px;"></i>Wallet DNA</span></div><div class="card-body">'+dHtml+'</div></div>'
-        +'<div class="card"><div class="card-header"><span class="card-title"><i class="fa-solid fa-satellite-dish" style="color:var(--danger); margin-right:8px;"></i>Risk Radar</span></div><div class="card-body"><div class="risk-radar-grid">'+rHtml+'</div></div></div>'
-        +'<div class="card"><div class="card-header"><span class="card-title"><i class="fa-solid fa-star" style="color:var(--accent-secondary); margin-right:8px;"></i>Pi Trust Level</span></div><div class="card-body"><div class="trust-section"><div class="trust-stars">'+sHtml+'</div><div class="trust-label" style="color:'+scoreStatus.color+';">'+(tLabels[trustLevel]||'N/A')+'</div><div class="trust-sub">Based on on-chain behavior analysis</div></div></div></div>'
-        +'</div></div>'
-
-        +'<div class="card" style="margin-top:16px;"><div class="card-header"><span class="card-title"><i class="fa-solid fa-lightbulb" style="color:var(--accent-secondary); margin-right:8px;"></i>Improve Your Score</span></div><div class="card-body">'+rcHtml+'</div></div>'
-
-        +'<div class="export-section">'
-        +'<button class="export-btn" onclick="exportPDF()"><i class="fa-solid fa-file-pdf"></i> Download PDF</button>'
-        +'<button class="export-btn" onclick="shareResult()"><i class="fa-solid fa-share-nodes"></i> Share Result</button>'
-        +'<button class="export-btn" onclick="copyShareLink()"><i class="fa-solid fa-link"></i> Copy Link</button>'
-        +'</div>'
-
-        +'<div class="card" style="margin-bottom:16px;"><div class="card-header"><span class="card-title"><i class="fa-solid fa-arrow-right-arrow-left" style="color:var(--accent); margin-right:8px;"></i>Recent Transactions</span><a href="history.html" class="card-action">Lihat semua <i class="fa-solid fa-arrow-right"></i></a></div><div class="card-body">'+txHtml+'</div></div>';
-
-      /* === TRIGGER ANIMASI === */
-      setTimeout(function(){animateGauge(score);},200);
-      animateNumber(document.getElementById('gaugeScoreNum'),score,1800);
-      setTimeout(function(){
-        animateNumber(document.getElementById('animScore'),score,1400);
-        animateNumber(document.getElementById('animTx'),txD.total||0,1200);
-        var rEl=document.getElementById('animRate'),rT=Math.round(sr);
-        animateNumber(rEl,rT,1200);
-        setTimeout(function(){rEl.textContent=rT+'%';},1300);
-      },400);
-      setTimeout(function(){var tp=document.getElementById('aiTyping');if(tp)tp.style.display='none';typewriterEffect(document.getElementById('aiTextContent'),aiText,16);},800);
-      document.querySelectorAll('#badgesGrid .badge-item').forEach(function(b,idx){setTimeout(function(){b.classList.add('show');},600+idx*150);});
-      setTimeout(function(){document.querySelectorAll('.breakdown-bar-fill').forEach(function(bar){var w=bar.getAttribute('data-width');if(w)bar.style.width=w+'%';});},500);
-      setTimeout(function(){document.querySelectorAll('.dna-bar-fill').forEach(function(bar){var w=bar.getAttribute('data-width');if(w)bar.style.width=w+'%';});},700);
-      setTimeout(function(){document.querySelectorAll('.trust-stars .star.active').forEach(function(star,idx){star.style.opacity='0';star.style.transform='scale(0.5)';star.style.transition='all 0.4s cubic-bezier(0.34,1.56,0.64,1) '+(idx*0.1)+'s';setTimeout(function(){star.style.opacity='1';star.style.transform='scale(1)';},50);});},900);
-      setTimeout(function(){renderTimelineChart(score);},300);
-    }
-
-    /* ================================================================
-       JALANKAN SAAT HALAMAN SIAP
+       INIT
     ================================================================ */
     buildDashboard();
   </script>
