@@ -1,0 +1,660 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0" />
+  <title>Masuk — Wallet Health Score</title>
+  <meta name="robots" content="noindex, nofollow" />
+
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=DM+Sans:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
+
+  <script>
+    window.APP_CONFIG = {
+      sandbox: true,
+      authScopes: ['username', 'payments'],
+      sdkTimeout: 15000,
+      authTimeout: 30000,
+      sessionMaxAge: 86400000,
+      appId: 'wallet-health-score',
+      supabaseUrl: 'https://valpwlebldnkedrznaym.supabase.co',
+      supabaseAnonKey: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZhbHB3bGVibGRua2VkcnpuYXltIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODI3Mzk3ODUsImV4cCI6MjA5ODMxNTc4NX0.G3BDRqiRBmcFwtBRtdiJI3CkptRrya9bxiVozcQZCSc'
+    };
+  </script>
+
+  <!--
+    ╔═══════════════════════════════════════════════════════════════════╗
+    ║  SCHEMA SUPABASE — Jalankan di SQL Editor, hapus schema lama     ║
+    ║  RLS diperketat, akses data lewat RPC function                  ║
+    ╚═══════════════════════════════════════════════════════════════════╝
+  -->
+  <script id="supabase-schema" type="text/sql">
+DROP TABLE IF EXISTS users CASCADE;
+
+CREATE TABLE users (
+  id              UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  pi_uid          TEXT NOT NULL,
+  username        TEXT NOT NULL,
+  pi_access_token TEXT,
+  last_login      TIMESTAMPTZ,
+  created_at      TIMESTAMPTZ DEFAULT now()
+);
+
+CREATE UNIQUE INDEX IF NOT EXISTS idx_users_pi_uid_unique ON users (pi_uid);
+CREATE INDEX IF NOT EXISTS idx_users_username ON users (username);
+
+ALTER TABLE users ENABLE ROW LEVEL SECURITY;
+
+-- Anon boleh insert (saat login)
+CREATE POLICY "anon_can_insert" ON users FOR INSERT TO anon WITH CHECK (true);
+-- Anon boleh select (diontrol lewat RPC)
+CREATE POLICY "anon_can_read" ON users FOR SELECT TO anon USING (true);
+-- Anon boleh update (diontrol lewat RPC)
+CREATE POLICY "anon_can_update" ON users FOR UPDATE TO anon USING (true) WITH CHECK (true);
+-- TIDAK ADA policy delete
+
+CREATE OR REPLACE FUNCTION login_user(
+  p_pi_uid TEXT,
+  p_username TEXT,
+  p_access_token TEXT
+)
+RETURNS JSON
+LANGUAGE plpgsql
+SECURITY DEFINER
+AS $$ DECLARE
+  v_result JSON;
+BEGIN
+  INSERT INTO users (pi_uid, username, pi_access_token, last_login)
+  VALUES (p_pi_uid, p_username, p_access_token, now())
+  ON CONFLICT (pi_uid) DO UPDATE SET
+    username = EXCLUDED.username,
+    pi_access_token = EXCLUDED.pi_access_token,
+    last_login = now()
+  RETURNING row_to_json(users.*) INTO v_result;
+  RETURN v_result;
+END;
+ $$;
+  </script>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+  <style>
+    :root {
+      --bg-primary: #060a13;
+      --bg-secondary: #0c1222;
+      --bg-card: rgba(14, 22, 42, 0.65);
+      --bg-card-hover: rgba(20, 32, 58, 0.8);
+      --bg-glass: rgba(14, 22, 42, 0.45);
+      --bg-input: rgba(6, 10, 19, 0.6);
+      --border-color: rgba(45, 212, 191, 0.12);
+      --border-color-hover: rgba(45, 212, 191, 0.3);
+      --border-subtle: rgba(255, 255, 255, 0.06);
+      --border-focus: rgba(45, 212, 191, 0.4);
+      --accent: #2dd4bf;
+      --accent-dim: rgba(45, 212, 191, 0.12);
+      --accent-glow: rgba(45, 212, 191, 0.2);
+      --accent-secondary: #f59e0b;
+      --accent-secondary-dim: rgba(245, 158, 11, 0.12);
+      --text-primary: #f1f5f9;
+      --text-secondary: #94a3b8;
+      --text-muted: #475569;
+      --text-accent: #2dd4bf;
+      --success: #22c55e;
+      --warning: #f59e0b;
+      --danger: #ef4444;
+      --info: #3b82f6;
+      --radius-sm: 8px;
+      --radius-md: 12px;
+      --radius-lg: 16px;
+      --radius-xl: 24px;
+      --radius-full: 9999px;
+      --font-display: 'Space Grotesk', sans-serif;
+      --font-body: 'DM Sans', sans-serif;
+      --shadow-card: 0 4px 32px rgba(0, 0, 0, 0.4), 0 1px 2px rgba(0, 0, 0, 0.2);
+      --shadow-glow: 0 0 60px rgba(45, 212, 191, 0.06);
+      --topbar-height: 56px;
+      --transition-fast: 150ms cubic-bezier(0.4, 0, 0.2, 1);
+      --transition-base: 250ms cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+    html { scroll-behavior: smooth; -webkit-font-smoothing: antialiased; }
+    body {
+      font-family: var(--font-body);
+      background: var(--bg-primary);
+      color: var(--text-primary);
+      line-height: 1.6;
+      overflow-x: hidden;
+      min-height: 100vh;
+    }
+    a { color: inherit; text-decoration: none; transition: color var(--transition-fast); }
+    button { font-family: var(--font-body); cursor: pointer; border: none; outline: none; background: none; }
+    button:focus-visible, a:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+    /* === Atmosfer latar belakang === */
+    .bg-atmosphere { position: fixed; inset: 0; pointer-events: none; z-index: 0; overflow: hidden; }
+    .bg-atmosphere .orb {
+      position: absolute; border-radius: 50%;
+      filter: blur(100px); opacity: 0.18;
+      animation: orbFloat 25s ease-in-out infinite;
+    }
+    .orb-1 {
+      width: 320px; height: 320px;
+      background: radial-gradient(circle, rgba(45,212,191,0.12) 0%, transparent 70%);
+      top: -8%; left: -5%;
+    }
+    .orb-2 {
+      width: 260px; height: 260px;
+      background: radial-gradient(circle, rgba(245,158,11,0.06) 0%, transparent 70%);
+      bottom: -8%; right: -5%;
+      animation-delay: -10s; animation-duration: 28s;
+    }
+    .orb-3 {
+      width: 200px; height: 200px;
+      background: radial-gradient(circle, rgba(45,212,191,0.05) 0%, transparent 70%);
+      top: 45%; left: 55%;
+      animation-delay: -15s; animation-duration: 22s;
+    }
+    @keyframes orbFloat {
+      0%, 100% { transform: translate(0, 0) scale(1); }
+      33% { transform: translate(15px, -20px) scale(1.03); }
+      66% { transform: translate(-10px, 12px) scale(0.97); }
+    }
+
+    /* === Topbar === */
+    .topbar {
+      height: var(--topbar-height); padding: 0 16px;
+      display: flex; align-items: center;
+      border-bottom: 1px solid var(--border-subtle);
+      background: rgba(6,10,19,0.85);
+      backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px);
+      position: sticky; top: 0; z-index: 40;
+    }
+    .topbar-left { display: flex; align-items: center; gap: 12px; min-width: 0; flex: 1; }
+    .back-btn {
+      display: inline-flex; align-items: center; gap: 6px;
+      padding: 8px 14px; font-size: 0.82rem; font-weight: 600;
+      color: var(--accent); border: 1px solid var(--border-color);
+      border-radius: var(--radius-full);
+      transition: all var(--transition-fast);
+      white-space: nowrap; background: var(--accent-dim);
+    }
+    .back-btn:hover {
+      background: rgba(45,212,191,0.18);
+      border-color: var(--border-color-hover);
+      box-shadow: 0 0 16px var(--accent-glow);
+    }
+    .back-btn:active { transform: scale(0.97); }
+    .back-btn i { font-size: 0.8rem; }
+    .topbar-title {
+      font-family: var(--font-display);
+      font-size: 1rem; font-weight: 600;
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    }
+
+    /* === Layout utama === */
+    .page-wrapper {
+      position: relative; z-index: 1;
+      min-height: 100vh; display: flex; flex-direction: column;
+    }
+    .login-main {
+      flex: 1; display: flex; align-items: center; justify-content: center;
+      padding: 24px 16px 40px;
+    }
+    .login-layout {
+      display: grid; grid-template-columns: 1fr;
+      gap: 32px; max-width: 440px; width: 100%;
+    }
+
+    /* === Branding === */
+    .login-branding { text-align: center; animation: fadeInUp 0.5s ease-out 0.1s both; }
+    @keyframes fadeInUp {
+      from { opacity: 0; transform: translateY(16px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    .branding-icon-large {
+      width: 56px; height: 56px;
+      background: linear-gradient(135deg, var(--accent), #0d9488);
+      border-radius: var(--radius-lg);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 1.5rem; color: var(--bg-primary);
+      margin: 0 auto 20px;
+      box-shadow: 0 0 32px var(--accent-glow);
+      position: relative;
+      font-family: var(--font-display); font-weight: 700;
+    }
+    .branding-icon-large::after {
+      content: ''; position: absolute; inset: -6px;
+      border-radius: 18px; border: 1px solid var(--accent-dim);
+      animation: pulseRing 3s ease-in-out infinite;
+    }
+    @keyframes pulseRing {
+      0%, 100% { opacity: 0.5; transform: scale(1); }
+      50% { opacity: 0.15; transform: scale(1.06); }
+    }
+    .branding-title {
+      font-family: var(--font-display);
+      font-size: 1.5rem; font-weight: 700;
+      letter-spacing: -0.02em; margin-bottom: 10px; line-height: 1.2;
+    }
+    .branding-title .highlight {
+      background: linear-gradient(135deg, var(--accent), #5eead4);
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+    }
+    .branding-desc { font-size: 0.88rem; color: var(--text-secondary); line-height: 1.6; }
+
+    /* === Card login === */
+    .login-card-wrapper { animation: fadeInUp 0.5s ease-out 0.25s both; }
+    .login-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-lg);
+      padding: 28px 22px;
+      box-shadow: var(--shadow-card);
+      position: relative; overflow: hidden;
+      backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+    }
+    .login-card::before {
+      content: ''; position: absolute;
+      top: 0; left: 20%; right: 20%; height: 1px;
+      background: linear-gradient(90deg, transparent, var(--accent), transparent);
+    }
+    .card-header { margin-bottom: 24px; }
+    .card-title {
+      font-family: var(--font-display);
+      font-size: 1.15rem; font-weight: 700; margin-bottom: 6px;
+    }
+    .card-subtitle { font-size: 0.82rem; color: var(--text-muted); line-height: 1.5; }
+
+    /* === Status area (spinner, teks, error) === */
+    .pi-status-area { text-align: center; }
+    .pi-spinner-wrapper {
+      width: 72px; height: 72px; margin: 0 auto 24px;
+      position: relative; display: flex; align-items: center; justify-content: center;
+    }
+    .pi-spinner-ring {
+      width: 72px; height: 72px;
+      border: 3px solid rgba(45,212,191,0.1);
+      border-top-color: var(--accent);
+      border-radius: 50%;
+      animation: spinRing 1s linear infinite;
+      transition: border-top-color 0.4s ease;
+    }
+    .pi-spinner-ring.success { border-top-color: var(--success); animation: none; }
+    .pi-spinner-ring.error { border-top-color: var(--danger); animation: none; }
+    .pi-spinner-icon {
+      position: absolute;
+      font-family: var(--font-display);
+      font-size: 1.6rem; color: var(--accent); font-weight: 700;
+      transition: color 0.4s ease, transform 0.4s ease;
+    }
+    .pi-spinner-icon.success { color: var(--success); transform: scale(1.1); }
+    .pi-spinner-icon.error { color: var(--danger); }
+    @keyframes spinRing { to { transform: rotate(360deg); } }
+
+    .pi-status-title {
+      font-family: var(--font-display);
+      font-size: 1.1rem; font-weight: 600;
+      margin-bottom: 6px; transition: color 0.3s ease;
+    }
+    .pi-status-title.success { color: var(--success); }
+    .pi-status-title.error { color: var(--danger); }
+    .pi-status-desc {
+      font-size: 0.84rem; color: var(--text-secondary);
+      line-height: 1.6; min-height: 42px;
+    }
+
+    /* Error & warning box */
+    .pi-error-box {
+      display: none;
+      background: rgba(239,68,68,0.08);
+      border: 1px solid rgba(239,68,68,0.2);
+      border-radius: var(--radius-sm);
+      padding: 14px 16px; margin: 20px 0; text-align: left;
+    }
+    .pi-error-box.visible { display: block; animation: fadeInUp 0.3s ease-out; }
+    .pi-error-label {
+      font-size: 0.7rem; font-weight: 600; color: #fca5a5;
+      text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 6px;
+    }
+    .pi-error-text { font-size: 0.82rem; color: #e2e8f0; word-break: break-word; line-height: 1.5; }
+
+    .pi-warning-box {
+      display: none;
+      background: rgba(245,158,11,0.08);
+      border: 1px solid rgba(245,158,11,0.2);
+      border-radius: var(--radius-sm);
+      padding: 14px 16px; margin: 20px 0; text-align: left;
+    }
+    .pi-warning-box.visible { display: block; animation: fadeInUp 0.3s ease-out; }
+    .pi-warning-label {
+      font-size: 0.7rem; font-weight: 600; color: #fcd34d;
+      text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 6px;
+    }
+    .pi-warning-text { font-size: 0.82rem; color: #e2e8f0; word-break: break-word; line-height: 1.5; }
+
+    /* Tombol aksi */
+    .pi-actions {
+      display: none; flex-direction: column; gap: 10px; margin-top: 20px;
+    }
+    .pi-actions.visible { display: flex; animation: fadeInUp 0.3s ease-out; }
+    .btn-pi-action {
+      width: 100%; padding: 13px 20px;
+      border-radius: var(--radius-md);
+      font-size: 0.88rem; font-weight: 600;
+      display: flex; align-items: center; justify-content: center; gap: 8px;
+      transition: all var(--transition-base);
+      position: relative; overflow: hidden;
+    }
+    .btn-pi-action::before {
+      content: ''; position: absolute;
+      top: 0; left: -100%; width: 100%; height: 100%;
+      background: linear-gradient(90deg, transparent, rgba(255,255,255,0.12), transparent);
+      transition: left 0.5s ease;
+    }
+    .btn-pi-action:hover::before { left: 100%; }
+    .btn-pi-retry {
+      background: linear-gradient(135deg, var(--accent), #0d9488);
+      color: var(--bg-primary);
+      box-shadow: 0 0 20px var(--accent-glow);
+    }
+    .btn-pi-retry:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 0 32px var(--accent-glow), 0 4px 16px rgba(45,212,191,0.2);
+    }
+    .btn-pi-retry:active { transform: translateY(0); }
+    .btn-pi-back {
+      background: transparent;
+      border: 1px solid var(--border-subtle);
+      color: var(--text-secondary);
+    }
+    .btn-pi-back:hover {
+      border-color: rgba(255,255,255,0.15);
+      color: var(--text-primary);
+      background: rgba(255,255,255,0.03);
+    }
+
+    /* Banner sesi */
+    .session-banner {
+      display: none; align-items: center; gap: 10px;
+      padding: 10px 14px;
+      background: rgba(34,197,94,0.08);
+      border: 1px solid rgba(34,197,94,0.2);
+      border-radius: var(--radius-sm);
+      margin-bottom: 18px; font-size: 0.78rem; color: var(--success);
+    }
+    .session-banner.visible { display: flex; }
+    .session-banner i { font-size: 0.9rem; }
+    .session-banner .user-preview {
+      font-family: 'Space Grotesk', monospace; font-weight: 600;
+    }
+    .session-banner .session-age {
+      color: var(--text-muted); font-size: 0.72rem; margin-left: 4px;
+    }
+    .session-banner .logout-link {
+      margin-left: auto; color: var(--text-muted); font-size: 0.74rem;
+      cursor: pointer; transition: color var(--transition-fast);
+      background: none; border: none; font-family: var(--font-body);
+    }
+    .session-banner .logout-link:hover { color: var(--danger); }
+
+    /* Debug log */
+    .debug-log {
+      display: none; margin-top: 16px;
+      padding: 10px 12px;
+      background: rgba(0,0,0,0.5);
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: var(--radius-sm);
+      font-family: 'Space Grotesk', monospace;
+      font-size: 0.7rem; color: var(--accent);
+      text-align: left; max-height: 200px; overflow-y: auto; line-height: 1.7;
+    }
+    .debug-log.visible { display: block; }
+    .debug-log p { margin: 0; padding: 2px 0; border-bottom: 1px solid rgba(255,255,255,0.03); }
+    .debug-log p.err { color: var(--danger); }
+    .debug-log p.warn { color: var(--warning); }
+
+    /* Footer card */
+    .card-footer {
+      margin-top: 20px; text-align: center;
+      font-size: 0.74rem; color: var(--text-muted); line-height: 1.7;
+    }
+    .card-footer a { color: var(--accent); font-weight: 500; }
+    .card-footer a:hover { text-decoration: underline; }
+
+    /* Trust chips (mobile) */
+    .trust-row {
+      display: flex; justify-content: center; gap: 12px;
+      margin-top: 24px;
+      animation: fadeInUp 0.5s ease-out 0.4s both; flex-wrap: wrap;
+    }
+    .trust-chip {
+      display: inline-flex; align-items: center; gap: 6px;
+      padding: 7px 14px;
+      background: rgba(255,255,255,0.02);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-full);
+      font-size: 0.72rem; font-weight: 500;
+      color: var(--text-muted); white-space: nowrap;
+    }
+    .trust-chip i { font-size: 0.7rem; }
+    .tc-teal { color: var(--accent); }
+    .tc-amber { color: var(--accent-secondary); }
+    .tc-green { color: var(--success); }
+
+    /* Toast */
+    .toast-container {
+      position: fixed; top: 68px; left: 16px; right: 16px;
+      z-index: 200; display: flex; flex-direction: column; gap: 8px;
+      pointer-events: none;
+    }
+    .toast {
+      display: flex; align-items: center; gap: 10px;
+      padding: 12px 16px;
+      background: var(--bg-secondary);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-md);
+      box-shadow: 0 8px 32px rgba(0,0,0,0.5);
+      font-size: 0.82rem; color: var(--text-primary);
+      transform: translateY(-20px); opacity: 0;
+      transition: all var(--transition-base); pointer-events: auto;
+    }
+    .toast.show { transform: translateY(0); opacity: 1; }
+    .toast i { font-size: 1rem; flex-shrink: 0; }
+    .toast.success { border-left: 3px solid var(--success); }
+    .toast.success i { color: var(--success); }
+    .toast.error { border-left: 3px solid var(--danger); }
+    .toast.error i { color: var(--danger); }
+    .toast.info { border-left: 3px solid var(--info); }
+    .toast.info i { color: var(--info); }
+    .toast.warning { border-left: 3px solid var(--warning); }
+    .toast.warning i { color: var(--warning); }
+
+    /* Banner offline */
+    .offline-banner {
+      display: none; position: fixed;
+      bottom: 0; left: 0; right: 0;
+      padding: 10px 16px;
+      background: rgba(239,68,68,0.15);
+      border-top: 1px solid rgba(239,68,68,0.3);
+      backdrop-filter: blur(12px);
+      text-align: center; font-size: 0.8rem; color: #fca5a5; z-index: 300;
+    }
+    .offline-banner.visible { display: block; animation: slideUp 0.3s ease-out; }
+    .offline-banner i { margin-right: 6px; }
+    @keyframes slideUp {
+      from { transform: translateY(100%); }
+      to { transform: translateY(0); }
+    }
+
+    /* === Responsive === */
+    @media (min-width: 640px) {
+      .login-main { padding: 32px 24px 48px; }
+      .login-layout { max-width: 480px; gap: 36px; }
+      .login-card { padding: 32px 28px; }
+      .branding-title { font-size: 1.7rem; }
+      .card-title { font-size: 1.3rem; }
+      .topbar { padding: 0 24px; }
+    }
+    @media (min-width: 900px) {
+      .login-layout {
+        grid-template-columns: 1fr 1fr;
+        max-width: 820px; gap: 48px; align-items: center;
+      }
+      .login-branding {
+        text-align: left;
+        display: flex; flex-direction: column; align-items: flex-start;
+      }
+      .branding-icon-large { margin: 0 0 24px; }
+      .branding-title { font-size: 2rem; line-height: 1.15; }
+      .branding-desc { margin-bottom: 28px; max-width: 360px; }
+      .trust-row { display: none; }
+      .trust-list { display: flex !important; flex-direction: column; gap: 14px; }
+      .trust-item {
+        display: flex; align-items: center; gap: 12px;
+        font-size: 0.88rem; color: var(--text-secondary);
+      }
+      .trust-icon {
+        width: 32px; height: 32px; border-radius: var(--radius-sm);
+        display: flex; align-items: center; justify-content: center;
+        font-size: 0.8rem; flex-shrink: 0;
+      }
+      .trust-icon.teal { background: var(--accent-dim); color: var(--accent); }
+      .trust-icon.amber { background: var(--accent-secondary-dim); color: var(--accent-secondary); }
+      .trust-icon.green { background: rgba(34,197,94,0.12); color: var(--success); }
+      .login-card { padding: 36px 32px; border-radius: var(--radius-xl); }
+    }
+    .trust-list { display: none; }
+    @media (max-width: 360px) {
+      .login-card { padding: 22px 16px; }
+      .branding-icon-large { width: 48px; height: 48px; font-size: 1.3rem; }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after {
+        animation-duration: 0.01ms !important;
+        transition-duration: 0.01ms !important;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Latar belakang atmosfer -->
+  <div class="bg-atmosphere" aria-hidden="true">
+    <div class="orb orb-1"></div>
+    <div class="orb orb-2"></div>
+    <div class="orb orb-3"></div>
+  </div>
+
+  <!-- Banner offline -->
+  <div class="offline-banner" id="offlineBanner" role="alert">
+    <i class="fa-solid fa-wifi" aria-hidden="true"></i>
+    Tidak ada koneksi internet
+  </div>
+
+  <!-- Container toast -->
+  <div class="toast-container" id="toastContainer" aria-live="polite"></div>
+
+  <div class="page-wrapper">
+    <!-- Topbar -->
+    <header class="topbar" role="banner">
+      <div class="topbar-left">
+        <a href="index.html" class="back-btn" aria-label="Kembali ke beranda">
+          <i class="fa-solid fa-arrow-left"></i>
+          <span>Kembali</span>
+        </a>
+      
+      </div>
+    </header>
+
+    <!-- Konten utama -->
+    <main class="login-main" role="main">
+      <div class="login-layout">
+        <!-- Kolom kiri: branding -->
+        <section class="login-branding" aria-labelledby="brandingTitle">
+          <div class="branding-icon-large" aria-hidden="true">&pi;</div>
+          <h2 class="branding-title" id="brandingTitle">
+            Masuk dengan<br><span class="highlight">Pi Network</span>
+          </h2>
+          <p class="branding-desc">
+            Hubungkan akun Pi Anda untuk mengakses dashboard credit score dan analitik wallet lengkap. Tanpa password, tanpa private key.
+          </p>
+          <div class="trust-list" role="list">
+            <div class="trust-item" role="listitem">
+              <div class="trust-icon teal"><i class="fa-solid fa-lock"></i></div>
+              <span>Otentikasi resmi via Pi SDK</span>
+            </div>
+            <div class="trust-item" role="listitem">
+              <div class="trust-icon amber"><i class="fa-solid fa-bolt"></i></div>
+              <span>Login instan — satu ketukan</span>
+            </div>
+            <div class="trust-item" role="listitem">
+              <div class="trust-icon green"><i class="fa-solid fa-shield-halved"></i></div>
+              <span>Data on-chain, tidak ada risiko keamanan</span>
+            </div>
+          </div>
+        </section>
+
+        <!-- Kolom kanan: card login -->
+        <div class="login-card-wrapper">
+          <article class="login-card">
+            <div class="card-header">
+              <h2 class="card-title">Masuk ke Dashboard</h2>
+              <p class="card-subtitle" id="cardSubtitle">Menghubungkan melalui Pi Network...</p>
+            </div>
+
+            <!-- Banner sesi aktif -->
+            <div class="session-banner" id="sessionBanner" role="status">
+              <i class="fa-solid fa-circle-check" aria-hidden="true"></i>
+              <span>Sesi: <span class="user-preview" id="sessionUser"></span><span class="session-age" id="sessionAge"></span></span>
+              <button class="logout-link" id="logoutBtn" aria-label="Hapus sesi dan login ulang">Ganti</button>
+            </div>
+
+            <!-- Area status utama -->
+            <div class="pi-status-area" id="piStatusArea" role="status" aria-live="polite">
+              <div class="pi-spinner-wrapper" id="spinnerWrapper">
+                <div class="pi-spinner-ring" id="spinnerRing"></div>
+                <div class="pi-spinner-icon" id="spinnerIcon" aria-hidden="true">&pi;</div>
+              </div>
+              <div class="pi-status-title" id="statusTitle">Menghubungkan...</div>
+              <div class="pi-status-desc" id="statusDesc">Menyiapkan koneksi aman ke Pi Network</div>
+
+              <!-- Box error -->
+              <div class="pi-error-box" id="errorBox" role="alert">
+                <div class="pi-error-label">Kesalahan Sistem</div>
+                <div class="pi-error-text" id="errorText">-</div>
+              </div>
+
+              <!-- Box warning -->
+              <div class="pi-warning-box" id="warningBox" role="alert">
+                <div class="pi-warning-label">Peringatan</div>
+                <div class="pi-warning-text" id="warningText">-</div>
+              </div>
+
+              <!-- Tombol aksi -->
+              <div class="pi-actions" id="actionButtons">
+                <button class="btn-pi-action btn-pi-retry" id="btnRetry" type="button">
+                  <i class="fa-solid fa-rotate-right" aria-hidden="true"></i>
+                  <span>Coba Lagi</span>
+                </button>
+                <button class="btn-pi-action btn-pi-back" id="btnBack" type="button">
+                  <i class="fa-solid fa-arrow-left" aria-hidden="true"></i>
+                  <span>Kembali ke Beranda</span>
+                </button>
+              </div>
+
+              <!-- Debug log (hanya muncul mode debug) -->
+              <div class="debug-log" id="debugLog" role="log" aria-label="Log debug"></div>
+            </div>
+
+            <footer class="card-footer">
+              Login aman via Pi SDK — access token hanya disimpan sesi ini.<br>
+              Bukan pengguna Pi? <a href="index.html">Kembali ke beranda</a>
+            </footer>
+          </article>
+
+          <!-- Trust chips (mobile) -->
+          <div class="trust-row" aria-label="Indikator keamanan">
+            <div class="trust-chip"><i class="fa-solid fa-lock tc-teal" aria-hidden="true"></i><span>Pi SDK Resmi</span></div>
+            <div class="trust
